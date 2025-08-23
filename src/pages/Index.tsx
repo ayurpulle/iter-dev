@@ -1,12 +1,73 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import TopBar from "@/components/TopBar";
+import TripCard from "@/components/TripCard";
+import BottomTabBar from "@/components/BottomTabBar";
 
 const Index = () => {
+  // Mock data based on the sketch
+  const mockTrips = [
+    {
+      user: {
+        name: "Shreyas Athreya",
+        username: "shreyasathreya",
+        avatar: undefined,
+      },
+      trip: {
+        title: "Colombia — Solo Travel",
+        duration: "25 hours",
+        distance: "1000km",
+        stops: [
+          { name: "Medellín", lat: 6.2442, lng: -75.5812 },
+          { name: "Bogotá", lat: 4.7110, lng: -74.0721 },
+        ],
+        photoCount: 12,
+      },
+      stats: {
+        likes: 24,
+        comments: 3,
+      },
+    },
+    {
+      user: {
+        name: "Ayur Palle",
+        username: "ayurpalle",
+        avatar: undefined,
+      },
+      trip: {
+        title: "Portugal — Summer and 3 others",
+        duration: "3 hours",
+        distance: "215 km",
+        stops: [
+          { name: "Porto", lat: 41.1579, lng: -8.6291 },
+          { name: "Évora", lat: 38.5714, lng: -7.9036 },
+          { name: "Lisbon", lat: 38.7223, lng: -9.1393 },
+        ],
+        photoCount: 18,
+      },
+      stats: {
+        likes: 42,
+        comments: 7,
+      },
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background pb-20">
+      <TopBar />
+      
+      <main className="px-4 py-6 max-w-md mx-auto">
+        <div className="space-y-6">
+          {mockTrips.map((trip, index) => (
+            <TripCard
+              key={index}
+              user={trip.user}
+              trip={trip.trip}
+              stats={trip.stats}
+            />
+          ))}
+        </div>
+      </main>
+      
+      <BottomTabBar />
     </div>
   );
 };

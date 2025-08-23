@@ -1,4 +1,4 @@
-import { Home, MapIcon, Plus, MessageCircle, Globe } from "lucide-react";
+import { Home, MapIcon, Plus, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BottomTabBar = () => {
@@ -22,11 +22,11 @@ const BottomTabBar = () => {
         </Button>
         
         <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">
-          <MessageCircle size={20} className="text-muted-foreground" />
+          <Globe size={20} className="text-muted-foreground" />
         </Button>
         
         <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">
-          <Globe size={20} className="text-muted-foreground" />
+          <User size={20} className="text-muted-foreground" />
         </Button>
       </div>
     </div>

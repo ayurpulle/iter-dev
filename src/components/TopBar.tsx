@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, Bell, Send, User } from "lucide-react";
+import { Search, Bell, Send, MessageCircle } from "lucide-react";
 
 const TopBar = () => {
   return (
@@ -7,14 +7,14 @@ const TopBar = () => {
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <User size={18} className="text-muted-foreground" />
+            <MessageCircle size={18} className="text-muted-foreground" />
           </Button>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Search size={18} className="text-muted-foreground" />
           </Button>
         </div>
         
-        <h1 className="text-lg font-semibold text-foreground">HOME</h1>
+        <h1 className="text-lg font-semibold text-foreground">ITER</h1>
         
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

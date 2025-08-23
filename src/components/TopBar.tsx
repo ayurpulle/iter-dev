@@ -7,9 +7,6 @@ const TopBar = () => {
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MessageCircle size={18} className="text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Search size={18} className="text-muted-foreground" />
           </Button>
         </div>
@@ -19,6 +16,9 @@ const TopBar = () => {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Bell size={18} className="text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MessageCircle size={18} className="text-muted-foreground" />
           </Button>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Send size={18} className="text-muted-foreground" />

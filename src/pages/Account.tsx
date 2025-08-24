@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
+import TravelMap from "@/components/TravelMap";
 import { Globe, MapPin, Calendar, Settings } from "lucide-react";
 
 const Account = () => {
@@ -76,11 +77,21 @@ const Account = () => {
     },
   ];
 
-  // Mock visited countries for the globe
+  // Mock visited countries for the map
   const visitedCountries = [
     "Japan", "France", "Indonesia", "USA", "Iceland", "Thailand",
     "Germany", "Italy", "Spain", "Australia", "Canada", "Mexico"
   ];
+
+  // Mock travel statistics
+  const travelStats = {
+    countriesVisited: visitedCountries.length,
+    totalCountries: 195,
+    citiesVisited: 48,
+    totalCities: 10000,
+    totalDistance: 87540,
+    totalDays: 156,
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -193,37 +204,15 @@ const Account = () => {
               My World
             </h2>
             
-            {/* Globe Placeholder */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-lg flex items-center justify-center mb-4">
-                  <div className="text-center">
-                    <Globe size={48} className="mx-auto mb-2 text-blue-600 dark:text-blue-400" />
-                    <p className="text-sm text-muted-foreground">Interactive Globe</p>
-                    <p className="text-xs text-muted-foreground">Coming Soon</p>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="font-semibold mb-2">Travel Statistics</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium">{visitedCountries.length}</div>
-                      <div className="text-muted-foreground">Countries</div>
-                    </div>
-                    <div>
-                      <div className="font-medium">{userData.stats.posts}</div>
-                      <div className="text-muted-foreground">Journeys</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TravelMap 
+              visitedCountries={visitedCountries}
+              travelStats={travelStats}
+            />
 
-            {/* Visited Countries */}
+            {/* Visited Countries List */}
             <Card>
               <CardContent className="p-4">
-                <h3 className="font-semibold mb-3">Countries Visited</h3>
+                <h3 className="font-semibold mb-3">Countries Visited ({visitedCountries.length})</h3>
                 <div className="flex flex-wrap gap-2">
                   {visitedCountries.map((country) => (
                     <Badge key={country} variant="secondary" className="text-xs">

@@ -40,7 +40,12 @@ const BottomTabBar = () => {
           <Search size={20} className="text-muted-foreground" />
         </Button>
         
-        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto p-2"
+          onClick={() => navigate("/account")}
+        >
           <User size={20} className="text-muted-foreground" />
         </Button>
       </div>

@@ -1,4 +1,4 @@
-import { Home, MapIcon, Plus, User } from "lucide-react";
+import { Home, MapIcon, Plus, User, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -8,7 +8,7 @@ const BottomTabBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2 safe-area-pb">
-      <div className="flex items-center justify-around max-w-md mx-auto">
+      <div className="flex items-center justify-between max-w-md mx-auto">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -31,9 +31,16 @@ const BottomTabBar = () => {
           variant="default" 
           size="sm" 
           className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground"
-          onClick={() => navigate("/trips")}
         >
           <Plus size={20} />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto p-2"
+        >
+          <Search size={20} className="text-muted-foreground" />
         </Button>
         
         <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">

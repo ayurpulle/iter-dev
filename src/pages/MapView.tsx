@@ -10,7 +10,7 @@ import TripPlanning from "@/components/TripPlanning";
 import { Button } from "@/components/ui/button";
 
 const MapView = () => {
-  const [activeTab, setActiveTab] = useState<"map" | "planning" | "friends">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "planning">("map");
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [showFullList, setShowFullList] = useState(false);
@@ -36,14 +36,14 @@ const MapView = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
       
-      {/* Back Button */}
+      {/* Back Button - Fixed positioning and visibility */}
       {(showPopup || showFullList) && (
-        <div className="px-4 py-2">
+        <div className="absolute top-16 left-4 z-50">
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={handleBackToMap}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
           >
             <ArrowLeft size={16} />
             Back to Map
@@ -51,39 +51,33 @@ const MapView = () => {
         </div>
       )}
       
-      {/* Toggle Banner */}
-      <div className="bg-background border-b border-border px-4 py-3">
-        <div className="flex items-center justify-center max-w-md mx-auto">
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={activeTab === "map" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("map")}
-              className="px-4"
-            >
-              Map
-            </Button>
-            <Button
-              variant={activeTab === "planning" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("planning")}
-              className="px-4"
-            >
-              Plan Trip
-            </Button>
-            <Button
-              variant={activeTab === "friends" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("friends")}
-              className="px-4"
-            >
-              Friends
-            </Button>
+      {/* Toggle Banner - Only show when not viewing location details */}
+      {!showPopup && !showFullList && (
+        <div className="bg-background border-b border-border px-4 py-3">
+          <div className="flex items-center justify-center max-w-md mx-auto">
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={activeTab === "map" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("map")}
+                className="px-4"
+              >
+                Map
+              </Button>
+              <Button
+                variant={activeTab === "planning" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("planning")}
+                className="px-6"
+              >
+                Plan Trip
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <main className="flex-1">
+      <main className="flex-1 relative">
         {activeTab === "map" && (
           <>
             <InteractiveMap onLocationClick={handleLocationClick} />
@@ -103,7 +97,6 @@ const MapView = () => {
           </>
         )}
         {activeTab === "planning" && <TripPlanning />}
-        {activeTab === "friends" && <CompactFriendsList />}
       </main>
       
       <BottomTabBar />

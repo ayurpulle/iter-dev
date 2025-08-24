@@ -15,13 +15,19 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [isTokenSet, setIsTokenSet] = useState(false);
 
-  // Mock trip locations
+  // Enhanced trip locations with friends' data
   const tripLocations = [
-    { name: "Medellín", lat: 6.2442, lng: -75.5812, trip: "Colombia — Solo Travel" },
-    { name: "Bogotá", lat: 4.7110, lng: -74.0721, trip: "Colombia — Solo Travel" },
-    { name: "Porto", lat: 41.1579, lng: -8.6291, trip: "Portugal — Summer" },
-    { name: "Évora", lat: 38.5714, lng: -7.9036, trip: "Portugal — Summer" },
-    { name: "Lisbon", lat: 38.7223, lng: -9.1393, trip: "Portugal — Summer" },
+    { name: "Tokyo", latitude: 35.6762, longitude: 139.6503, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
+    { name: "Kyoto", latitude: 35.0116, longitude: 135.7681, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
+    { name: "Osaka", latitude: 34.6937, longitude: 135.5023, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
+    { name: "Barcelona", latitude: 41.3851, longitude: 2.1734, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
+    { name: "Rome", latitude: 41.9028, longitude: 12.4964, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
+    { name: "Athens", latitude: 37.9838, longitude: 23.7275, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
+    { name: "Santorini", latitude: 36.3932, longitude: 25.4615, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
+    { name: "Reykjavik", latitude: 64.1466, longitude: -21.9426, trip: "Iceland Road Trip — Mike", friendsCount: 1 },
+    { name: "Bangkok", latitude: 13.7563, longitude: 100.5018, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
+    { name: "Chiang Mai", latitude: 18.7061, longitude: 98.9817, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
+    { name: "Phuket", latitude: 7.8804, longitude: 98.3923, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
   ];
 
   useEffect(() => {
@@ -55,10 +61,12 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
         'horizon-blend': 0.2,
       });
 
-      // Add markers for trip locations
+      // Add markers for friends' trip locations
       tripLocations.forEach((location) => {
-        const marker = new mapboxgl.Marker({ color: '#10b981' })
-          .setLngLat([location.lng, location.lat])
+        const marker = new mapboxgl.Marker({ 
+          color: location.friendsCount > 1 ? '#8b5cf6' : '#10b981' // Purple for multiple friends, green for single
+        })
+          .setLngLat([location.longitude, location.latitude])
           .addTo(map.current!);
 
         // Add click event to marker
@@ -73,7 +81,8 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
             <div class="p-2">
               <h3 class="font-semibold">${location.name}</h3>
               <p class="text-sm text-gray-600">${location.trip}</p>
-              <p class="text-xs text-gray-500">Click to see friends' trips</p>
+              <p class="text-xs text-blue-600 font-medium">${location.friendsCount} friend${location.friendsCount > 1 ? 's' : ''} visited</p>
+              <p class="text-xs text-gray-500">Click to see details</p>
             </div>
           `);
 

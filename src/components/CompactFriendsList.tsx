@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, Users, Plus, X } from "lucide-react";
 import TripDetail from "./TripDetail";
 
-const CompactFriendsList = () => {
+interface CompactFriendsListProps {
+  filterLocation?: string;
+}
+
+const CompactFriendsList = ({ filterLocation }: CompactFriendsListProps) => {
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  
   
   const friendsTrips = [
     {
@@ -83,6 +88,16 @@ const CompactFriendsList = () => {
     },
   ];
 
+  // Filter trips by location if specified
+  const filteredTrips = filterLocation 
+    ? friendsTrips.filter(item => 
+        item.trip.locations.some(loc => 
+          loc.toLowerCase().includes(filterLocation.toLowerCase()) || 
+          filterLocation.toLowerCase().includes(loc.toLowerCase())
+        )
+      )
+    : friendsTrips;
+
   const handleTripClick = (friendTrip: any) => {
     setSelectedTrip(friendTrip);
   };
@@ -105,7 +120,12 @@ const CompactFriendsList = () => {
   return (
     <div className="px-4 py-6 max-w-md mx-auto">
       <div className="space-y-3">
-        {friendsTrips.map((item, index) => (
+        {filteredTrips.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No trips found for {filterLocation}</p>
+          </div>
+        ) : (
+          filteredTrips.map((item, index) => (
           <Card 
             key={index} 
             className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -155,7 +175,8 @@ const CompactFriendsList = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

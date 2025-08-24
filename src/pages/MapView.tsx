@@ -2,12 +2,14 @@ import { useState } from "react";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import InteractiveMap from "@/components/InteractiveMap";
-import CompactFriendsList from "@/components/CompactFriendsList";
+import LocationTrips from "@/components/LocationTrips";
 import TripPlanning from "@/components/TripPlanning";
 import { Button } from "@/components/ui/button";
 
 const MapView = () => {
-  const [activeTab, setActiveTab] = useState<"map" | "friends" | "planning">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "planning">("map");
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [showLocationTrips, setShowLocationTrips] = useState(false);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -26,14 +28,6 @@ const MapView = () => {
               Map
             </Button>
             <Button
-              variant={activeTab === "friends" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("friends")}
-              className="px-6"
-            >
-              Friends
-            </Button>
-            <Button
               variant={activeTab === "planning" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("planning")}
@@ -46,8 +40,17 @@ const MapView = () => {
       </div>
 
       <main className="flex-1">
-        {activeTab === "map" && <InteractiveMap />}
-        {activeTab === "friends" && <CompactFriendsList />}
+        {activeTab === "map" && (
+          <>
+            <InteractiveMap onLocationClick={setSelectedLocation} />
+            {selectedLocation && (
+              <LocationTrips 
+                location={selectedLocation} 
+                onClose={() => setSelectedLocation(null)}
+              />
+            )}
+          </>
+        )}
         {activeTab === "planning" && <TripPlanning />}
       </main>
       

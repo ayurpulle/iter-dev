@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-const InteractiveMap = () => {
+interface InteractiveMapProps {
+  onLocationClick?: (location: string) => void;
+}
+
+const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
@@ -51,21 +55,29 @@ const InteractiveMap = () => {
         'horizon-blend': 0.2,
       });
 
-      // Add trip location markers
+      // Add markers for trip locations
       tripLocations.forEach((location) => {
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div class="p-2">
-            <h3 class="font-semibold">${location.name}</h3>
-            <p class="text-sm text-gray-600">${location.trip}</p>
-          </div>`
-        );
-
-        new mapboxgl.Marker({
-          color: '#FF6B6B'
-        })
+        const marker = new mapboxgl.Marker({ color: '#10b981' })
           .setLngLat([location.lng, location.lat])
-          .setPopup(popup)
           .addTo(map.current!);
+
+        // Add click event to marker
+        const markerElement = marker.getElement();
+        markerElement.addEventListener('click', () => {
+          onLocationClick?.(location.name);
+        });
+        markerElement.style.cursor = 'pointer';
+
+        const popup = new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`
+            <div class="p-2">
+              <h3 class="font-semibold">${location.name}</h3>
+              <p class="text-sm text-gray-600">${location.trip}</p>
+              <p class="text-xs text-gray-500">Click to see friends' trips</p>
+            </div>
+          `);
+
+        marker.setPopup(popup);
       });
     });
 

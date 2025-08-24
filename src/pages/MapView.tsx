@@ -5,11 +5,12 @@ import BottomTabBar from "@/components/BottomTabBar";
 import InteractiveMap from "@/components/InteractiveMap";
 import LocationPopup from "@/components/LocationPopup";
 import LocationTrips from "@/components/LocationTrips";
+import CompactFriendsList from "@/components/CompactFriendsList";
 import TripPlanning from "@/components/TripPlanning";
 import { Button } from "@/components/ui/button";
 
 const MapView = () => {
-  const [activeTab, setActiveTab] = useState<"map" | "planning">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "planning" | "friends">("map");
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [showFullList, setShowFullList] = useState(false);
@@ -28,6 +29,7 @@ const MapView = () => {
     setShowPopup(false);
     setShowFullList(false);
     setSelectedLocation(null);
+    setActiveTab("map"); // Ensure we're back on map tab
   };
 
   return (
@@ -57,7 +59,7 @@ const MapView = () => {
               variant={activeTab === "map" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("map")}
-              className="px-6"
+              className="px-4"
             >
               Map
             </Button>
@@ -65,9 +67,17 @@ const MapView = () => {
               variant={activeTab === "planning" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("planning")}
-              className="px-6"
+              className="px-4"
             >
               Plan Trip
+            </Button>
+            <Button
+              variant={activeTab === "friends" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("friends")}
+              className="px-4"
+            >
+              Friends
             </Button>
           </div>
         </div>
@@ -93,6 +103,7 @@ const MapView = () => {
           </>
         )}
         {activeTab === "planning" && <TripPlanning />}
+        {activeTab === "friends" && <CompactFriendsList />}
       </main>
       
       <BottomTabBar />

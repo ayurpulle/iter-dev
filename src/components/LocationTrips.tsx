@@ -6,9 +6,10 @@ import CompactFriendsList from "./CompactFriendsList";
 interface LocationTripsProps {
   location: string;
   onClose: () => void;
+  onTripClick: (trip: any) => void;
 }
 
-const LocationTrips = ({ location, onClose }: LocationTripsProps) => {
+const LocationTrips = ({ location, onClose, onTripClick }: LocationTripsProps) => {
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-40 overflow-y-auto">
       <div className="min-h-screen px-4 py-6">
@@ -31,7 +32,7 @@ const LocationTrips = ({ location, onClose }: LocationTripsProps) => {
 
           {/* Friends trips for this location */}
           <div className="space-y-4">
-            <CompactFriendsList filterLocation={location} />
+            <CompactFriendsList filterLocation={location} onTripClick={onTripClick} />
           </div>
         </div>
       </div>

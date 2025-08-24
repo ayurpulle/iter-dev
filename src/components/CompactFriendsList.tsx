@@ -7,9 +7,10 @@ import TripDetail from "./TripDetail";
 
 interface CompactFriendsListProps {
   filterLocation?: string;
+  onTripClick?: (trip: any) => void;
 }
 
-const CompactFriendsList = ({ filterLocation }: CompactFriendsListProps) => {
+const CompactFriendsList = ({ filterLocation, onTripClick }: CompactFriendsListProps) => {
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   
   
@@ -99,7 +100,11 @@ const CompactFriendsList = ({ filterLocation }: CompactFriendsListProps) => {
     : friendsTrips;
 
   const handleTripClick = (friendTrip: any) => {
-    setSelectedTrip(friendTrip);
+    if (onTripClick) {
+      onTripClick(friendTrip);
+    } else {
+      setSelectedTrip(friendTrip);
+    }
   };
 
   const handleSaveTrip = (e: React.MouseEvent, friendTrip: any) => {

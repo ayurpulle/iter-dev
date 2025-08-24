@@ -1,4 +1,4 @@
-import { Home, MapIcon, Plus, User } from "lucide-react";
+import { Home, MapIcon, Plus, User, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -25,6 +25,10 @@ const BottomTabBar = () => {
           onClick={() => navigate("/map")}
         >
           <MapIcon size={20} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
+        </Button>
+        
+        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">
+          <Search size={20} className="text-muted-foreground" />
         </Button>
         
         <Button 

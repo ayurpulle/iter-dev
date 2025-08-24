@@ -1,14 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Search, Bell, Send, MessageCircle } from "lucide-react";
+import { Bell, Send, MessageCircle } from "lucide-react";
 
 const TopBar = () => {
   return (
     <div className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Search size={18} className="text-muted-foreground" />
-          </Button>
         </div>
         
         <h1 className="text-lg font-semibold text-foreground">ITER</h1>

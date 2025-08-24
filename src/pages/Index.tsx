@@ -54,6 +54,10 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
       
+      <div className="text-center py-4">
+        <h1 className="text-3xl font-bold text-primary">Get Addicted to the Real World</h1>
+      </div>
+      
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
           {mockTrips.map((trip, index) => (

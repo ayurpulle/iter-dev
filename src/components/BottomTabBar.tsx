@@ -31,6 +31,7 @@ const BottomTabBar = () => {
           variant="default" 
           size="sm" 
           className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground"
+          onClick={() => navigate("/trips")}
         >
           <Plus size={20} />
         </Button>

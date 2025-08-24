@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import InteractiveMap from "@/components/InteractiveMap";
+import LocationPopup from "@/components/LocationPopup";
 import LocationTrips from "@/components/LocationTrips";
 import TripPlanning from "@/components/TripPlanning";
 import { Button } from "@/components/ui/button";
@@ -9,11 +11,43 @@ import { Button } from "@/components/ui/button";
 const MapView = () => {
   const [activeTab, setActiveTab] = useState<"map" | "planning">("map");
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [showLocationTrips, setShowLocationTrips] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [showFullList, setShowFullList] = useState(false);
+
+  const handleLocationClick = (location: string) => {
+    setSelectedLocation(location);
+    setShowPopup(true);
+  };
+
+  const handlePopupClick = () => {
+    setShowPopup(false);
+    setShowFullList(true);
+  };
+
+  const handleBackToMap = () => {
+    setShowPopup(false);
+    setShowFullList(false);
+    setSelectedLocation(null);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
+      
+      {/* Back Button */}
+      {(showPopup || showFullList) && (
+        <div className="px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMap}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft size={16} />
+            Back to Map
+          </Button>
+        </div>
+      )}
       
       {/* Toggle Banner */}
       <div className="bg-background border-b border-border px-4 py-3">
@@ -42,11 +76,18 @@ const MapView = () => {
       <main className="flex-1">
         {activeTab === "map" && (
           <>
-            <InteractiveMap onLocationClick={setSelectedLocation} />
-            {selectedLocation && (
+            <InteractiveMap onLocationClick={handleLocationClick} />
+            {showPopup && selectedLocation && (
+              <LocationPopup 
+                location={selectedLocation} 
+                onClose={handleBackToMap}
+                onViewAll={handlePopupClick}
+              />
+            )}
+            {showFullList && selectedLocation && (
               <LocationTrips 
                 location={selectedLocation} 
-                onClose={() => setSelectedLocation(null)}
+                onClose={handleBackToMap}
               />
             )}
           </>

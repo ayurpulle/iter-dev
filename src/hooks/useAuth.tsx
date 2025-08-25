@@ -24,20 +24,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         // Create profile if user signs up with social auth
-        if (event === 'SIGNED_IN' && session?.user && !session.user.email_confirmed_at) {
+        if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('user_id', session.user.id)
-              .single();
+            try {
+              const { data: existingProfile, error: selectError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .single();
 
-            if (!existingProfile) {
-              await supabase.from('profiles').insert({
-                user_id: session.user.id,
-                name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                avatar: session.user.user_metadata?.avatar_url,
-              });
+              if (selectError && selectError.code === 'PGRST116') {
+                // Profile doesn't exist, create it
+                const { error: insertError } = await supabase.from('profiles').insert({
+                  user_id: session.user.id,
+                  name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+                  avatar: session.user.user_metadata?.avatar_url,
+                });
+                
+                if (insertError) {
+                  console.error('Error creating profile:', insertError);
+                }
+              }
+            } catch (error) {
+              console.error('Error handling profile creation:', error);
             }
           }, 0);
         }

@@ -1,5 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Bell, Send, MessageCircle } from "lucide-react";
+import { Bell, Send, MessageCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const TopBar = () => {
   const { signOut } = useAuth();
@@ -36,9 +44,20 @@ const TopBar = () => {
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <MessageCircle size={18} className="text-muted-foreground" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Send size={18} className="text-muted-foreground" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Send size={18} className="text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

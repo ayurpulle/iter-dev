@@ -40,9 +40,9 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
       projection: 'globe' as any,
-      zoom: 1.5,
-      center: [30, 15],
-      pitch: 45,
+      zoom: 1.2,
+      center: [0, 20],
+      pitch: 0,
     });
 
     // Add navigation controls

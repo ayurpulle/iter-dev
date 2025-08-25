@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Globe, Calendar, Users, DollarSign, Sparkles, ChevronRight, X, Filter, Plane, Clock, Navigation, Search } from 'lucide-react';
 import { Button } from './ui/button';
+import BottomTabBar from './BottomTabBar';
 
 // 3D Globe Component
 const Globe3D = ({ pins, onPinClick }: { pins: any[], onPinClick: (pin: any) => void }) => {
@@ -430,6 +431,8 @@ export default function EnhancedMapView() {
           <TripPlanning />
         )}
       </div>
+      
+      <BottomTabBar />
     </div>
   );
 }

@@ -61,7 +61,7 @@ const TripPlanning = () => {
 
   return (
     <div className="px-4 py-6 max-w-md mx-auto">
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Plan Your Trip</h1>
           <p className="text-muted-foreground">Tell us about your dream getaway</p>
@@ -75,7 +75,7 @@ const TripPlanning = () => {
               Where
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             <div>
               <Label htmlFor="destination">Destination</Label>
               <Input
@@ -85,11 +85,6 @@ const TripPlanning = () => {
                 onChange={(e) => setFormData({...formData, destination: e.target.value})}
               />
             </div>
-            {/* Add Where with Suggestions */}
-            <Input placeholder="Where?" list="suggestions" />
-            <datalist id="suggestions">
-              {mockSuggestions.map(s => <option key={s} value={s} />)}
-            </datalist>
           </CardContent>
         </Card>
 
@@ -101,7 +96,7 @@ const TripPlanning = () => {
               When
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="start-date">Start Date</Label>
@@ -136,44 +131,31 @@ const TripPlanning = () => {
           <CardContent>
             <div>
               <Label htmlFor="holiday-type">What kind of trip are you planning?</Label>
-              <Select value={formData.holidayType} onValueChange={(value) => setFormData({...formData, holidayType: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select holiday type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {holidayTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="holiday-type"
+                placeholder="e.g., Adventure, Beach, Cultural, Food & Wine..."
+                value={formData.holidayType}
+                onChange={(e) => setFormData({...formData, holidayType: e.target.value})}
+              />
             </div>
-            {/* Add Multi-Select for Type */}
-            <Select multiple onValueChange={setSelectedTypes}>
-              {/* Options */}
-            </Select>
           </CardContent>
         </Card>
 
-        {/* Take Inspiration from Friends */}
+        {/* Take Inspiration from Friends - Compact */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users size={20} className="text-primary" />
-              Take Inspiration from Friends
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="inspire-friends">Get suggestions from friends' trips</Label>
-                <p className="text-sm text-muted-foreground">
-                  We'll show you similar destinations your friends have visited
-                </p>
+              <div className="flex items-center gap-2">
+                <Users size={16} className="text-muted-foreground" />
+                <Label htmlFor="inspire-friends" className="text-sm font-medium">
+                  Get suggestions from friends' trips
+                </Label>
               </div>
-              {/* Add Inspiration Toggle */}
-              <Switch checked={formData.inspireFromFriends} onCheckedChange={(checked) => setFormData({...formData, inspireFromFriends: checked})} />
+              <Switch 
+                id="inspire-friends"
+                checked={formData.inspireFromFriends} 
+                onCheckedChange={(checked) => setFormData({...formData, inspireFromFriends: checked})} 
+              />
             </div>
           </CardContent>
         </Card>
@@ -188,18 +170,18 @@ const TripPlanning = () => {
               <Label htmlFor="notes">Anything else you'd like to add?</Label>
               <Textarea
                 id="notes"
-                placeholder="Special requirements, budget considerations, activities you're interested in..."
+                placeholder="Special requirements, budget considerations, activities..."
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                rows={3}
+                rows={2}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Plan Trip Button */}
+        {/* Generate Iter Button */}
         <Button className="w-full h-12 text-lg" onClick={handleGenerate}>
-          Start Planning My Trip
+          Generate Iter
         </Button>
       </div>
     </div>

@@ -47,7 +47,12 @@ const Profile = () => {
           <TabsContent value="posts">
             <div className="space-y-4">
               {mockProfile.trips.map((trip, index) => (
-                <TripCard key={index} trip={trip} user={{}} stats={{}} />
+                <TripCard 
+                  key={index} 
+                  trip={trip} 
+                  user={{ name: "You", username: "you" }} 
+                  stats={{ likes: 0, comments: 0 }} 
+                />
               ))}
             </div>
           </TabsContent>

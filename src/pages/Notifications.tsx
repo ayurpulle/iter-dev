@@ -1,0 +1,145 @@
+import { useEffect } from "react";
+import { Heart, MessageCircle, Users, MapPin, Sparkles, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import TopBar from "@/components/TopBar";
+import BottomTabBar from "@/components/BottomTabBar";
+import { useNotifications } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+
+const Notifications = () => {
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'like': return <Heart size={16} className="text-red-500" />;
+      case 'comment': return <MessageCircle size={16} className="text-blue-500" />;
+      case 'reply': return <MessageCircle size={16} className="text-blue-500" />;
+      case 'friend_post': return <Users size={16} className="text-green-500" />;
+      case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
+      default: return <Clock size={16} className="text-muted-foreground" />;
+    }
+  };
+
+  const getNotificationColor = (type: string) => {
+    switch (type) {
+      case 'like': return 'bg-red-50 border-red-100';
+      case 'comment': return 'bg-blue-50 border-blue-100';
+      case 'reply': return 'bg-blue-50 border-blue-100';
+      case 'friend_post': return 'bg-green-50 border-green-100';
+      case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
+      default: return 'bg-muted/50';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <TopBar />
+      
+      <main className="px-4 py-6 max-w-md mx-auto">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
+              <p className="text-muted-foreground">
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
+              </p>
+            </div>
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                Mark all read
+              </Button>
+            )}
+          </div>
+
+          {/* Notifications List */}
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading notifications...</p>
+            </div>
+          ) : notifications.length > 0 ? (
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <Card 
+                  key={notification.id} 
+                  className={`cursor-pointer transition-colors ${
+                    !notification.read 
+                      ? `${getNotificationColor(notification.type)} border-l-4` 
+                      : 'hover:bg-muted/50'
+                  }`}
+                  onClick={() => !notification.read && markAsRead(notification.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {/* Icon */}
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm text-foreground">
+                              {notification.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {notification.message}
+                            </p>
+                          </div>
+
+                          {/* Avatar */}
+                          {notification.profiles && (
+                            <Avatar className="w-8 h-8 flex-shrink-0">
+                              <AvatarImage src={notification.profiles.avatar} />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {(notification.profiles.name || notification.profiles.username || 'U')
+                                  .split(' ')
+                                  .map(n => n[0])
+                                  .join('')
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                        </div>
+
+                        {/* Time and Status */}
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          </span>
+                          {!notification.read && (
+                            <Badge variant="default" className="text-xs px-2 py-0">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock size={24} className="text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">No notifications yet</h3>
+              <p className="text-sm text-muted-foreground">
+                You'll see likes, comments, and updates from friends here
+              </p>
+            </div>
+          )}
+        </div>
+      </main>
+      
+      <BottomTabBar />
+    </div>
+  );
+};
+
+export default Notifications;

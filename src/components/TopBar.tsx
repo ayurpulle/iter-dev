@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Bell, Send, MessageCircle, LogOut } from "lucide-react";
+import { Bell, MessageCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import NotificationBadge from "./NotificationBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +14,7 @@ import {
 const TopBar = () => {
   const { signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
@@ -38,17 +41,30 @@ const TopBar = () => {
         <h1 className="text-lg font-semibold text-foreground">ITER</h1>
         
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Bell size={18} className="text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <NotificationBadge>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0"
+              onClick={() => navigate('/notifications')}
+            >
+              <Bell size={18} className="text-muted-foreground" />
+            </Button>
+          </NotificationBadge>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0"
+            onClick={() => navigate('/chat')}
+          >
             <MessageCircle size={18} className="text-muted-foreground" />
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Send size={18} className="text-muted-foreground" />
+                <LogOut size={18} className="text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

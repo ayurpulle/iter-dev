@@ -40,9 +40,9 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
       projection: 'globe' as any,
-      zoom: 1.5,
-      center: [30, 15],
-      pitch: 45,
+      zoom: 0.8,
+      center: [0, 15],
+      pitch: 0,
     });
 
     // Add navigation controls
@@ -154,44 +154,48 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
 
   if (!isTokenSet) {
     return (
-      <div className="flex items-center justify-center h-96 px-4">
-        <div className="w-full max-w-md space-y-4">
-          <div className="text-center space-y-2">
-            <h2 className="text-lg font-semibold">Enter Mapbox Token</h2>
-            <p className="text-sm text-muted-foreground">
-              Get your free token from{" "}
-              <a 
-                href="https://mapbox.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                mapbox.com
-              </a>
-            </p>
+      <div className="flex items-center justify-center py-8 px-4">
+        <div className="w-full max-w-sm aspect-square bg-muted rounded-xl flex items-center justify-center">
+          <div className="w-full max-w-md space-y-4 p-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-lg font-semibold">Enter Mapbox Token</h2>
+              <p className="text-sm text-muted-foreground">
+                Get your free token from{" "}
+                <a 
+                  href="https://mapbox.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  mapbox.com
+                </a>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
+              <Input
+                id="mapbox-token"
+                type="text"
+                placeholder="pk.eyJ1..."
+                value={mapboxToken}
+                onChange={(e) => setMapboxToken(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleTokenSubmit} className="w-full">
+              Load Map
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
-            <Input
-              id="mapbox-token"
-              type="text"
-              placeholder="pk.eyJ1..."
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
-            />
-          </div>
-          <Button onClick={handleTokenSubmit} className="w-full">
-            Load Map
-          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-[calc(100vh-160px)]">
-      <div ref={mapContainer} className="absolute inset-0" />
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10" />
+    <div className="flex items-center justify-center py-8 px-4">
+      <div className="relative w-full max-w-sm aspect-square">
+        <div ref={mapContainer} className="absolute inset-0 rounded-xl shadow-lg overflow-hidden" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/5 rounded-xl" />
+      </div>
     </div>
   );
 };

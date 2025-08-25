@@ -36,8 +36,13 @@ const BottomTabBar = () => {
           <Plus size={24} />
         </Button>
         
-        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto p-2">
-          <Search size={20} className="text-muted-foreground" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto p-2"
+          onClick={() => navigate("/search")}
+        >
+          <Search size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 

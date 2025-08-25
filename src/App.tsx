@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import MapView from "./pages/MapView";
 import CreateTrip from "./pages/CreateTrip";
 import Search from "./pages/Search";
+import Chat from "./pages/Chat";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
@@ -45,6 +46,11 @@ const App = () => (
               <Route path="/search" element={
                 <ProtectedRoute>
                   <Search />
+                </ProtectedRoute>
+              } />
+              <Route path="/chat" element={
+                <ProtectedRoute>
+                  <Chat />
                 </ProtectedRoute>
               } />
               <Route path="/notifications" element={

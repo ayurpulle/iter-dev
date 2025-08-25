@@ -66,10 +66,7 @@ const Index = () => {
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
           {mockTrips.map((trip, index) => (
-            <TripCard key={index} user={trip.user} trip={trip.trip} stats={trip.stats}>
-              <div>Mini Map</div>
-              {trip.photoUrls.map(url => <img key={url} src={url} alt="" />)}
-            </TripCard>
+            <TripCard key={index} user={trip.user} trip={trip.trip} stats={trip.stats} />
           ))}
         </div>
       </main>

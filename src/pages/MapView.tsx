@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState } from 'react';
 import { ArrowLeft } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";

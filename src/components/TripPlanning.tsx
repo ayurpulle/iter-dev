@@ -149,10 +149,6 @@ const TripPlanning = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Add Multi-Select for Type */}
-            <Select multiple onValueChange={setSelectedTypes}>
-              {/* Options */}
-            </Select>
           </CardContent>
         </Card>
 

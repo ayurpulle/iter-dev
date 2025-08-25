@@ -2,6 +2,25 @@ import { Button } from "@/components/ui/button";
 import { Bell, Send, MessageCircle } from "lucide-react";
 
 const TopBar = () => {
+  const { signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You've been signed out successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
       <div className="flex items-center justify-between max-w-md mx-auto">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,10 +6,32 @@ import { Badge } from "@/components/ui/badge";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
-import { Globe, MapPin, Calendar, Settings } from "lucide-react";
+import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+
+interface SavedPost {
+  id: string;
+  content: string;
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
+  user_id: string;
+  profiles?: {
+    name: string;
+    username: string;
+    avatar: string;
+  };
+}
 
 const Account = () => {
-  const [activeSection, setActiveSection] = useState<"posts" | "world">("posts");
+  const [activeSection, setActiveSection] = useState<"posts" | "saved" | "world">("posts");
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Mock user data
   const userData = {
@@ -93,6 +115,108 @@ const Account = () => {
     totalDays: 156,
   };
 
+  // Load saved posts when saved section is selected
+  useEffect(() => {
+    if (activeSection === 'saved' && user) {
+      loadSavedPosts();
+    }
+  }, [activeSection, user]);
+
+  const loadSavedPosts = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { data: savedPostsData, error } = await supabase
+        .from('saved_posts')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading saved posts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load saved posts",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (savedPostsData && savedPostsData.length > 0) {
+        const postIds = savedPostsData.map(sp => sp.post_id);
+        
+        // Fetch the actual posts
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .in('id', postIds);
+
+        if (postsError) {
+          console.error('Error loading posts data:', postsError);
+          return;
+        }
+
+        if (postsData) {
+          // Fetch profiles for post authors
+          const userIds = postsData.map(p => p.user_id);
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('user_id, name, username, avatar')
+            .in('user_id', userIds);
+
+          const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+          const enrichedPosts = postsData.map(post => ({
+            ...post,
+            profiles: profilesMap.get(post.user_id)
+          }));
+
+          setSavedPosts(enrichedPosts);
+        }
+      } else {
+        setSavedPosts([]);
+      }
+    } catch (error) {
+      console.error('Error loading saved posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load saved posts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnsavePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('saved_posts')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('post_id', postId);
+
+      if (error) {
+        console.error('Error unsaving post:', error);
+        return;
+      }
+
+      // Remove from local state
+      setSavedPosts(prev => prev.filter(post => post.id !== postId));
+      
+      toast({
+        title: "Post unsaved",
+        description: "Removed from your saved posts",
+      });
+    } catch (error) {
+      console.error('Error unsaving post:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
@@ -154,6 +278,14 @@ const Account = () => {
             My Posts
           </Button>
           <Button
+            variant={activeSection === "saved" ? "default" : "outline"}
+            size="sm"
+            className="flex-1"
+            onClick={() => setActiveSection("saved")}
+          >
+            Saved Posts
+          </Button>
+          <Button
             variant={activeSection === "world" ? "default" : "outline"}
             size="sm"
             className="flex-1"
@@ -194,6 +326,76 @@ const Account = () => {
                 </Card>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeSection === "saved" && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Saved Posts ({savedPosts.length})</h2>
+            
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading saved posts...</p>
+              </div>
+            ) : savedPosts.length === 0 ? (
+              <div className="text-center py-8">
+                <Bookmark size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-2">No saved posts yet</p>
+                <p className="text-sm text-muted-foreground">Posts you save will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedPosts.map((post) => (
+                  <Card key={post.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3 mb-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={post.profiles?.avatar} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            {post.profiles?.name?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
+                              <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm mb-4">{post.content}</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Heart size={16} />
+                            <span className="text-sm">{post.likes_count}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MessageCircle size={16} />
+                            <span className="text-sm">{post.comments_count}</span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-primary"
+                          onClick={() => handleUnsavePost(post.id)}
+                        >
+                          <Bookmark size={16} className="fill-current" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

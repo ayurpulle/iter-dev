@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,41 +10,47 @@ import TripCard from "@/components/TripCard";
 import BottomTabBar from "@/components/BottomTabBar";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Post {
   id: string;
-  user: {
-    name: string;
-    username: string;
-    avatar?: string;
-  };
   content: string;
-  trip_id?: string;
   created_at: string;
   likes_count: number;
   comments_count: number;
-  saved: boolean;
-  liked: boolean;
+  user_id: string;
+  profiles?: {
+    name: string;
+    username: string;
+    avatar: string;
+  };
+  is_liked?: boolean;
+  is_saved?: boolean;
 }
 
 interface Comment {
   id: string;
-  user: {
-    name: string;
-    username: string;
-    avatar?: string;
-  };
   content: string;
   created_at: string;
+  user_id: string;
+  profiles?: {
+    name: string;
+    username: string;
+    avatar: string;
+  };
 }
 
 const Index = () => {
   const [showComments, setShowComments] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Update mocks to include photos and mini-maps
+  // Mock trips data (keeping this as is since it's not part of the posts system)
   const mockTrips = [
     {
       user: {
@@ -95,61 +101,218 @@ const Index = () => {
     },
   ];
 
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: "1",
-      user: {
-        name: "Sarah Johnson",
-        username: "sarah_j",
-        avatar: ""
-      },
-      content: "Just completed an incredible 2-week journey through Japan! From the bustling streets of Tokyo to the serene temples of Kyoto. Every moment was magical ✨",
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-      likes_count: 24,
-      comments_count: 8,
-      saved: false,
-      liked: false
-    },
-    {
-      id: "2",
-      user: {
-        name: "Mike Chen",
-        username: "mike_c",
-        avatar: ""
-      },
-      content: "Amazing road trip through the Swiss Alps! The views were absolutely breathtaking 🏔️",
-      created_at: new Date(Date.now() - 14400000).toISOString(),
-      likes_count: 15,
-      comments_count: 3,
-      saved: false,
-      liked: false
-    }
-  ]);
+  // Load posts on component mount
+  useEffect(() => {
+    loadPosts();
+  }, []);
 
-  const handleLike = (postId: string) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { 
-            ...post, 
-            liked: !post.liked,
-            likes_count: post.liked ? post.likes_count - 1 : post.likes_count + 1
-          }
-        : post
-    ));
+  const loadPosts = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch posts first
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (postsError) {
+        console.error('Error loading posts:', postsError);
+        return;
+      }
+
+      if (!postsData || postsData.length === 0) {
+        // Create some sample posts if none exist
+        await createSamplePosts();
+        return;
+      }
+
+      // Fetch profiles for all post authors
+      const userIds = postsData.map(p => p.user_id);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+      // Check likes and saves for current user
+      if (user) {
+        const postIds = postsData.map(p => p.id);
+        
+        const [likesResult, savesResult] = await Promise.all([
+          supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds),
+          supabase
+            .from('saved_posts')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds)
+        ]);
+
+        const likedPosts = new Set(likesResult.data?.map(l => l.post_id) || []);
+        const savedPosts = new Set(savesResult.data?.map(s => s.post_id) || []);
+
+        const enrichedPosts = postsData.map(post => ({
+          ...post,
+          profiles: profilesMap.get(post.user_id),
+          is_liked: likedPosts.has(post.id),
+          is_saved: savedPosts.has(post.id)
+        }));
+
+        setPosts(enrichedPosts);
+      } else {
+        const enrichedPosts = postsData.map(post => ({
+          ...post,
+          profiles: profilesMap.get(post.user_id)
+        }));
+        setPosts(enrichedPosts);
+      }
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load posts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSave = (postId: string) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { ...post, saved: !post.saved }
-        : post
-    ));
-    
-    const post = posts.find(p => p.id === postId);
-    toast({
-      title: post?.saved ? "Trip removed from saved" : "Trip saved",
-      description: post?.saved ? "Removed from your saved trips" : "Added to your saved trips",
-    });
+  const createSamplePosts = async () => {
+    if (!user) return;
+
+    const samplePosts = [
+      {
+        user_id: user.id,
+        content: "Just completed an incredible 2-week journey through Japan! From the bustling streets of Tokyo to the serene temples of Kyoto. Every moment was magical ✨"
+      },
+      {
+        user_id: user.id,
+        content: "Amazing road trip through the Swiss Alps! The views were absolutely breathtaking 🏔️"
+      }
+    ];
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .insert(samplePosts);
+
+      if (error) {
+        console.error('Error creating sample posts:', error);
+      } else {
+        // Reload posts after creating samples
+        loadPosts();
+      }
+    } catch (error) {
+      console.error('Error creating sample posts:', error);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to like posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.is_liked) {
+        // Unlike
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
+      } else {
+        // Like
+        await supabase
+          .from('post_likes')
+          .insert({ user_id: user.id, post_id: postId });
+      }
+
+      // Update local state
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { 
+              ...p, 
+              is_liked: !p.is_liked,
+              likes_count: p.is_liked ? p.likes_count - 1 : p.likes_count + 1
+            }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update like",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSave = async (postId: string) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to save posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.is_saved) {
+        // Unsave
+        await supabase
+          .from('saved_posts')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
+        
+        toast({
+          title: "Trip removed from saved",
+          description: "Removed from your saved trips",
+        });
+      } else {
+        // Save
+        await supabase
+          .from('saved_posts')
+          .insert({ user_id: user.id, post_id: postId });
+        
+        toast({
+          title: "Trip saved",
+          description: "Added to your saved trips",
+        });
+      }
+
+      // Update local state
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, is_saved: !p.is_saved }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error toggling save:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update save status",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleShare = (postId: string) => {
@@ -159,47 +322,103 @@ const Index = () => {
     });
   };
 
-  const handleComment = (postId: string) => {
+  const handleComment = async (postId: string) => {
     setShowComments(postId);
-    // Mock comments
-    setComments([
-      {
-        id: "1",
-        user: { name: "Alex Smith", username: "alex_s", avatar: "" },
-        content: "Looks amazing! How was the food?",
-        created_at: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: "2", 
-        user: { name: "Emma Wilson", username: "emma_w", avatar: "" },
-        content: "I'm planning a similar trip next year, any recommendations?",
-        created_at: new Date(Date.now() - 1800000).toISOString()
+    
+    try {
+      const { data: commentsData, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading comments:', error);
+        return;
       }
-    ]);
+
+      if (commentsData && commentsData.length > 0) {
+        // Fetch profiles for comment authors
+        const userIds = commentsData.map(c => c.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, name, username, avatar')
+          .in('user_id', userIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+        const enrichedComments = commentsData.map(comment => ({
+          ...comment,
+          profiles: profilesMap.get(comment.user_id)
+        }));
+
+        setComments(enrichedComments);
+      } else {
+        setComments([]);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    }
   };
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !showComments || !user) return;
     
-    const comment: Comment = {
-      id: Date.now().toString(),
-      user: { name: "You", username: "you", avatar: "" },
-      content: newComment,
-      created_at: new Date().toISOString()
-    };
-    
-    setComments(prev => [...prev, comment]);
-    setNewComment("");
-    
-    // Update comments count
-    if (showComments) {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: showComments,
+          user_id: user.id,
+          content: newComment.trim()
+        });
+
+      if (error) {
+        console.error('Error adding comment:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add comment",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Reload comments
+      handleComment(showComments);
+      
+      // Update comments count in posts
       setPosts(prev => prev.map(post => 
         post.id === showComments 
           ? { ...post, comments_count: post.comments_count + 1 }
           : post
       ));
+
+      setNewComment("");
+      
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted",
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -218,16 +437,16 @@ const Index = () => {
               <CardContent className="p-4">
                 <div className="flex items-start gap-3 mb-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={post.user.avatar} />
+                    <AvatarImage src={post.profiles?.avatar} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {post.user.name[0].toUpperCase()}
+                      {post.profiles?.name?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm">{post.user.name}</p>
-                        <p className="text-xs text-muted-foreground">@{post.user.username}</p>
+                        <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
+                        <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
                       </div>
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
@@ -243,10 +462,10 @@ const Index = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className={`flex items-center gap-2 h-8 px-2 ${post.liked ? 'text-red-500' : ''}`}
+                      className={`flex items-center gap-2 h-8 px-2 ${post.is_liked ? 'text-red-500' : ''}`}
                       onClick={() => handleLike(post.id)}
                     >
-                      <Heart size={16} className={post.liked ? 'fill-current' : ''} />
+                      <Heart size={16} className={post.is_liked ? 'fill-current' : ''} />
                       <span className="text-sm">{post.likes_count}</span>
                     </Button>
                     <Button 
@@ -271,10 +490,10 @@ const Index = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className={`h-8 w-8 p-0 ${post.saved ? 'text-primary' : ''}`}
+                      className={`h-8 w-8 p-0 ${post.is_saved ? 'text-primary' : ''}`}
                       onClick={() => handleSave(post.id)}
                     >
-                      <Bookmark size={16} className={post.saved ? 'fill-current' : ''} />
+                      <Bookmark size={16} className={post.is_saved ? 'fill-current' : ''} />
                     </Button>
                   </div>
                 </div>
@@ -295,14 +514,14 @@ const Index = () => {
               {comments.map((comment) => (
                 <div key={comment.id} className="flex items-start gap-3">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={comment.user.avatar} />
+                    <AvatarImage src={comment.profiles?.avatar} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {comment.user.name[0].toUpperCase()}
+                      {comment.profiles?.name?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{comment.user.name}</span>
+                      <span className="text-sm font-medium">{comment.profiles?.name || 'Unknown User'}</span>
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
@@ -311,6 +530,11 @@ const Index = () => {
                   </div>
                 </div>
               ))}
+              {comments.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 pt-2 border-t">
               <Input

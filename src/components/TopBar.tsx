@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Bell, MessageCircle, LogOut } from "lucide-react";
+import { Bell, Mail, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -58,7 +58,7 @@ const TopBar = () => {
             className="h-8 w-8 p-0"
             onClick={() => navigate('/chat')}
           >
-            <MessageCircle size={18} className="text-muted-foreground" />
+            <Mail size={18} className="text-muted-foreground" />
           </Button>
           
           <DropdownMenu>

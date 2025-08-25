@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Apple, Facebook, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -17,7 +16,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -48,9 +46,12 @@ const Auth = () => {
         if (error) throw error;
 
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your signup.",
+          title: "Account created successfully!",
+          description: "You can now sign in with your email and password.",
         });
+        
+        // Switch to sign in mode after successful signup
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -76,56 +77,6 @@ const Auth = () => {
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'apple' | 'facebook') => {
-    setSocialLoading(provider);
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Authentication Error",
-        description: error.message || `Failed to sign in with ${provider}.`,
-        variant: "destructive",
-      });
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const getSocialButtonIcon = (provider: string) => {
-    switch (provider) {
-      case 'google':
-        return <Mail size={20} />;
-      case 'apple':
-        return <Apple size={20} />;
-      case 'facebook':
-        return <Facebook size={20} />;
-      default:
-        return null;
-    }
-  };
-
-  const getSocialButtonText = (provider: string) => {
-    const action = isSignUp ? 'Sign up' : 'Continue';
-    switch (provider) {
-      case 'google':
-        return `${action} with Google`;
-      case 'apple':
-        return `${action} with Apple`;
-      case 'facebook':
-        return `${action} with Facebook`;
-      default:
-        return action;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -142,39 +93,6 @@ const Auth = () => {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Social Login Buttons */}
-          <div className="space-y-3">
-            {['google', 'apple', 'facebook'].map((provider) => (
-              <Button
-                key={provider}
-                variant="outline"
-                className="w-full h-11"
-                onClick={() => handleSocialAuth(provider as 'google' | 'apple' | 'facebook')}
-                disabled={socialLoading !== null}
-              >
-                {socialLoading === provider ? (
-                  <Loader2 size={20} className="animate-spin" />
-                ) : (
-                  getSocialButtonIcon(provider)
-                )}
-                <span className="ml-2">
-                  {getSocialButtonText(provider)}
-                </span>
-              </Button>
-            ))}
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with email
-              </span>
-            </div>
-          </div>
-
           {/* Email/Password Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-2">

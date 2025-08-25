@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,10 +50,10 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   
   
   // Try to get mapbox token from localStorage for enhanced map view
-  useState(() => {
+  useEffect(() => {
     const token = localStorage.getItem('mapbox_token');
     if (token) setMapboxToken(token);
-  });
+  }, []);
   
   const photos = trip.photos || [];
   const hasPhotos = photos.length > 0;

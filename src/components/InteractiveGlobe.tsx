@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Globe } from 'lucide-react';
 
 interface Pin {
   location: string;
@@ -17,24 +18,80 @@ interface InteractiveGlobeProps {
   onPinClick: (pin: Pin) => void;
 }
 
+// Fallback CSS globe for when Mapbox isn't available
+const FallbackGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick }) => {
+  const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotation(prev => (prev + 0.3) % 360); // Slower rotation
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full h-96 bg-gradient-to-b from-slate-900 to-slate-700 rounded-2xl overflow-hidden flex items-center justify-center">
+      <div 
+        className="w-72 h-72 rounded-full bg-gradient-to-br from-blue-500 to-green-500 relative shadow-2xl"
+        style={{ 
+          transform: `rotateY(${rotation}deg)`, 
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.1s linear'
+        }}
+      >
+        {/* Continent shapes */}
+        <div className="absolute inset-0 rounded-full overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-20 h-16 bg-green-700 opacity-80 rounded-lg transform rotate-12"></div>
+          <div className="absolute top-1/3 right-1/4 w-16 h-20 bg-green-700 opacity-80 rounded-lg transform -rotate-12"></div>
+          <div className="absolute bottom-1/3 left-1/3 w-24 h-12 bg-green-700 opacity-80 rounded-lg"></div>
+          <div className="absolute top-1/2 left-1/2 w-12 h-8 bg-green-700 opacity-80 rounded transform -translate-x-1/2 -translate-y-1/2"></div>
+        </div>
+        
+        {/* Pins */}
+        {pins.map((pin, idx) => (
+          <button
+            key={idx}
+            onClick={() => onPinClick(pin)}
+            className="absolute w-4 h-4 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform border-2 border-white"
+            style={{
+              top: `${pin.lat}%`,
+              left: `${pin.lng}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
+            title={`${pin.location} - ${pin.friends.length} friends visited`}
+          />
+        ))}
+      </div>
+      
+      <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+        <Globe size={16} />
+        Fallback Globe • Click pins to explore
+      </div>
+    </div>
+  );
+};
+
 const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
+  const [useMapbox, setUseMapbox] = useState(false);
 
   useEffect(() => {
     // Check for stored token first
     const storedToken = localStorage.getItem('mapbox_token');
     if (storedToken) {
       setMapboxToken(storedToken);
+      setUseMapbox(true);
     } else {
-      setShowTokenInput(true);
+      // Show fallback globe by default
+      setUseMapbox(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapContainer.current || !mapboxToken || !useMapbox) return;
 
     // Initialize map
     mapboxgl.accessToken = mapboxToken;
@@ -42,7 +99,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
+        style: 'mapbox://styles/mapbox/dark-v11',
         projection: { name: 'globe' },
         zoom: 1.5,
         center: [30, 15],
@@ -58,7 +115,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       );
 
       // Smooth rotation animation
-      const secondsPerRevolution = 300; // Slower rotation
+      const secondsPerRevolution = 300;
       const maxSpinZoom = 4;
       const slowSpinZoom = 2;
       let userInteracting = false;
@@ -89,7 +146,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             distancePerSecond *= zoomDif;
           }
           const center = map.current.getCenter();
-          center.lng -= distancePerSecond / 60; // Divide by 60 for per-frame movement
+          center.lng -= distancePerSecond / 60;
           map.current.easeTo({ 
             center, 
             duration: 1000, 
@@ -109,7 +166,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       
       map.current.on('mouseup', () => {
         userInteracting = false;
-        setTimeout(spinGlobe, 1000); // Resume spinning after 1 second
+        setTimeout(spinGlobe, 1000);
       });
       
       map.current.on('touchend', () => {
@@ -125,7 +182,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
 
       // Add pins to map
       pins.forEach((pin, index) => {
-        // Create custom marker element
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';
         markerElement.style.cssText = `
@@ -139,7 +195,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
           animation: pulse 2s infinite;
         `;
 
-        // Add CSS for pulse animation
         if (index === 0) {
           const style = document.createElement('style');
           style.textContent = `
@@ -152,23 +207,20 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
           document.head.appendChild(style);
         }
 
-        // Create marker and add to map
         const marker = new mapboxgl.Marker(markerElement)
           .setLngLat([pin.lng, pin.lat])
           .addTo(map.current!);
 
-        // Add click handler
         markerElement.addEventListener('click', () => {
           onPinClick(pin);
         });
 
-        // Add popup on hover
         const popup = new mapboxgl.Popup({
           offset: 25,
           closeButton: false,
           closeOnClick: false
         }).setHTML(`
-          <div style="font-family: system-ui; padding: 4px;">
+          <div style="font-family: system-ui; padding: 4px; color: #333;">
             <strong>${pin.location}</strong><br>
             ${pin.friends.length} friends visited<br>
             ${pin.trips} trips
@@ -184,35 +236,38 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         });
       });
 
-      // Start gentle spinning
       setTimeout(spinGlobe, 2000);
 
     } catch (error) {
       console.error('Error initializing Mapbox:', error);
-      setShowTokenInput(true);
+      setUseMapbox(false);
     }
 
-    // Cleanup
     return () => {
       map.current?.remove();
     };
-  }, [mapboxToken, pins, onPinClick]);
+  }, [mapboxToken, pins, onPinClick, useMapbox]);
 
   const handleTokenSubmit = () => {
     if (mapboxToken.trim()) {
       localStorage.setItem('mapbox_token', mapboxToken.trim());
       setShowTokenInput(false);
+      setUseMapbox(true);
     }
+  };
+
+  const handleUpgradeToMapbox = () => {
+    setShowTokenInput(true);
   };
 
   if (showTokenInput) {
     return (
-      <div className="w-full h-96 bg-gradient-to-b from-blue-900 to-purple-900 rounded-2xl flex items-center justify-center p-8">
-        <div className="bg-white/10 backdrop-blur rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-white text-lg font-semibold mb-4">Setup Interactive Map</h3>
-          <p className="text-white/80 text-sm mb-4">
+      <div className="w-full h-96 bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center p-8">
+        <div className="bg-card border rounded-lg p-6 max-w-md w-full">
+          <h3 className="text-foreground text-lg font-semibold mb-4">Setup Interactive Map</h3>
+          <p className="text-muted-foreground text-sm mb-4">
             Enter your Mapbox public token to enable the interactive globe.
-            Get one free at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-300 underline">mapbox.com</a>
+            Get one free at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
           </p>
           <div className="space-y-3">
             <Input
@@ -220,21 +275,39 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
               value={mapboxToken}
               onChange={(e) => setMapboxToken(e.target.value)}
               placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIi..."
-              className="bg-white/20 text-white placeholder:text-white/60 border-white/30"
             />
-            <Button onClick={handleTokenSubmit} className="w-full">
-              Enable Interactive Map
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleTokenSubmit} className="flex-1">
+                Enable Interactive Map
+              </Button>
+              <Button variant="outline" onClick={() => setShowTokenInput(false)}>
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // Show fallback globe if not using Mapbox
+  if (!useMapbox) {
+    return (
+      <div className="relative">
+        <FallbackGlobe pins={pins} onPinClick={onPinClick} />
+        <div className="absolute bottom-4 right-4">
+          <Button onClick={handleUpgradeToMapbox} size="sm" variant="secondary">
+            Upgrade to Interactive Globe
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-96 rounded-2xl overflow-hidden">
+    <div className="relative w-full h-96 rounded-2xl overflow-hidden bg-slate-900">
       <div ref={mapContainer} className="absolute inset-0" />
-      <div className="absolute top-4 left-4 bg-black/50 backdrop-blur text-white px-3 py-2 rounded-lg text-sm">
+      <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm">
         Interactive Globe • Click pins to explore
       </div>
     </div>

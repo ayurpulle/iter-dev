@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Globe, Calendar, Users, DollarSign, Sparkles, ChevronRight, X, Filter, Plane, Clock, Navigation, Search } from 'lucide-react';
+import { Button } from './ui/button';
 
 // 3D Globe Component
-const Globe3D = ({ pins, onPinClick }) => {
+const Globe3D = ({ pins, onPinClick }: { pins: any[], onPinClick: (pin: any) => void }) => {
   const [rotation, setRotation] = useState(0);
-  const globeRef = useRef(null);
+  const globeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -51,12 +52,12 @@ const Globe3D = ({ pins, onPinClick }) => {
       
       {/* Globe controls */}
       <div className="absolute bottom-4 right-4 flex gap-2">
-        <button className="bg-white/20 backdrop-blur p-2 rounded-lg text-white hover:bg-white/30 transition-colors">
+        <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur text-white hover:bg-white/30">
           <Globe size={20} />
-        </button>
-        <button className="bg-white/20 backdrop-blur p-2 rounded-lg text-white hover:bg-white/30 transition-colors">
+        </Button>
+        <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur text-white hover:bg-white/30">
           <Filter size={20} />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -68,8 +69,8 @@ const TripPlanning = () => {
   const [dates, setDates] = useState({ start: '', end: '' });
   const [tripType, setTripType] = useState('');
   const [budget, setBudget] = useState('');
-  const [savedTrips, setSavedTrips] = useState([]);
-  const [generatedItinerary, setGeneratedItinerary] = useState(null);
+  const [savedTrips, setSavedTrips] = useState<number[]>([]);
+  const [generatedItinerary, setGeneratedItinerary] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const tripTypes = ['Adventure', 'Relaxing', 'Cultural', 'Beach', 'City', 'Nature', 'Food', 'Luxury', 'Budget', 'Family'];
@@ -137,13 +138,13 @@ const TripPlanning = () => {
           <div>
             <label className="text-sm font-medium mb-2 block">Where do you want to go?</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
               <input 
                 type="text"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 placeholder="Enter destination (country or city)"
-                className="w-full pl-10 pr-3 py-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+                className="w-full pl-10 pr-3 py-3 border rounded-lg bg-background"
               />
             </div>
           </div>
@@ -156,7 +157,7 @@ const TripPlanning = () => {
                 type="date"
                 value={dates.start}
                 onChange={(e) => setDates({...dates, start: e.target.value})}
-                className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+                className="w-full p-3 border rounded-lg bg-background"
               />
             </div>
             <div>
@@ -165,7 +166,7 @@ const TripPlanning = () => {
                 type="date"
                 value={dates.end}
                 onChange={(e) => setDates({...dates, end: e.target.value})}
-                className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+                className="w-full p-3 border rounded-lg bg-background"
               />
             </div>
           </div>
@@ -175,17 +176,14 @@ const TripPlanning = () => {
             <label className="text-sm font-medium mb-2 block">Trip Type</label>
             <div className="flex flex-wrap gap-2">
               {tripTypes.map(type => (
-                <button
+                <Button
                   key={type}
+                  variant={tripType === type ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setTripType(type)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    tripType === type 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
                 >
                   {type}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -194,13 +192,13 @@ const TripPlanning = () => {
           <div>
             <label className="text-sm font-medium mb-2 block">Budget (per person)</label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
               <input 
                 type="text"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="Enter your budget"
-                className="w-full pl-10 pr-3 py-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+                className="w-full pl-10 pr-3 py-3 border rounded-lg bg-background"
               />
             </div>
           </div>
@@ -210,7 +208,7 @@ const TripPlanning = () => {
             <label className="text-sm font-medium mb-2 block">Use saved trips for inspiration</label>
             <div className="space-y-2">
               {savedTripsList.map(trip => (
-                <label key={trip.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <label key={trip.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors">
                   <input 
                     type="checkbox"
                     checked={savedTrips.includes(trip.id)}
@@ -221,11 +219,11 @@ const TripPlanning = () => {
                         setSavedTrips(savedTrips.filter(id => id !== trip.id));
                       }
                     }}
-                    className="w-4 h-4 text-blue-500"
+                    className="w-4 h-4 text-primary"
                   />
                   <div className="flex-1">
                     <p className="font-medium text-sm">{trip.title}</p>
-                    <p className="text-xs text-gray-500">{trip.location} • by {trip.user}</p>
+                    <p className="text-xs text-muted-foreground">{trip.location} • by {trip.user}</p>
                   </div>
                 </label>
               ))}
@@ -233,35 +231,36 @@ const TripPlanning = () => {
           </div>
 
           {/* Generate Button */}
-          <button 
+          <Button 
             onClick={generateItinerary}
             disabled={!destination || isGenerating}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
           >
             {isGenerating ? (
               <>Generating your itinerary...</>
             ) : (
               <>
-                <Sparkles size={20} />
+                <Sparkles size={20} className="mr-2" />
                 Generate AI Itinerary
               </>
             )}
-          </button>
+          </Button>
         </>
       ) : (
         /* Generated Itinerary Display */
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold">{generatedItinerary.title}</h3>
-            <button 
+            <Button 
+              variant="ghost"
+              size="icon"
               onClick={() => setGeneratedItinerary(null)}
-              className="text-gray-500 hover:text-gray-700"
             >
               <X size={20} />
-            </button>
+            </Button>
           </div>
           
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock size={14} />
               {generatedItinerary.duration}
@@ -273,13 +272,13 @@ const TripPlanning = () => {
           </div>
 
           <div className="space-y-4">
-            {generatedItinerary.dailyPlans.map(day => (
+            {generatedItinerary.dailyPlans.map((day: any) => (
               <div key={day.day} className="border rounded-lg p-4 space-y-2">
                 <h4 className="font-semibold">Day {day.day}: {day.title}</h4>
                 <ul className="space-y-1">
-                  {day.activities.map((activity, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-blue-500 mt-0.5">•</span>
+                  {day.activities.map((activity: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="text-primary mt-0.5">•</span>
                       {activity}
                     </li>
                   ))}
@@ -294,12 +293,12 @@ const TripPlanning = () => {
           </div>
 
           <div className="flex gap-2">
-            <button className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+            <Button className="flex-1">
               Save Itinerary
-            </button>
-            <button className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            </Button>
+            <Button variant="outline" className="flex-1">
               Export as PDF
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -310,7 +309,7 @@ const TripPlanning = () => {
 // Main Map View Component
 export default function EnhancedMapView() {
   const [activeTab, setActiveTab] = useState('friends');
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [showLocationDetails, setShowLocationDetails] = useState(false);
 
   // Mock pins data
@@ -322,44 +321,36 @@ export default function EnhancedMapView() {
     { location: 'Bangkok', lat: 50, lng: 62, friends: ['Maya Patel'], trips: 1 },
   ];
 
-  const handlePinClick = (pin) => {
+  const handlePinClick = (pin: any) => {
     setSelectedLocation(pin);
     setShowLocationDetails(true);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-3">
           <h1 className="text-xl font-bold text-center">Explore</h1>
         </div>
       </div>
 
       {/* Tab Switcher */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div className="bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-2">
           <div className="flex gap-2 justify-center">
-            <button
+            <Button
+              variant={activeTab === 'friends' ? "default" : "ghost"}
               onClick={() => setActiveTab('friends')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'friends' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-              }`}
             >
               Friends' Trips
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={activeTab === 'plan' ? "default" : "ghost"}
               onClick={() => setActiveTab('plan')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'plan' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-              }`}
             >
               Plan Trip
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -373,19 +364,20 @@ export default function EnhancedMapView() {
             {/* Location Details Modal */}
             {showLocationDetails && selectedLocation && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 max-w-md w-full">
+                <div className="bg-card rounded-xl p-6 max-w-md w-full">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold">{selectedLocation.location}</h3>
-                    <button 
+                    <Button 
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setShowLocationDetails(false)}
-                      className="text-gray-500 hover:text-gray-700"
                     >
                       <X size={20} />
-                    </button>
+                    </Button>
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Users size={16} />
                       <span>{selectedLocation.friends.length} friends visited</span>
                     </div>
@@ -393,18 +385,18 @@ export default function EnhancedMapView() {
                     <div>
                       <h4 className="font-medium mb-2">Friends who visited:</h4>
                       <div className="space-y-2">
-                        {selectedLocation.friends.map((friend, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        {selectedLocation.friends.map((friend: string, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-accent rounded-lg">
                             <span className="text-sm">{friend}</span>
-                            <ChevronRight size={16} className="text-gray-400" />
+                            <ChevronRight size={16} className="text-muted-foreground" />
                           </div>
                         ))}
                       </div>
                     </div>
                     
-                    <button className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    <Button className="w-full">
                       View All {selectedLocation.trips} Trips
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -412,3 +404,32 @@ export default function EnhancedMapView() {
 
             {/* Friends' Recent Trips */}
             <div>
+              <h2 className="text-lg font-semibold mb-4">Recent Trips from Friends</h2>
+              <div className="space-y-4">
+                {[
+                  { user: 'Sarah Chen', location: 'Tokyo, Japan', time: '2 days ago', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop' },
+                  { user: 'Alex Martinez', location: 'Bali, Indonesia', time: '1 week ago', image: 'https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=400&h=300&fit=crop' },
+                  { user: 'Maya Patel', location: 'Bangkok, Thailand', time: '2 weeks ago', image: 'https://images.unsplash.com/photo-1563492065-c3a2e356a5e4?w=400&h=300&fit=crop' }
+                ].map((trip, idx) => (
+                  <div key={idx} className="border rounded-lg p-4 hover:bg-accent transition-colors cursor-pointer">
+                    <div className="flex gap-3">
+                      <img src={trip.image} alt={trip.location} className="w-16 h-16 rounded-lg object-cover" />
+                      <div className="flex-1">
+                        <h3 className="font-medium">{trip.user}</h3>
+                        <p className="text-sm text-muted-foreground">{trip.location}</p>
+                        <p className="text-xs text-muted-foreground">{trip.time}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-muted-foreground" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <TripPlanning />
+        )}
+      </div>
+    </div>
+  );
+}

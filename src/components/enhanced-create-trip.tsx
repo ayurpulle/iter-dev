@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { MapPin, Calendar, Users, DollarSign, Camera, Plus, X, Star, Globe, Navigation } from 'lucide-react';
+import { Button } from './ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export default function EnhancedCreateTrip() {
+  const navigate = useNavigate();
   const [country, setCountry] = useState('');
   const [title, setTitle] = useState('');
-  const [cities, setCities] = useState([]);
+  const [cities, setCities] = useState<string[]>([]);
   const [currentCity, setCurrentCity] = useState('');
-  const [photos, setPhotos] = useState([]);
-  const [companions, setCompanions] = useState([]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [companions, setCompanions] = useState<string[]>([]);
   const [currentCompanion, setCurrentCompanion] = useState('');
-  const [highlights, setHighlights] = useState([]);
+  const [highlights, setHighlights] = useState<string[]>([]);
   const [currentHighlight, setCurrentHighlight] = useState('');
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
@@ -35,7 +38,7 @@ export default function EnhancedCreateTrip() {
     }
   };
 
-  const removeCity = (cityToRemove) => {
+  const removeCity = (cityToRemove: string) => {
     setCities(cities.filter(city => city !== cityToRemove));
   };
 
@@ -46,7 +49,7 @@ export default function EnhancedCreateTrip() {
     }
   };
 
-  const removeCompanion = (companionToRemove) => {
+  const removeCompanion = (companionToRemove: string) => {
     setCompanions(companions.filter(comp => comp !== companionToRemove));
   };
 
@@ -57,11 +60,11 @@ export default function EnhancedCreateTrip() {
     }
   };
 
-  const removeHighlight = (highlightToRemove) => {
+  const removeHighlight = (highlightToRemove: string) => {
     setHighlights(highlights.filter(h => h !== highlightToRemove));
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const newPhotos = files.map(file => URL.createObjectURL(file));
@@ -69,7 +72,7 @@ export default function EnhancedCreateTrip() {
     }
   };
 
-  const removePhoto = (index) => {
+  const removePhoto = (index: number) => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
@@ -90,27 +93,24 @@ export default function EnhancedCreateTrip() {
       distance
     };
     console.log('Trip created:', tripData);
-    // Here you would submit to your backend
     alert('Trip posted successfully! 🎉');
+    navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button className="text-gray-600 dark:text-gray-400">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <X size={24} />
-            </button>
+            </Button>
             <h1 className="text-lg font-semibold">Create Trip Post</h1>
           </div>
-          <button 
-            onClick={handleSubmit}
-            className="bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
-          >
+          <Button onClick={handleSubmit} size="sm">
             Post
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ export default function EnhancedCreateTrip() {
           <select 
             value={country} 
             onChange={(e) => setCountry(e.target.value)}
-            className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+            className="w-full p-3 border rounded-lg bg-background"
           >
             <option value="">Select a country</option>
             {countries.map(c => (
@@ -144,8 +144,231 @@ export default function EnhancedCreateTrip() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your trip a memorable title"
-            className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700"
+            className="w-full p-3 border rounded-lg bg-background"
           />
         </div>
 
         {/* Cities */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <MapPin size={16} />
+            Cities Visited
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input 
+              type="text"
+              value={currentCity}
+              onChange={(e) => setCurrentCity(e.target.value)}
+              placeholder="Add a city"
+              className="flex-1 p-3 border rounded-lg bg-background"
+              onKeyPress={(e) => e.key === 'Enter' && addCity()}
+            />
+            <Button onClick={addCity} size="icon">
+              <Plus size={16} />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cities.map((city, index) => (
+              <span key={index} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-sm flex items-center gap-1">
+                {city}
+                <Button variant="ghost" size="sm" onClick={() => removeCity(city)}>
+                  <X size={12} />
+                </Button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Photos */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <Camera size={16} />
+            Trip Photos
+          </label>
+          <input 
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotoUpload}
+            className="w-full p-3 border rounded-lg bg-background"
+          />
+          {photos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {photos.map((photo, index) => (
+                <div key={index} className="relative">
+                  <img src={photo} alt={`Trip photo ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-1 right-1 w-6 h-6"
+                    onClick={() => removePhoto(index)}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Travel Companions */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <Users size={16} />
+            Travel Companions
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input 
+              type="text"
+              value={currentCompanion}
+              onChange={(e) => setCurrentCompanion(e.target.value)}
+              placeholder="Add a companion"
+              className="flex-1 p-3 border rounded-lg bg-background"
+              onKeyPress={(e) => e.key === 'Enter' && addCompanion()}
+            />
+            <Button onClick={addCompanion} size="icon">
+              <Plus size={16} />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {companions.map((companion, index) => (
+              <span key={index} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-sm flex items-center gap-1">
+                {companion}
+                <Button variant="ghost" size="sm" onClick={() => removeCompanion(companion)}>
+                  <X size={12} />
+                </Button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Trip Highlights */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <Star size={16} />
+            Trip Highlights
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input 
+              type="text"
+              value={currentHighlight}
+              onChange={(e) => setCurrentHighlight(e.target.value)}
+              placeholder="Add a highlight"
+              className="flex-1 p-3 border rounded-lg bg-background"
+              onKeyPress={(e) => e.key === 'Enter' && addHighlight()}
+            />
+            <Button onClick={addHighlight} size="icon">
+              <Plus size={16} />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {highlights.map((highlight, index) => (
+              <span key={index} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-sm flex items-center gap-1">
+                {highlight}
+                <Button variant="ghost" size="sm" onClick={() => removeHighlight(highlight)}>
+                  <X size={12} />
+                </Button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Trip Description
+          </label>
+          <textarea 
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Share your travel story..."
+            rows={4}
+            className="w-full p-3 border rounded-lg bg-background resize-none"
+          />
+        </div>
+
+        {/* Budget */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <DollarSign size={16} />
+            Trip Budget
+          </label>
+          <div className="flex gap-2">
+            <input 
+              type="text"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              placeholder="Total budget"
+              className="flex-1 p-3 border rounded-lg bg-background"
+            />
+            <select 
+              value={budgetCurrency} 
+              onChange={(e) => setBudgetCurrency(e.target.value)}
+              className="p-3 border rounded-lg bg-background"
+            >
+              {currencies.map(currency => (
+                <option key={currency} value={currency}>{currency}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <Calendar size={16} />
+              Start Date
+            </label>
+            <input 
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full p-3 border rounded-lg bg-background"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              End Date
+            </label>
+            <input 
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full p-3 border rounded-lg bg-background"
+            />
+          </div>
+        </div>
+
+        {/* Duration & Distance */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Trip Duration
+            </label>
+            <input 
+              type="text"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="e.g., 7 days"
+              className="w-full p-3 border rounded-lg bg-background"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <Navigation size={16} />
+              Distance Traveled
+            </label>
+            <input 
+              type="text"
+              value={distance}
+              onChange={(e) => setDistance(e.target.value)}
+              placeholder="e.g., 2000 km"
+              className="w-full p-3 border rounded-lg bg-background"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

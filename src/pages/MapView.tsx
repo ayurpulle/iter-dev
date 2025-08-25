@@ -104,14 +104,6 @@ const MapView = () => {
                 >
                   Plan Trip
                 </Button>
-                <Button
-                  variant={activeTab === "your-trip" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveTab("your-trip")}
-                  className="px-4"
-                >
-                  Your Trips
-                </Button>
               </div>
             </div>
           </div>
@@ -128,12 +120,6 @@ const MapView = () => {
             
             {activeTab === "plan" && (
               <TripPlanning />
-            )}
-            
-            {activeTab === "your-trip" && (
-              <div className="max-w-md mx-auto">
-                <InteractiveMap onLocationClick={handleLocationClick} />
-              </div>
             )}
           </div>
         )}

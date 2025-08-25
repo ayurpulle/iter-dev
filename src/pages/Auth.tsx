@@ -20,8 +20,11 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
+      console.log('Auth page - checking for existing session');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth page - session found:', !!session, session?.user?.email);
       if (session) {
+        console.log('Auth page - redirecting to home');
         navigate("/");
       }
     };
@@ -77,6 +80,58 @@ const Auth = () => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    try {
+      console.log('Attempting demo login...');
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'demo@example.com',
+        password: 'demo123',
+      });
+      
+      if (error) {
+        console.log('Demo user not found, creating...', error.message);
+        // If demo user doesn't exist, create it
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: 'demo@example.com',
+          password: 'demo123',
+        });
+        
+        if (signUpError) {
+          console.error('Error creating demo user:', signUpError);
+          throw signUpError;
+        }
+        
+        // Try signing in again
+        const { error: secondSignInError } = await supabase.auth.signInWithPassword({
+          email: 'demo@example.com',
+          password: 'demo123',
+        });
+        
+        if (secondSignInError) {
+          console.error('Error signing in after creation:', secondSignInError);
+          throw secondSignInError;
+        }
+      }
+      
+      console.log('Demo login successful, navigating to home');
+      toast({
+        title: "Demo login successful!",
+        description: "Welcome to the app!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      console.error('Demo login error:', error);
+      toast({
+        title: "Demo Login Error",
+        description: error.message || "Failed to login with demo account.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -93,6 +148,25 @@ const Auth = () => {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Demo Login Button */}
+          <Button 
+            onClick={handleDemoLogin}
+            className="w-full"
+            disabled={loading}
+            variant="outline"
+          >
+            {loading ? <Loader2 size={20} className="animate-spin" /> : 'Try Demo Login'}
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+            </div>
+          </div>
+
           {/* Email/Password Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-2">

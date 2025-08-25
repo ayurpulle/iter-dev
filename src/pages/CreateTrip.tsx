@@ -75,7 +75,7 @@ const CreateTrip = () => {
     setIsProcessing(false);
     
     toast({
-      title: "Trip Created Successfully!",
+      title: "Trip Posted Successfully!",
       description: "Your journey has been processed and added to your timeline.",
     });
 
@@ -118,7 +118,7 @@ const CreateTrip = () => {
           >
             <ArrowLeft size={18} />
           </Button>
-          <h1 className="text-lg font-semibold">Create Trip</h1>
+          <h1 className="text-lg font-semibold">Post Trip</h1>
           <div className="w-8" />
         </div>
       </div>
@@ -224,7 +224,7 @@ const CreateTrip = () => {
           className="w-full h-12 text-lg"
           disabled={isProcessing}
         >
-          {isProcessing ? "Processing Your Journey..." : "Create Trip"}
+          {isProcessing ? "Processing Your Journey..." : "Post Trip"}
         </Button>
 
         {isProcessing && (

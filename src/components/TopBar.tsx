@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Bell, Send, MessageCircle, LogOut } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import NotificationBadge from "./NotificationBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import {
 
 const TopBar = () => {
   const { signOut } = useAuth();
-  const { unreadCount } = useNotifications();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -43,7 +41,7 @@ const TopBar = () => {
         <h1 className="text-lg font-semibold text-foreground">ITER</h1>
         
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <NotificationBadge>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -52,15 +50,8 @@ const TopBar = () => {
             >
               <Bell size={18} className="text-muted-foreground" />
             </Button>
-            {unreadCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0 min-w-[20px]"
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            )}
-          </div>
+          </NotificationBadge>
+          
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <MessageCircle size={18} className="text-muted-foreground" />
           </Button>

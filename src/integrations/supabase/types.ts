@@ -43,6 +43,7 @@ export type Database = {
           created_at: string | null
           distance: string | null
           duration: string | null
+          hashtags: string[] | null
           id: string
           is_public: boolean | null
           photo_count: number | null
@@ -54,6 +55,7 @@ export type Database = {
           created_at?: string | null
           distance?: string | null
           duration?: string | null
+          hashtags?: string[] | null
           id?: string
           is_public?: boolean | null
           photo_count?: number | null
@@ -65,6 +67,7 @@ export type Database = {
           created_at?: string | null
           distance?: string | null
           duration?: string | null
+          hashtags?: string[] | null
           id?: string
           is_public?: boolean | null
           photo_count?: number | null

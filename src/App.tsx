@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import MapView from "./pages/MapView";
 import CreateTrip from "./pages/CreateTrip";
 import Search from "./pages/Search";
+import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,11 @@ const App = () => (
               <Route path="/search" element={
                 <ProtectedRoute>
                   <Search />
+                </ProtectedRoute>
+              } />
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
               <Route path="/account" element={

@@ -2,67 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Globe, Calendar, Users, DollarSign, Sparkles, ChevronRight, X, Filter, Plane, Clock, Navigation, Search } from 'lucide-react';
 import { Button } from './ui/button';
 import BottomTabBar from './BottomTabBar';
+import InteractiveGlobe from './InteractiveGlobe';
 
-// 3D Globe Component
-const Globe3D = ({ pins, onPinClick }: { pins: any[], onPinClick: (pin: any) => void }) => {
-  const [rotation, setRotation] = useState(0);
-  const globeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRotation(prev => (prev + 0.5) % 360);
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="relative w-full h-96 bg-gradient-to-b from-blue-900 to-purple-900 rounded-2xl overflow-hidden">
-      {/* Globe */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div 
-          ref={globeRef}
-          className="w-64 h-64 rounded-full bg-gradient-to-br from-blue-400 to-green-400 relative shadow-2xl"
-          style={{ transform: `rotateY(${rotation}deg)`, transformStyle: 'preserve-3d' }}
-        >
-          {/* Continent shapes (simplified) */}
-          <div className="absolute inset-0 rounded-full overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-20 h-16 bg-green-600 opacity-70 rounded-lg transform rotate-12"></div>
-            <div className="absolute top-1/3 right-1/4 w-16 h-20 bg-green-600 opacity-70 rounded-lg transform -rotate-12"></div>
-            <div className="absolute bottom-1/3 left-1/3 w-24 h-12 bg-green-600 opacity-70 rounded-lg"></div>
-          </div>
-          
-          {/* Pins */}
-          {pins.map((pin, idx) => (
-            <button
-              key={idx}
-              onClick={() => onPinClick(pin)}
-              className="absolute w-4 h-4 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform"
-              style={{
-                top: `${pin.lat}%`,
-                left: `${pin.lng}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                {pin.location}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Globe controls */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur text-white hover:bg-white/30">
-          <Globe size={20} />
-        </Button>
-        <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur text-white hover:bg-white/30">
-          <Filter size={20} />
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 // Trip Planning Component
 const TripPlanning = () => {
@@ -360,7 +301,7 @@ export default function EnhancedMapView() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {activeTab === 'friends' ? (
           <div className="space-y-6">
-            <Globe3D pins={friendPins} onPinClick={handlePinClick} />
+            <InteractiveGlobe pins={friendPins} onPinClick={handlePinClick} />
             
             {/* Location Details Modal */}
             {showLocationDetails && selectedLocation && (

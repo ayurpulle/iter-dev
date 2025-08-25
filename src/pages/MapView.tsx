@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as React from 'react';
 import { ArrowLeft } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -8,9 +8,10 @@ import LocationTrips from "@/components/LocationTrips";
 import TripDetail from "@/components/TripDetail";
 import TripPlanning from "@/components/TripPlanning";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MapView = () => {
-  const [activeTab, setActiveTab] = useState<"map" | "planning">("map");
+  const [activeTab, setActiveTab] = useState("friends"); // Default to friends
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [viewLevel, setViewLevel] = useState<"map" | "popup" | "list" | "detail">("map");
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
@@ -108,32 +109,22 @@ const MapView = () => {
       )}
 
       <main className="flex-1 relative">
-        {activeTab === "map" && (
-          <>
-            <InteractiveMap onLocationClick={handleLocationClick} />
-            {viewLevel === "popup" && selectedLocation && (
-              <LocationPopup 
-                location={selectedLocation} 
-                onClose={handleBackClick}
-                onViewAll={handlePopupClick}
-              />
-            )}
-            {viewLevel === "list" && selectedLocation && (
-              <LocationTrips 
-                location={selectedLocation} 
-                onClose={handleBackClick}
-                onTripClick={handleTripClick}
-              />
-            )}
-            {viewLevel === "detail" && selectedTrip && (
-              <TripDetail 
-                friendTrip={selectedTrip} 
-                onClose={handleBackClick}
-              />
-            )}
-          </>
-        )}
-        {activeTab === "planning" && <TripPlanning />}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="friends">Friends</TabsTrigger>
+            <TabsTrigger value="plan">Plan</TabsTrigger>
+            <TabsTrigger value="your-trip">Your Trip</TabsTrigger>
+          </TabsList>
+          <TabsContent value="friends">
+            {/* Friends content */}
+          </TabsContent>
+          <TabsContent value="plan">
+            <TripPlanning />
+          </TabsContent>
+          <TabsContent value="your-trip">
+            <InteractiveMap /* Globe view props */ />
+          </TabsContent>
+        </Tabs>
       </main>
       
       <BottomTabBar />

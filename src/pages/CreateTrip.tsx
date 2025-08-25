@@ -18,6 +18,9 @@ const CreateTrip = () => {
   const [tripTitle, setTripTitle] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Add new state for country and photos grid
+  const [country, setCountry] = useState("");
+
   const addCity = () => {
     if (currentCity.trim() && !cities.includes(currentCity.trim())) {
       setCities([...cities, currentCity.trim()]);
@@ -177,53 +180,41 @@ const CreateTrip = () => {
           </CardContent>
         </Card>
 
-        {/* Photo Upload */}
+        {/* Add Country Input */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Camera size={20} />
-              Trip Photos
-            </CardTitle>
+            <CardTitle>Country</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-                id="photo-upload"
-              />
-              <label htmlFor="photo-upload" className="cursor-pointer">
-                <Upload size={40} className="mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Click to upload photos (up to 10)
-                </p>
-              </label>
-            </div>
+          <CardContent>
+            <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g., Colombia" />
+          </CardContent>
+        </Card>
 
-            {photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {photos.map((photo, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={URL.createObjectURL(photo)}
-                      alt={`Upload ${index + 1}`}
-                      className="w-full h-20 object-cover rounded-lg"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                      onClick={() => removePhoto(index)}
-                    >
-                      <X size={12} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Add Map for Route */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Route Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-40 bg-muted">Mock Map with Route</div> {/* Replace with actual map */}
+          </CardContent>
+        </Card>
+
+        {/* Update Photo Section for Grid */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Photos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map((photo, idx) => (
+                <div key={idx} className="relative">
+                  <img src={URL.createObjectURL(photo)} alt="" className="h-20 w-full object-cover" />
+                  <Button onClick={() => removePhoto(idx)}>X</Button>
+                </div>
+              ))}
+              <div className="h-20 bg-muted flex items-center justify-center">+</div>
+            </div>
           </CardContent>
         </Card>
 

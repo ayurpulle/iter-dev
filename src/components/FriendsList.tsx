@@ -1,6 +1,8 @@
+import * as React from 'react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Calendar, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const FriendsList = () => {
   const friendsTrips = [
@@ -106,6 +108,7 @@ const FriendsList = () => {
                   </div>
                 </div>
               </div>
+              <Button>Get planning!</Button>
             </CardContent>
           </Card>
         ))}

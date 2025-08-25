@@ -18,6 +18,9 @@ const TripPlanning = () => {
     notes: ""
   });
 
+  const [generatedPlan, setGeneratedPlan] = useState(null); // For plan view
+  const [selectedTypes, setSelectedTypes] = useState([]);
+
   const holidayTypes = [
     "Adventure & Outdoor",
     "Beach & Relaxation", 
@@ -30,6 +33,31 @@ const TripPlanning = () => {
     "Backpacking",
     "Luxury & Spa"
   ];
+
+  const mockSuggestions = ["Colombia", "Guatemala"];
+
+  const handleGenerate = () => {
+    // Mock generation
+    setGeneratedPlan({
+      map: "Mock Map",
+      time: "3 days",
+      distance: "200km",
+      itinerary: ["Day 1: ...", "Day 2: ..."],
+    });
+  };
+
+  if (generatedPlan) {
+    return (
+      <div>
+        <h2>Plan Your Trip</h2>
+        <div className="h-40 bg-muted">{generatedPlan.map}</div>
+        <p>Time: {generatedPlan.time}</p>
+        <p>Distance: {generatedPlan.distance}</p>
+        <h3>Itinerary:</h3>
+        {generatedPlan.itinerary.map((item, idx) => <p key={idx}>{item}</p>)}
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6 max-w-md mx-auto">
@@ -57,6 +85,11 @@ const TripPlanning = () => {
                 onChange={(e) => setFormData({...formData, destination: e.target.value})}
               />
             </div>
+            {/* Add Where with Suggestions */}
+            <Input placeholder="Where?" list="suggestions" />
+            <datalist id="suggestions">
+              {mockSuggestions.map(s => <option key={s} value={s} />)}
+            </datalist>
           </CardContent>
         </Card>
 
@@ -116,6 +149,10 @@ const TripPlanning = () => {
                 </SelectContent>
               </Select>
             </div>
+            {/* Add Multi-Select for Type */}
+            <Select multiple onValueChange={setSelectedTypes}>
+              {/* Options */}
+            </Select>
           </CardContent>
         </Card>
 
@@ -135,11 +172,8 @@ const TripPlanning = () => {
                   We'll show you similar destinations your friends have visited
                 </p>
               </div>
-              <Switch
-                id="inspire-friends"
-                checked={formData.inspireFromFriends}
-                onCheckedChange={(checked) => setFormData({...formData, inspireFromFriends: checked})}
-              />
+              {/* Add Inspiration Toggle */}
+              <Switch checked={formData.inspireFromFriends} onCheckedChange={(checked) => setFormData({...formData, inspireFromFriends: checked})} />
             </div>
           </CardContent>
         </Card>
@@ -164,7 +198,7 @@ const TripPlanning = () => {
         </Card>
 
         {/* Plan Trip Button */}
-        <Button className="w-full h-12 text-lg">
+        <Button className="w-full h-12 text-lg" onClick={handleGenerate}>
           Start Planning My Trip
         </Button>
       </div>

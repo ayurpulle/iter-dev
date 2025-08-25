@@ -1,9 +1,10 @@
+import * as React from 'react';
 import TopBar from "@/components/TopBar";
 import TripCard from "@/components/TripCard";
 import BottomTabBar from "@/components/BottomTabBar";
 
 const Index = () => {
-  // Mock data based on the sketch
+  // Update mocks to include photos and mini-maps
   const mockTrips = [
     {
       user: {
@@ -25,6 +26,8 @@ const Index = () => {
         likes: 24,
         comments: 3,
       },
+      photoUrls: ["url1", "url2"],
+      map: "mock map",
     },
     {
       user: {
@@ -47,6 +50,8 @@ const Index = () => {
         likes: 42,
         comments: 7,
       },
+      photoUrls: ["url3", "url4"],
+      map: "mock map 2",
     },
   ];
 
@@ -61,12 +66,10 @@ const Index = () => {
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
           {mockTrips.map((trip, index) => (
-            <TripCard
-              key={index}
-              user={trip.user}
-              trip={trip.trip}
-              stats={trip.stats}
-            />
+            <TripCard key={index} user={trip.user} trip={trip.trip} stats={trip.stats}>
+              <div>Mini Map</div>
+              {trip.photoUrls.map(url => <img key={url} src={url} alt="" />)}
+            </TripCard>
           ))}
         </div>
       </main>

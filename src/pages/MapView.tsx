@@ -67,7 +67,7 @@ const MapView = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
       
-      {/* Back Button - 2-tier system */}
+      {/* Back Button - Only show when in detail views */}
       {viewLevel !== "map" && (
         <div className="absolute top-16 left-4 z-50">
           <Button
@@ -82,49 +82,87 @@ const MapView = () => {
         </div>
       )}
       
-      {/* Toggle Banner - Only show when not viewing location details */}
-      {viewLevel === "map" && (
-        <div className="bg-background border-b border-border px-4 py-3">
-          <div className="flex items-center justify-center max-w-md mx-auto">
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={activeTab === "map" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveTab("map")}
-                className="px-4"
-              >
-                Map
-              </Button>
-              <Button
-                variant={activeTab === "planning" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveTab("planning")}
-                className="px-6"
-              >
-                Plan Trip
-              </Button>
+      <main className="flex-1 relative">
+        {/* Toggle Banner - Only show when on main map view */}
+        {viewLevel === "map" && (
+          <div className="bg-background border-b border-border px-4 py-3">
+            <div className="flex items-center justify-center max-w-md mx-auto">
+              <div className="flex bg-muted rounded-lg p-1">
+                <Button
+                  variant={activeTab === "friends" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("friends")}
+                  className="px-4"
+                >
+                  Friends
+                </Button>
+                <Button
+                  variant={activeTab === "plan" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("plan")}
+                  className="px-6"
+                >
+                  Plan Trip
+                </Button>
+                <Button
+                  variant={activeTab === "your-trip" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("your-trip")}
+                  className="px-4"
+                >
+                  Your Trips
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <main className="flex-1 relative">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="friends">Friends</TabsTrigger>
-            <TabsTrigger value="plan">Plan</TabsTrigger>
-            <TabsTrigger value="your-trip">Your Trip</TabsTrigger>
-          </TabsList>
-          <TabsContent value="friends">
-            {/* Friends content */}
-          </TabsContent>
-          <TabsContent value="plan">
-            <TripPlanning />
-          </TabsContent>
-          <TabsContent value="your-trip">
-            <InteractiveMap /* Globe view props */ />
-          </TabsContent>
-        </Tabs>
+        {/* Content based on active tab and view level */}
+        {viewLevel === "map" && (
+          <div className="px-4 py-6">
+            {activeTab === "friends" && (
+              <div className="max-w-md mx-auto">
+                <InteractiveMap onLocationClick={handleLocationClick} />
+              </div>
+            )}
+            
+            {activeTab === "plan" && (
+              <TripPlanning />
+            )}
+            
+            {activeTab === "your-trip" && (
+              <div className="max-w-md mx-auto">
+                <InteractiveMap onLocationClick={handleLocationClick} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Location Popup */}
+        {viewLevel === "popup" && selectedLocation && (
+          <LocationPopup 
+            location={selectedLocation} 
+            onClose={() => setViewLevel("map")}
+            onViewAll={handlePopupClick}
+          />
+        )}
+
+        {/* Location Trip List */}
+        {viewLevel === "list" && selectedLocation && (
+          <LocationTrips 
+            location={selectedLocation}
+            onClose={() => setViewLevel("popup")}
+            onTripClick={handleTripClick}
+          />
+        )}
+
+        {/* Trip Detail */}
+        {viewLevel === "detail" && selectedTrip && (
+          <TripDetail 
+            friendTrip={selectedTrip}
+            onClose={() => setViewLevel("list")}
+          />
+        )}
       </main>
       
       <BottomTabBar />

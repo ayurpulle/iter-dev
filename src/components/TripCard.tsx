@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Heart, MessageCircle, Share, MoreHorizontal, Clock, Navigation, MapPin, Calendar, Users, Star, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import CountryMap from "./CountryMap";
 import MiniMap from "./MiniMap";
 
 interface Stop {
@@ -44,7 +45,15 @@ interface TripCardProps {
 
 const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string>("");
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+  
+  
+  // Try to get mapbox token from localStorage for enhanced map view
+  useState(() => {
+    const token = localStorage.getItem('mapbox_token');
+    if (token) setMapboxToken(token);
+  });
   
   const photos = trip.photos || [];
   const hasPhotos = photos.length > 0;
@@ -89,10 +98,14 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
         <div className="mb-4">
           <Carousel className="w-full">
             <CarouselContent>
-              {/* Journey Map - Always First */}
+              {/* Country Map with Route - Always First */}
               <CarouselItem>
                 <div className="h-48 bg-muted rounded-lg overflow-hidden">
-                  <MiniMap stops={trip.stops} className="h-full w-full" />
+                  <CountryMap 
+                    stops={trip.stops} 
+                    className="h-full w-full" 
+                    mapboxToken={mapboxToken}
+                  />
                 </div>
               </CarouselItem>
               

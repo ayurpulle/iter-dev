@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Send, Bookmark, X } from "lucide-react";
+import { Heart, MessageCircle, Send, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TopBar from "@/components/TopBar";
 import TripCard from "@/components/TripCard";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -15,7 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface Post {
   id: string;
-  content: string;
+  content?: string;
+  image_url?: string;
   created_at: string;
   likes_count: number;
   comments_count: number;
@@ -189,11 +189,13 @@ const Index = () => {
     const samplePosts = [
       {
         user_id: user.id,
-        content: "Just completed an incredible 2-week journey through Japan! From the bustling streets of Tokyo to the serene temples of Kyoto. Every moment was magical ✨"
+        image_url: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&h=600&fit=crop",
+        content: null
       },
       {
         user_id: user.id,
-        content: "Amazing road trip through the Swiss Alps! The views were absolutely breathtaking 🏔️"
+        image_url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop",
+        content: null
       }
     ];
 
@@ -323,6 +325,13 @@ const Index = () => {
   };
 
   const handleComment = async (postId: string) => {
+    if (showComments === postId) {
+      // Toggle off if same post
+      setShowComments(null);
+      setComments([]);
+      return;
+    }
+    
     setShowComments(postId);
     
     try {
@@ -433,69 +442,121 @@ const Index = () => {
 
           {/* Posts */}
           {posts.map((post) => (
-            <Card key={post.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3 mb-3">
-                  <Avatar className="w-10 h-10">
+            <Card key={post.id} className="overflow-hidden">
+              <CardContent className="p-0">
+                {/* Header */}
+                <div className="flex items-center gap-3 p-4 pb-2">
+                  <Avatar className="w-8 h-8">
                     <AvatarImage src={post.profiles?.avatar} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                       {post.profiles?.name?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
-                        <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </p>
                   </div>
                 </div>
-                
-                <p className="text-sm mb-4">{post.content}</p>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className={`flex items-center gap-2 h-8 px-2 ${post.is_liked ? 'text-red-500' : ''}`}
-                      onClick={() => handleLike(post.id)}
-                    >
-                      <Heart size={16} className={post.is_liked ? 'fill-current' : ''} />
-                      <span className="text-sm">{post.likes_count}</span>
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex items-center gap-2 h-8 px-2"
-                      onClick={() => handleComment(post.id)}
-                    >
-                      <MessageCircle size={16} />
-                      <span className="text-sm">{post.comments_count}</span>
-                    </Button>
+
+                {/* Image */}
+                {post.image_url && (
+                  <div className="w-full">
+                    <img 
+                      src={post.image_url} 
+                      alt="Post content" 
+                      className="w-full h-64 object-cover"
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleShare(post.id)}
-                    >
-                      <Send size={16} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className={`h-8 w-8 p-0 ${post.is_saved ? 'text-primary' : ''}`}
-                      onClick={() => handleSave(post.id)}
-                    >
-                      <Bookmark size={16} className={post.is_saved ? 'fill-current' : ''} />
-                    </Button>
+                )}
+                
+                {/* Actions */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`flex items-center gap-2 h-8 px-2 ${post.is_liked ? 'text-red-500' : ''}`}
+                        onClick={() => handleLike(post.id)}
+                      >
+                        <Heart size={18} className={post.is_liked ? 'fill-current' : ''} />
+                        <span className="text-sm">{post.likes_count}</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`flex items-center gap-2 h-8 px-2 ${showComments === post.id ? 'text-primary' : ''}`}
+                        onClick={() => handleComment(post.id)}
+                      >
+                        <MessageCircle size={18} />
+                        <span className="text-sm">{post.comments_count}</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleShare(post.id)}
+                      >
+                        <Send size={16} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-8 w-8 p-0 ${post.is_saved ? 'text-primary' : ''}`}
+                        onClick={() => handleSave(post.id)}
+                      >
+                        <Plus size={16} className={post.is_saved ? 'fill-current' : ''} />
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Inline Comments */}
+                  {showComments === post.id && (
+                    <div className="border-t pt-3 space-y-3">
+                      <div className="max-h-40 overflow-y-auto space-y-3">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="flex items-start gap-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarImage src={comment.profiles?.avatar} />
+                              <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                                {comment.profiles?.name?.[0]?.toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium">{comment.profiles?.name || 'Unknown User'}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                              <p className="text-xs text-foreground">{comment.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {comments.length === 0 && (
+                          <div className="text-center py-2">
+                            <p className="text-xs text-muted-foreground">No comments yet. Be the first to comment!</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 pt-2">
+                        <Input
+                          placeholder="Add a comment..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                          className="flex-1 h-8 text-sm"
+                        />
+                        <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="h-8">
+                          <Send size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -503,54 +564,6 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Comments Dialog */}
-      <Dialog open={!!showComments} onOpenChange={() => setShowComments(null)}>
-        <DialogContent className="max-w-md mx-auto">
-          <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="max-h-60 overflow-y-auto space-y-3">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex items-start gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={comment.profiles?.avatar} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {comment.profiles?.name?.[0]?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{comment.profiles?.name || 'Unknown User'}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{comment.content}</p>
-                  </div>
-                </div>
-              ))}
-              {comments.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Input
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                className="flex-1"
-              />
-              <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
-                <Send size={16} />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
       
       <BottomTabBar />
     </div>

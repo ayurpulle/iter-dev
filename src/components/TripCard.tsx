@@ -70,7 +70,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
     toast({
       title: isLiked ? "Trip unliked" : "Trip liked",
-      description: isLiked ? "Removed from your liked trips" : "Added to your liked trips",
+      description: isLiked ? "Like removed" : "Trip liked",
     });
   };
 

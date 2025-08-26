@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Send, Plus } from "lucide-react";
+import { Heart, MessageCircle, Plus, MoreHorizontal, Send, Share } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import TopBar from "@/components/TopBar";
 import TripCard from "@/components/TripCard";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -110,10 +111,11 @@ const Index = () => {
     try {
       setLoading(true);
       
-      // Fetch posts first
+      // Fetch posts with images only
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
+        .not('image_url', 'is', null)
         .order('created_at', { ascending: false });
 
       if (postsError) {
@@ -458,6 +460,19 @@ const Index = () => {
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </p>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal size={16} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleShare(post.id)}>
+                        <Share size={14} className="mr-2" />
+                        Share
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Image */}
@@ -495,14 +510,6 @@ const Index = () => {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleShare(post.id)}
-                      >
-                        <Send size={16} />
-                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 

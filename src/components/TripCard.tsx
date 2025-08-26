@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Heart, MessageCircle, Share, MoreHorizontal, Clock, Navigation, MapPin, Calendar, Users, Star, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
 import CountryMap from "./CountryMap";
-import MiniMap from "./MiniMap";
 
 interface Stop {
   name: string;
@@ -27,6 +28,7 @@ interface TripCardProps {
     distance: string;
     stops: Stop[];
     photoCount: number;
+    photos?: string[];
     coverImage?: string;
     date?: string;
     companions?: number;
@@ -34,7 +36,6 @@ interface TripCardProps {
     highlights?: string[];
     cost?: string;
     rating?: number;
-    photos?: string[];
   };
   stats: {
     likes: number;
@@ -44,10 +45,16 @@ interface TripCardProps {
 }
 
 const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = false }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+  const [showComments, setShowComments] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [likesCount, setLikesCount] = useState(stats.likes);
+  const [commentsCount, setCommentsCount] = useState(stats.comments);
+  const { toast } = useToast();
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  
   
   // Try to get mapbox token from localStorage for enhanced map view
   useEffect(() => {
@@ -57,63 +64,122 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   
   const photos = trip.photos || [];
   const hasPhotos = photos.length > 0;
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    toast({
+      title: isLiked ? "Trip unliked" : "Trip liked",
+      description: isLiked ? "Removed from your liked trips" : "Added to your liked trips",
+    });
+  };
+
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    toast({
+      title: isSaved ? "Trip removed from saved" : "Trip saved",
+      description: isSaved ? "Removed from your saved trips" : "Added to your saved trips",
+    });
+  };
+
+  const handleShare = () => {
+    toast({
+      title: "Share trip",
+      description: "Trip link copied to clipboard",
+    });
+  };
+
+  const handleComment = () => {
+    if (showComments === true) {
+      setShowComments(false);
+      setComments([]);
+      return;
+    }
+    
+    setShowComments(true);
+    // Load mock comments for demonstration
+    setComments([
+      {
+        id: "1",
+        content: "Amazing trip! Love the route you took.",
+        user: "Travel Buddy",
+        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
+      }
+    ]);
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    
+    const comment = {
+      id: Date.now().toString(),
+      content: newComment.trim(),
+      user: user.name,
+      timestamp: new Date().toISOString()
+    };
+    
+    setComments(prev => [...prev, comment]);
+    setCommentsCount(prev => prev + 1);
+    setNewComment("");
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been posted",
+    });
+  };
   
   return (
-    <Card className="w-full max-w-md mx-auto mb-4 overflow-hidden">
-      {/* Header */}
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium text-sm text-foreground">{user.username}</p>
-            </div>
+    <Card className="overflow-hidden">
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 pb-2">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={user.avatar} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <p className="font-medium text-sm">{user.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(), { addSuffix: true })}
+            </p>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreHorizontal size={16} className="text-muted-foreground" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleShare}>
+                <Share size={14} className="mr-2" />
+                Share
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        
-        {/* Trip Title */}
-        <h3 className="font-semibold text-lg mb-3 text-foreground">{trip.title}</h3>
-        
-        {/* Trip Stats */}
-        <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock size={14} />
-            <span>{trip.duration}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Navigation size={14} />
-            <span>{trip.distance}</span>
-          </div>
-        </div>
-        
-        {/* Carousel Content */}
-        <div className="mb-4">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {/* Country Map with Route - Always First */}
-              <CarouselItem>
-                <div className="h-48 bg-muted rounded-lg overflow-hidden">
-                  <CountryMap 
-                    stops={trip.stops} 
-                    className="h-full w-full" 
-                    mapboxToken={mapboxToken}
-                  />
-                </div>
-              </CarouselItem>
-              
-              {/* Photos */}
-              {hasPhotos ? (
-                photos.map((photo, index) => (
-                  <CarouselItem key={index}>
-                    <div className="h-48 bg-muted rounded-lg overflow-hidden">
+
+        {/* Image/Map */}
+        <div className="w-full">
+          <div className="h-64 bg-muted overflow-hidden">
+            <Carousel className="w-full h-full">
+              <CarouselContent className="h-full">
+                {/* Country Map with Route - Always First */}
+                <CarouselItem className="h-full">
+                  <div className="h-full">
+                    <CountryMap 
+                      stops={trip.stops} 
+                      className="h-full w-full" 
+                      mapboxToken={mapboxToken}
+                    />
+                  </div>
+                </CarouselItem>
+                
+                {/* Photos */}
+                {hasPhotos && photos.map((photo, index) => (
+                  <CarouselItem key={index} className="h-full">
+                    <div className="h-full">
                       <img 
                         src={photo} 
                         alt={`Trip photo ${index + 1}`} 
@@ -121,149 +187,103 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                       />
                     </div>
                   </CarouselItem>
-                ))
-              ) : (
-                <CarouselItem>
-                  <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center p-4">
-                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <span className="text-lg text-primary font-medium">{trip.photoCount}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Photos from {trip.stops[0]?.name || 'this trip'}
-                      </p>
-                    </div>
-                  </div>
-                </CarouselItem>
+                ))}
+              </CarouselContent>
+              {(hasPhotos || photos.length > 0) && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </>
               )}
-            </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
-          </Carousel>
+            </Carousel>
+          </div>
         </div>
         
-        {/* Expandable Details */}
-        {expandable && (trip.description || trip.highlights || trip.cost || trip.rating) && (
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between p-0 h-auto text-sm">
-                <span>Trip details</span>
-                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </Button>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent className="space-y-4 mt-4">
-              {/* Trip Overview */}
-              {(trip.date || trip.companions || trip.cost || trip.rating) && (
-                <div className="grid grid-cols-2 gap-4">
-                  {trip.date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Date</p>
-                        <p className="text-sm font-medium">{trip.date}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {trip.companions && (
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">People</p>
-                        <p className="text-sm font-medium">{trip.companions} travelers</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {trip.cost && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Cost</p>
-                        <p className="text-sm font-medium">{trip.cost}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {trip.rating && (
-                    <div className="flex items-center gap-2">
-                      <Star size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Rating</p>
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              size={12} 
-                              className={i < trip.rating! ? "text-yellow-500 fill-current" : "text-muted-foreground"} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Locations */}
-              {trip.stops && trip.stops.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin size={16} className="text-muted-foreground" />
-                    <h4 className="font-medium text-sm">Locations</h4>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {trip.stops.map((stop, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {stop.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Description */}
-              {trip.description && (
-                <div>
-                  <h4 className="font-medium text-sm mb-2">About this trip</h4>
-                  <p className="text-sm text-muted-foreground">{trip.description}</p>
-                </div>
-              )}
-              
-              {/* Highlights */}
-              {trip.highlights && trip.highlights.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Trip highlights</h4>
-                  <div className="space-y-2">
-                    {trip.highlights.map((highlight, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                        <span className="text-sm">{highlight}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-        
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-border mt-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
-              <Heart size={16} className="text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{stats.likes}</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
-              <MessageCircle size={16} className="text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{stats.comments}</span>
-            </Button>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
+                onClick={handleLike}
+              >
+                <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                <span className="text-sm">{likesCount}</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`flex items-center gap-2 h-8 px-2 ${showComments ? 'text-primary' : ''}`}
+                onClick={handleComment}
+              >
+                <MessageCircle size={18} />
+                <span className="text-sm">{commentsCount}</span>
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-8 w-8 p-0 ${isSaved ? 'text-primary' : ''}`}
+                onClick={handleSave}
+              >
+                <Plus size={16} className={isSaved ? 'fill-current' : ''} />
+              </Button>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Share size={16} className="text-muted-foreground" />
-          </Button>
+
+          {/* Trip Title and Info */}
+          <div className="mb-3">
+            <h3 className="font-semibold text-base mb-1">{trip.title}</h3>
+            <p className="text-sm text-muted-foreground">
+              {trip.duration} • {trip.distance} • {trip.stops.length} stops
+            </p>
+          </div>
+
+          {/* Inline Comments */}
+          {showComments && (
+            <div className="border-t pt-3 space-y-3">
+              <div className="max-h-40 overflow-y-auto space-y-3">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex items-start gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                        {comment.user[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium">{comment.user}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-foreground">{comment.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {comments.length === 0 && (
+                  <div className="text-center py-2">
+                    <p className="text-xs text-muted-foreground">No comments yet. Be the first to comment!</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <Input
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                  className="flex-1 h-8 text-sm"
+                />
+                <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="h-8">
+                  <Send size={14} />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

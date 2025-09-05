@@ -19,7 +19,7 @@ const TripPlanning = () => {
   const [useTripsForInspiration, setUseTripsForInspiration] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [folders, setFolders] = useState<{id: string, name: string}[]>([]);
-  const [generatedItinerary, setGeneratedItinerary] = useState<any>(null);
+  const [generatedIter, setGeneratedIter] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const availableTripTypes = ['Adventure', 'Relaxing', 'Cultural', 'Beach', 'City', 'Nature', 'Food', 'Luxury', 'Budget', 'Family'];
@@ -54,12 +54,12 @@ const TripPlanning = () => {
     }
   };
 
-  const generateItinerary = () => {
+  const generateIter = () => {
     setIsGenerating(true);
     // Simulate AI generation
     setTimeout(() => {
-      setGeneratedItinerary({
-        title: `Your Perfect ${destination} Itinerary`,
+      setGeneratedIter({
+        title: `Your Perfect ${destination} Iter`,
         duration: '7 days',
         dailyPlans: [
           {
@@ -105,7 +105,33 @@ const TripPlanning = () => {
 
   return (
     <div className="space-y-6">
-      {!generatedItinerary ? (
+      {/* Saved Iters Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Your Saved Iters</h3>
+        <div className="grid grid-cols-1 gap-3">
+          {/* Mock saved iters - in real app, fetch from database */}
+          <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-medium text-sm">Tokyo Adventure Iter</h4>
+                <p className="text-xs text-muted-foreground">7 days • Created 3 days ago</p>
+              </div>
+              <Button variant="ghost" size="sm" className="text-xs">View</Button>
+            </div>
+          </div>
+          <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-medium text-sm">European Backpacking Iter</h4>
+                <p className="text-xs text-muted-foreground">14 days • Created 1 week ago</p>
+              </div>
+              <Button variant="ghost" size="sm" className="text-xs">View</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {!generatedIter ? (
         <>
           {/* Destination Input */}
           <div>
@@ -215,7 +241,7 @@ const TripPlanning = () => {
                 
                 {selectedFolder && (
                   <div className="text-xs text-muted-foreground p-2 bg-accent/50 rounded">
-                    💡 Your itinerary will be inspired by {selectedFolder === 'all' ? 'all your saved trips' : `trips in "${folders.find(f => f.id === selectedFolder)?.name}"`}
+                    💡 Your iter will be inspired by {selectedFolder === 'all' ? 'all your saved trips' : `trips in "${folders.find(f => f.id === selectedFolder)?.name}"`}
                   </div>
                 )}
               </div>
@@ -224,29 +250,29 @@ const TripPlanning = () => {
 
           {/* Generate Button */}
           <Button 
-            onClick={generateItinerary}
+            onClick={generateIter}
             disabled={!destination || isGenerating}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
           >
             {isGenerating ? (
-              <>Generating your itinerary...</>
+              <>Generating your iter...</>
             ) : (
               <>
                 <Sparkles size={20} className="mr-2" />
-                Generate AI Itinerary
+                Generate AI Iter
               </>
             )}
           </Button>
         </>
       ) : (
-        /* Generated Itinerary Display */
+        /* Generated Iter Display */
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold">{generatedItinerary.title}</h3>
+            <h3 className="text-lg font-bold">{generatedIter.title}</h3>
             <Button 
               variant="ghost"
               size="icon"
-              onClick={() => setGeneratedItinerary(null)}
+              onClick={() => setGeneratedIter(null)}
             >
               <X size={20} />
             </Button>
@@ -255,16 +281,16 @@ const TripPlanning = () => {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock size={14} />
-              {generatedItinerary.duration}
+              {generatedIter.duration}
             </span>
             <span className="flex items-center gap-1">
               <DollarSign size={14} />
-              {generatedItinerary.estimatedBudget}
+              {generatedIter.estimatedBudget}
             </span>
           </div>
 
           <div className="space-y-4">
-            {generatedItinerary.dailyPlans.map((day: any) => (
+            {generatedIter.dailyPlans.map((day: any) => (
               <div key={day.day} className="border rounded-lg p-4 space-y-2">
                 <h4 className="font-semibold">Day {day.day}: {day.title}</h4>
                 <ul className="space-y-1">
@@ -286,7 +312,7 @@ const TripPlanning = () => {
 
           <div className="flex gap-2">
             <Button className="flex-1">
-              Save Itinerary
+              Save Iter
             </Button>
             <Button variant="outline" className="flex-1">
               Export as PDF

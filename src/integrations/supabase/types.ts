@@ -81,6 +81,8 @@ export type Database = {
           message: string
           read: boolean
           related_comment_id: string | null
+          related_like_id: string | null
+          related_post_id: string | null
           related_trip_id: string | null
           related_user_id: string | null
           title: string
@@ -94,6 +96,8 @@ export type Database = {
           message: string
           read?: boolean
           related_comment_id?: string | null
+          related_like_id?: string | null
+          related_post_id?: string | null
           related_trip_id?: string | null
           related_user_id?: string | null
           title: string
@@ -107,6 +111,8 @@ export type Database = {
           message?: string
           read?: boolean
           related_comment_id?: string | null
+          related_like_id?: string | null
+          related_post_id?: string | null
           related_trip_id?: string | null
           related_user_id?: string | null
           title?: string
@@ -114,6 +120,27 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_related_comment_id_fkey"
+            columns: ["related_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_like_id_fkey"
+            columns: ["related_like_id"]
+            isOneToOne: false
+            referencedRelation: "post_likes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_post_id_fkey"
+            columns: ["related_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_related_trip_id_fkey"
             columns: ["related_trip_id"]

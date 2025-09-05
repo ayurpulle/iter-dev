@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FolderPlus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,6 +126,9 @@ export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemF
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save {itemLabel} to Folder</DialogTitle>
+          <DialogDescription>
+            Choose a folder to organize your saved {itemType}s, or save to your main collection.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>

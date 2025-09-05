@@ -82,6 +82,17 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const handleSave = async (folderId?: string) => {
     if (!currentUser) return;
     
+    // Check if this is a mock trip (doesn't start with a valid UUID pattern)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(trip.id)) {
+      toast({
+        title: "Cannot save mock trip",
+        description: "This is a sample trip that cannot be saved",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('saved_items')

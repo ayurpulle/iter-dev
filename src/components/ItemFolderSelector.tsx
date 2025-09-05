@@ -93,18 +93,18 @@ export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemF
           user_id: user.id,
           item_id: itemId,
           item_type: itemType,
-          folder_id: selectedFolderId || null
+          folder_id: selectedFolderId === "no-folder" ? null : selectedFolderId || null
         });
 
       if (error) throw error;
 
-      onSave(selectedFolderId || undefined);
+      onSave(selectedFolderId === "no-folder" ? undefined : selectedFolderId || undefined);
       setIsOpen(false);
       setSelectedFolderId("");
       
       toast({
         title: "Success",
-        description: selectedFolderId ? `${itemType} saved to folder` : `${itemType} saved to your collection`,
+        description: selectedFolderId && selectedFolderId !== "no-folder" ? `${itemType} saved to folder` : `${itemType} saved to your collection`,
       });
     } catch (error) {
       console.error('Error saving item:', error);
@@ -137,7 +137,7 @@ export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemF
                 <SelectValue placeholder="No folder (save to main collection)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No folder</SelectItem>
+                <SelectItem value="no-folder">No folder</SelectItem>
                 {folders.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}

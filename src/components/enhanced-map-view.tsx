@@ -1,17 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Globe, Calendar, Users, DollarSign, Sparkles, ChevronRight, X, Filter, Plane, Clock, Navigation, Search } from 'lucide-react';
 import { Button } from './ui/button';
+import { Switch } from './ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import BottomTabBar from './BottomTabBar';
 import InteractiveGlobe from './InteractiveGlobe';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 
 // Trip Planning Component
 const TripPlanning = () => {
+  const { user } = useAuth();
   const [destination, setDestination] = useState('');
   const [dates, setDates] = useState({ start: '', end: '' });
   const [tripTypes, setTripTypes] = useState<string[]>([]);
   const [budget, setBudget] = useState('');
-  const [savedTrips, setSavedTrips] = useState<number[]>([]);
+  const [useTripsForInspiration, setUseTripsForInspiration] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<string>('all');
+  const [folders, setFolders] = useState<{id: string, name: string}[]>([]);
   const [generatedItinerary, setGeneratedItinerary] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -22,6 +29,30 @@ const TripPlanning = () => {
     { id: 2, title: 'Italian Renaissance', location: 'Italy', user: 'Alex Martinez' },
     { id: 3, title: 'Thai Island Paradise', location: 'Thailand', user: 'Maya Patel' },
   ];
+
+  // Fetch folders when component mounts and user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchFolders();
+    }
+  }, [user]);
+
+  const fetchFolders = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('item_folders')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('name');
+      
+      if (error) throw error;
+      setFolders(data || []);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    }
+  };
 
   const generateItinerary = () => {
     setIsGenerating(true);
@@ -66,7 +97,7 @@ const TripPlanning = () => {
           }
         ],
         estimatedBudget: '$1,500',
-        basedOn: savedTrips
+        basedOn: useTripsForInspiration ? selectedFolder : null
       });
       setIsGenerating(false);
     }, 2000);
@@ -151,31 +182,44 @@ const TripPlanning = () => {
             </div>
           </div>
 
-          {/* Saved Trips for Inspiration */}
+          {/* Use Saved Trips for Inspiration */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Use saved trips for inspiration</label>
-            <div className="space-y-2">
-              {savedTripsList.map(trip => (
-                <label key={trip.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors">
-                  <input 
-                    type="checkbox"
-                    checked={savedTrips.includes(trip.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSavedTrips([...savedTrips, trip.id]);
-                      } else {
-                        setSavedTrips(savedTrips.filter(id => id !== trip.id));
-                      }
-                    }}
-                    className="w-4 h-4 text-primary"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{trip.title}</p>
-                    <p className="text-xs text-muted-foreground">{trip.location} • by {trip.user}</p>
-                  </div>
-                </label>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium">Use saved trips for inspiration</label>
+              <Switch
+                checked={useTripsForInspiration}
+                onCheckedChange={setUseTripsForInspiration}
+              />
             </div>
+            
+            {useTripsForInspiration && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Choose trips to use for inspiration
+                  </label>
+                  <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select folder or all trips" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All saved trips</SelectItem>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          {folder.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedFolder && (
+                  <div className="text-xs text-muted-foreground p-2 bg-accent/50 rounded">
+                    💡 Your itinerary will be inspired by {selectedFolder === 'all' ? 'all your saved trips' : `trips in "${folders.find(f => f.id === selectedFolder)?.name}"`}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Generate Button */}

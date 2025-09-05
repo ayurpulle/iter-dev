@@ -65,8 +65,7 @@ const Search = () => {
           photo_count,
           hashtags,
           user_id,
-          created_at,
-          profiles!trips_user_id_fkey (name, username, avatar)
+          created_at
         `)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -74,20 +73,32 @@ const Search = () => {
 
       if (error) throw error;
 
+      // Manually join with profiles
+      const userIds = [...new Set(publicTrips?.map(trip => trip.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', userIds);
+
       // Transform the data to match our interface
-      const transformedTrips: Trip[] = (publicTrips || []).map(trip => ({
-        id: trip.id,
-        title: trip.title,
-        duration: trip.duration,
-        distance: trip.distance,
-        stops: trip.stops,
-        photo_count: trip.photo_count,
-        hashtags: trip.hashtags || [],
-        user_id: trip.user_id,
-        profiles: Array.isArray(trip.profiles) && trip.profiles.length > 0 
-          ? trip.profiles[0] 
-          : null
-      }));
+      const transformedTrips: Trip[] = (publicTrips || []).map(trip => {
+        const userProfile = profiles?.find(p => p.user_id === trip.user_id);
+        return {
+          id: trip.id,
+          title: trip.title,
+          duration: trip.duration,
+          distance: trip.distance,
+          stops: trip.stops,
+          photo_count: trip.photo_count,
+          hashtags: trip.hashtags || [],
+          user_id: trip.user_id,
+          profiles: userProfile ? {
+            name: userProfile.name,
+            username: userProfile.username,
+            avatar: userProfile.avatar
+          } : null
+        };
+      });
 
       setExploreTrips(transformedTrips);
     } catch (error) {
@@ -150,13 +161,19 @@ const Search = () => {
           stops,
           photo_count,
           hashtags,
-          user_id,
-          profiles!trips_user_id_fkey (name, username, avatar)
+          user_id
         `)
         .eq('is_public', true)
         .limit(10);
 
       if (locationError) throw locationError;
+
+      // Get profiles for location trips
+      const locationUserIds = [...new Set(locationTrips?.map(trip => trip.user_id) || [])];
+      const { data: locationProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', locationUserIds);
 
       // Group by location
       const locationMap = new Map();
@@ -166,18 +183,39 @@ const Search = () => {
             if (stop.name && stop.name.toLowerCase().includes(query.toLowerCase())) {
               const locationKey = stop.name;
               if (!locationMap.has(locationKey)) {
+                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
+                const tripWithProfile = {
+                  ...trip,
+                  profiles: userProfile ? {
+                    name: userProfile.name,
+                    username: userProfile.username,
+                    avatar: userProfile.avatar
+                  } : null
+                };
+                
                 locationMap.set(locationKey, {
                   id: `location-${locationKey}`,
                   type: 'location',
                   title: locationKey,
                   subtitle: `Visited by friends`,
                   tripCount: 1,
-                  data: { name: locationKey, trips: [trip] }
+                  data: { name: locationKey, trips: [tripWithProfile] }
                 });
               } else {
                 const existing = locationMap.get(locationKey);
                 existing.tripCount++;
-                existing.data.trips.push(trip);
+                
+                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
+                const tripWithProfile = {
+                  ...trip,
+                  profiles: userProfile ? {
+                    name: userProfile.name,
+                    username: userProfile.username,
+                    avatar: userProfile.avatar
+                  } : null
+                };
+                
+                existing.data.trips.push(tripWithProfile);
               }
             }
           });
@@ -197,13 +235,19 @@ const Search = () => {
           stops,
           photo_count,
           hashtags,
-          user_id,
-          profiles!trips_user_id_fkey (name, username, avatar)
+          user_id
         `)
         .eq('is_public', true)
         .limit(10);
 
       if (hashtagError) throw hashtagError;
+
+      // Get profiles for hashtag trips
+      const hashtagUserIds = [...new Set(hashtagTrips?.map(trip => trip.user_id) || [])];
+      const { data: hashtagProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', hashtagUserIds);
 
       // Group by hashtag - filter in memory for now
       const hashtagMap = new Map();
@@ -211,6 +255,16 @@ const Search = () => {
         if (trip.hashtags && Array.isArray(trip.hashtags)) {
           trip.hashtags.forEach((hashtag: string) => {
             if (hashtag.toLowerCase().includes(query.toLowerCase())) {
+              const userProfile = hashtagProfiles?.find(p => p.user_id === trip.user_id);
+              const tripWithProfile = {
+                ...trip,
+                profiles: userProfile ? {
+                  name: userProfile.name,
+                  username: userProfile.username,
+                  avatar: userProfile.avatar
+                } : null
+              };
+              
               if (!hashtagMap.has(hashtag)) {
                 hashtagMap.set(hashtag, {
                   id: `hashtag-${hashtag}`,
@@ -218,12 +272,12 @@ const Search = () => {
                   title: `#${hashtag}`,
                   subtitle: `Used in trips`,
                   tripCount: 1,
-                  data: { hashtag, trips: [trip] }
+                  data: { hashtag, trips: [tripWithProfile] }
                 });
               } else {
                 const existing = hashtagMap.get(hashtag);
                 existing.tripCount++;
-                existing.data.trips.push(trip);
+                existing.data.trips.push(tripWithProfile);
               }
             }
           });
@@ -232,7 +286,8 @@ const Search = () => {
 
       hashtagMap.forEach(hashtag => results.push(hashtag));
 
-      // Get all trips for trip results - transform the data to match our interface
+      // Get all trips for trip results - combine all profiles
+      const allProfiles = [...(locationProfiles || []), ...(hashtagProfiles || [])];
       const allTrips: Trip[] = [
         ...(locationTrips || []),
         ...(hashtagTrips || [])
@@ -240,19 +295,24 @@ const Search = () => {
       .filter((trip, index, self) => 
         index === self.findIndex(t => t.id === trip.id)
       )
-      .map(trip => ({
-        id: trip.id,
-        title: trip.title,
-        duration: trip.duration,
-        distance: trip.distance,
-        stops: trip.stops,
-        photo_count: trip.photo_count,
-        hashtags: trip.hashtags || [],
-        user_id: trip.user_id,
-        profiles: Array.isArray(trip.profiles) && trip.profiles.length > 0 
-          ? trip.profiles[0] 
-          : null
-      }));
+      .map(trip => {
+        const userProfile = allProfiles.find(p => p.user_id === trip.user_id);
+        return {
+          id: trip.id,
+          title: trip.title,
+          duration: trip.duration,
+          distance: trip.distance,
+          stops: trip.stops,
+          photo_count: trip.photo_count,
+          hashtags: trip.hashtags || [],
+          user_id: trip.user_id,
+          profiles: userProfile ? {
+            name: userProfile.name,
+            username: userProfile.username,
+            avatar: userProfile.avatar
+          } : null
+        };
+      });
 
       setSearchResults(results);
       setTrips(allTrips);

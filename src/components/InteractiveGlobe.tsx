@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Globe } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Pin {
   location: string;
@@ -75,23 +76,47 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(false);
-  const [useMapbox, setUseMapbox] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Check for stored token first
-    const storedToken = localStorage.getItem('mapbox_token');
-    if (storedToken) {
-      setMapboxToken(storedToken);
-      setUseMapbox(true);
-    } else {
-      // Show fallback globe by default
-      setUseMapbox(false);
-    }
+    // Fetch Mapbox token from secure edge function
+    const fetchMapboxToken = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setError('Authentication required');
+          setLoading(false);
+          return;
+        }
+
+        const response = await supabase.functions.invoke('get-mapbox-token', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+
+        const { token } = response.data;
+        setMapboxToken(token);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching Mapbox token:', err);
+        setError('Failed to load map');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMapboxToken();
   }, []);
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !useMapbox) return;
+    if (!mapContainer.current || !mapboxToken || loading) return;
 
     // Initialize map
     mapboxgl.accessToken = mapboxToken;
@@ -240,65 +265,33 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
 
     } catch (error) {
       console.error('Error initializing Mapbox:', error);
-      setUseMapbox(false);
+      setError('Failed to initialize map');
     }
 
     return () => {
       map.current?.remove();
     };
-  }, [mapboxToken, pins, onPinClick, useMapbox]);
+  }, [mapboxToken, pins, onPinClick, loading]);
 
-  const handleTokenSubmit = () => {
-    if (mapboxToken.trim()) {
-      localStorage.setItem('mapbox_token', mapboxToken.trim());
-      setShowTokenInput(false);
-      setUseMapbox(true);
-    }
-  };
-
-  const handleUpgradeToMapbox = () => {
-    setShowTokenInput(true);
-  };
-
-  if (showTokenInput) {
+  // Show loading state
+  if (loading) {
     return (
-      <div className="w-full h-96 bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center p-8">
-        <div className="bg-card border rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-foreground text-lg font-semibold mb-4">Setup Interactive Map</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Enter your Mapbox public token to enable the interactive globe.
-            Get one free at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
-          </p>
-          <div className="space-y-3">
-            <Input
-              type="text"
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
-              placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIi..."
-            />
-            <div className="flex gap-2">
-              <Button onClick={handleTokenSubmit} className="flex-1">
-                Enable Interactive Map
-              </Button>
-              <Button variant="outline" onClick={() => setShowTokenInput(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
+      <div className="relative w-full h-96 bg-gradient-to-b from-slate-900 to-slate-700 rounded-2xl overflow-hidden flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading interactive globe...</p>
         </div>
       </div>
     );
   }
 
-  // Show fallback globe if not using Mapbox
-  if (!useMapbox) {
+  // Show error state
+  if (error) {
     return (
       <div className="relative">
         <FallbackGlobe pins={pins} onPinClick={onPinClick} />
-        <div className="absolute bottom-4 right-4">
-          <Button onClick={handleUpgradeToMapbox} size="sm" variant="secondary">
-            Upgrade to Interactive Globe
-          </Button>
+        <div className="absolute bottom-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm">
+          {error}
         </div>
       </div>
     );
@@ -307,7 +300,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
   return (
     <div className="relative w-full h-96 rounded-2xl overflow-hidden bg-slate-900">
       <div ref={mapContainer} className="absolute inset-0" />
-      <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm">
+      <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+        <Globe size={16} />
         Interactive Globe • Click pins to explore
       </div>
     </div>

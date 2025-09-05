@@ -251,7 +251,7 @@ const TripPlanning = () => {
           {/* Generate Button */}
           <Button 
             onClick={generateIter}
-            disabled={!destination || isGenerating}
+            disabled={(!destination && !dates.start && !dates.end && tripTypes.length === 0 && !budget && !useTripsForInspiration) || isGenerating}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
           >
             {isGenerating ? (

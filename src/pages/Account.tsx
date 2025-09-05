@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
@@ -388,25 +387,38 @@ const Account = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Saved Posts ({savedPosts.length})</h2>
             
-            {/* Folder Tabs */}
-            <Tabs value={selectedFolder} onValueChange={setSelectedFolder} className="w-full">
-              <TabsList className="grid w-full grid-cols-auto gap-1 overflow-x-auto">
-                <TabsTrigger value="all" className="flex items-center gap-1 whitespace-nowrap">
-                  <FolderOpen size={14} />
-                  All Posts
-                </TabsTrigger>
-                <TabsTrigger value="none" className="flex items-center gap-1 whitespace-nowrap">
-                  <Folder size={14} />
-                  Unsorted
-                </TabsTrigger>
-                {folders.map((folder) => (
-                  <TabsTrigger key={folder.id} value={folder.id} className="flex items-center gap-1 whitespace-nowrap">
-                    <Folder size={14} />
-                    {folder.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            {/* Folder Icons Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <Button
+                variant={selectedFolder === "all" ? "default" : "outline"}
+                className="h-20 flex-col gap-2 p-3"
+                onClick={() => setSelectedFolder("all")}
+              >
+                <FolderOpen size={24} />
+                <span className="text-xs">All Posts</span>
+              </Button>
+              
+              <Button
+                variant={selectedFolder === "none" ? "default" : "outline"}
+                className="h-20 flex-col gap-2 p-3"
+                onClick={() => setSelectedFolder("none")}
+              >
+                <Folder size={24} />
+                <span className="text-xs">Unsorted</span>
+              </Button>
+              
+              {folders.map((folder) => (
+                <Button
+                  key={folder.id}
+                  variant={selectedFolder === folder.id ? "default" : "outline"}
+                  className="h-20 flex-col gap-2 p-3"
+                  onClick={() => setSelectedFolder(folder.id)}
+                >
+                  <Folder size={24} />
+                  <span className="text-xs text-center leading-tight">{folder.name}</span>
+                </Button>
+              ))}
+            </div>
             
             {loading ? (
               <div className="text-center py-8">

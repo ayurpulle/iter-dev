@@ -9,13 +9,13 @@ import InteractiveGlobe from './InteractiveGlobe';
 const TripPlanning = () => {
   const [destination, setDestination] = useState('');
   const [dates, setDates] = useState({ start: '', end: '' });
-  const [tripType, setTripType] = useState('');
+  const [tripTypes, setTripTypes] = useState<string[]>([]);
   const [budget, setBudget] = useState('');
   const [savedTrips, setSavedTrips] = useState<number[]>([]);
   const [generatedItinerary, setGeneratedItinerary] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const tripTypes = ['Adventure', 'Relaxing', 'Cultural', 'Beach', 'City', 'Nature', 'Food', 'Luxury', 'Budget', 'Family'];
+  const availableTripTypes = ['Adventure', 'Relaxing', 'Cultural', 'Beach', 'City', 'Nature', 'Food', 'Luxury', 'Budget', 'Family'];
 
   const savedTripsList = [
     { id: 1, title: 'Japan Adventure', location: 'Japan', user: 'Sarah Chen' },
@@ -113,16 +113,22 @@ const TripPlanning = () => {
             </div>
           </div>
 
-          {/* Trip Type */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Trip Type</label>
+            <label className="text-sm font-medium mb-2 block">Trip Type (Select multiple)</label>
             <div className="flex flex-wrap gap-2">
-              {tripTypes.map(type => (
+              {availableTripTypes.map(type => (
                 <Button
                   key={type}
-                  variant={tripType === type ? "default" : "outline"}
+                  variant={tripTypes.includes(type) ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setTripType(type)}
+                  onClick={() => {
+                    setTripTypes(prev => 
+                      prev.includes(type) 
+                        ? prev.filter(t => t !== type)
+                        : [...prev, type]
+                    );
+                  }}
+                  className={tripTypes.includes(type) ? "bg-gradient-to-r from-primary to-primary-glow text-white shadow-lg" : ""}
                 >
                   {type}
                 </Button>

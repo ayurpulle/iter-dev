@@ -420,6 +420,7 @@ const Search = () => {
                               avatar: trip.profiles?.avatar
                             }}
                             trip={{
+                              id: trip.id,
                               title: trip.title || 'Untitled Trip',
                               duration: trip.duration || '0 hours',
                               distance: trip.distance || '0 km',
@@ -473,13 +474,14 @@ const Search = () => {
                         username: trip.profiles?.username || 'unknown',
                         avatar: trip.profiles?.avatar
                       }}
-                      trip={{
-                        title: trip.title || 'Untitled Trip',
-                        duration: trip.duration || '0 hours',
-                        distance: trip.distance || '0 km',
-                        stops: Array.isArray(trip.stops) ? trip.stops : [],
-                        photoCount: trip.photo_count || 0
-                      }}
+                       trip={{
+                         id: trip.id,
+                         title: trip.title || 'Untitled Trip',
+                         duration: trip.duration || '0 hours',
+                         distance: trip.distance || '0 km',
+                         stops: Array.isArray(trip.stops) ? trip.stops : [],
+                         photoCount: trip.photo_count || 0
+                       }}
                       stats={{
                         likes: Math.floor(Math.random() * 50), // Mock engagement data
                         comments: Math.floor(Math.random() * 20)

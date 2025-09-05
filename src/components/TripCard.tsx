@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
+import { TripFolderSelector } from "./TripFolderSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +26,7 @@ interface TripCardProps {
     avatar?: string;
   };
   trip: {
+    id: string;
     title: string;
     duration: string;
     distance: string;
@@ -54,6 +58,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const [likesCount, setLikesCount] = useState(stats.likes);
   const [commentsCount, setCommentsCount] = useState(stats.comments);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
   
   // Try to get mapbox token from localStorage for enhanced map view
@@ -74,12 +79,33 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
     });
   };
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-    toast({
-      title: isSaved ? "Trip removed from saved" : "Trip saved",
-      description: isSaved ? "Removed from your saved trips" : "Added to your saved trips",
-    });
+  const handleSave = async (folderId?: string) => {
+    if (!currentUser) return;
+    
+    try {
+      const { error } = await supabase
+        .from('saved_trips')
+        .insert({
+          user_id: currentUser.id,
+          trip_id: trip.id,
+          folder_id: folderId
+        });
+
+      if (error) throw error;
+
+      setIsSaved(true);
+      toast({
+        title: "Success",
+        description: folderId ? "Trip saved to folder" : "Trip saved to your collection",
+      });
+    } catch (error) {
+      console.error('Error saving trip:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save trip",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleShare = () => {
@@ -223,14 +249,15 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-8 w-8 p-0 ${isSaved ? 'text-primary' : ''}`}
-                onClick={handleSave}
-              >
-                <Plus size={16} className={isSaved ? 'fill-current' : ''} />
-              </Button>
+              <TripFolderSelector tripId={trip.id} onSave={handleSave}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`h-8 w-8 p-0 ${isSaved ? 'text-primary' : ''}`}
+                >
+                  <Plus size={16} className={isSaved ? 'fill-current' : ''} />
+                </Button>
+              </TripFolderSelector>
             </div>
           </div>
 

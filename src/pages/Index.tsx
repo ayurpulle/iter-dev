@@ -439,7 +439,7 @@ const Index = () => {
         <div className="space-y-6">
           {/* Trip Cards */}
           {mockTrips.map((trip, index) => (
-            <TripCard key={index} user={trip.user} trip={trip.trip} stats={trip.stats} />
+            <TripCard key={index} user={trip.user} trip={{...trip.trip, id: `trip-${index}`}} stats={trip.stats} />
           ))}
 
           {/* Posts */}

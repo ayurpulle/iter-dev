@@ -149,7 +149,7 @@ const CompactFriendsList = ({ filterLocation, onTripClick }: CompactFriendsListP
             <TripCard
               key={index}
               user={item.user}
-              trip={item.trip}
+              trip={{...item.trip, id: `trip-${index}`}}
               stats={item.stats}
               expandable={true}
             />

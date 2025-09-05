@@ -49,7 +49,7 @@ const Profile = () => {
               {mockProfile.trips.map((trip, index) => (
                 <TripCard 
                   key={index} 
-                  trip={trip} 
+                  trip={{...trip, id: `trip-${index}`}} 
                   user={{ name: "You", username: "you" }} 
                   stats={{ likes: 0, comments: 0 }} 
                 />

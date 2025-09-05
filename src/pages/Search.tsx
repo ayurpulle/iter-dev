@@ -66,7 +66,7 @@ const Search = () => {
           hashtags,
           user_id,
           created_at,
-          profiles!inner (name, username, avatar)
+          profiles!trips_user_id_fkey (name, username, avatar)
         `)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -151,7 +151,7 @@ const Search = () => {
           photo_count,
           hashtags,
           user_id,
-          profiles!inner (name, username, avatar)
+          profiles!trips_user_id_fkey (name, username, avatar)
         `)
         .eq('is_public', true)
         .limit(10);
@@ -198,7 +198,7 @@ const Search = () => {
           photo_count,
           hashtags,
           user_id,
-          profiles!inner (name, username, avatar)
+          profiles!trips_user_id_fkey (name, username, avatar)
         `)
         .eq('is_public', true)
         .limit(10);

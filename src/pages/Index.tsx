@@ -149,14 +149,15 @@ const Index = () => {
             .eq('user_id', user.id)
             .in('post_id', postIds),
           supabase
-            .from('saved_posts')
-            .select('post_id')
+            .from('saved_items')
+            .select('item_id')
             .eq('user_id', user.id)
-            .in('post_id', postIds)
+            .eq('item_type', 'post')
+            .in('item_id', postIds)
         ]);
 
         const likedPosts = new Set(likesResult.data?.map(l => l.post_id) || []);
-        const savedPosts = new Set(savesResult.data?.map(s => s.post_id) || []);
+        const savedPosts = new Set(savesResult.data?.map(s => s.item_id) || []);
 
         const enrichedPosts = postsData.map(post => ({
           ...post,
@@ -282,10 +283,11 @@ const Index = () => {
       if (post.is_saved) {
         // Unsave
         await supabase
-          .from('saved_posts')
+          .from('saved_items')
           .delete()
           .eq('user_id', user.id)
-          .eq('post_id', postId);
+          .eq('item_id', postId)
+          .eq('item_type', 'post');
         
         toast({
           title: "Trip removed from saved",
@@ -294,8 +296,8 @@ const Index = () => {
       } else {
         // Save
         await supabase
-          .from('saved_posts')
-          .insert({ user_id: user.id, post_id: postId });
+          .from('saved_items')
+          .insert({ user_id: user.id, item_id: postId, item_type: 'post' });
         
         toast({
           title: "Trip saved",

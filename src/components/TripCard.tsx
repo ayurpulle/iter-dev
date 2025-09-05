@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
-import { TripFolderSelector } from "./TripFolderSelector";
+import { ItemFolderSelector } from "./ItemFolderSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -84,11 +84,12 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
     
     try {
       const { error } = await supabase
-        .from('saved_trips')
+        .from('saved_items')
         .insert({
           user_id: currentUser.id,
-          trip_id: trip.id,
-          folder_id: folderId
+          item_id: trip.id,
+          item_type: 'trip',
+          folder_id: folderId || null
         });
 
       if (error) throw error;
@@ -249,7 +250,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <TripFolderSelector tripId={trip.id} onSave={handleSave}>
+              <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -257,7 +258,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                 >
                   <Plus size={16} className={isSaved ? 'fill-current' : ''} />
                 </Button>
-              </TripFolderSelector>
+              </ItemFolderSelector>
             </div>
           </div>
 

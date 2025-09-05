@@ -131,9 +131,10 @@ const Account = () => {
       setLoading(true);
       
       const { data: savedPostsData, error } = await supabase
-        .from('saved_posts')
-        .select('post_id')
+        .from('saved_items')
+        .select('item_id')
         .eq('user_id', user.id)
+        .eq('item_type', 'post')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -147,7 +148,7 @@ const Account = () => {
       }
 
       if (savedPostsData && savedPostsData.length > 0) {
-        const postIds = savedPostsData.map(sp => sp.post_id);
+        const postIds = savedPostsData.map(sp => sp.item_id);
         
         // Fetch the actual posts
         const { data: postsData, error: postsError } = await supabase
@@ -197,10 +198,11 @@ const Account = () => {
 
     try {
       const { error } = await supabase
-        .from('saved_posts')
+        .from('saved_items')
         .delete()
         .eq('user_id', user.id)
-        .eq('post_id', postId);
+        .eq('item_id', postId)
+        .eq('item_type', 'post');
 
       if (error) {
         console.error('Error unsaving post:', error);

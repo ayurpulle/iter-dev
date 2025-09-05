@@ -8,19 +8,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-interface TripFolder {
+interface ItemFolder {
   id: string;
   name: string;
 }
 
-interface TripFolderSelectorProps {
-  tripId: string;
+interface ItemFolderSelectorProps {
+  itemId: string;
+  itemType: 'post' | 'trip';
   onSave: (folderId?: string) => void;
   children: React.ReactNode;
 }
 
-export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelectorProps) {
-  const [folders, setFolders] = useState<TripFolder[]>([]);
+export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemFolderSelectorProps) {
+  const [folders, setFolders] = useState<ItemFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -38,7 +39,7 @@ export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelec
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('trip_folders')
+      .from('item_folders')
       .select('id, name')
       .eq('user_id', user.id)
       .order('name');
@@ -55,7 +56,7 @@ export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelec
     if (!user || !newFolderName.trim()) return;
 
     const { data, error } = await supabase
-      .from('trip_folders')
+      .from('item_folders')
       .insert({
         user_id: user.id,
         name: newFolderName.trim()
@@ -82,11 +83,40 @@ export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelec
     });
   };
 
-  const handleSave = () => {
-    onSave(selectedFolderId || undefined);
-    setIsOpen(false);
-    setSelectedFolderId("");
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('saved_items')
+        .insert({
+          user_id: user.id,
+          item_id: itemId,
+          item_type: itemType,
+          folder_id: selectedFolderId || null
+        });
+
+      if (error) throw error;
+
+      onSave(selectedFolderId || undefined);
+      setIsOpen(false);
+      setSelectedFolderId("");
+      
+      toast({
+        title: "Success",
+        description: selectedFolderId ? `${itemType} saved to folder` : `${itemType} saved to your collection`,
+      });
+    } catch (error) {
+      console.error('Error saving item:', error);
+      toast({
+        title: "Error",
+        description: `Failed to save ${itemType}`,
+        variant: "destructive",
+      });
+    }
   };
+
+  const itemLabel = itemType === 'trip' ? 'Trip' : 'Post';
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -95,7 +125,7 @@ export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelec
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Save Trip to Folder</DialogTitle>
+          <DialogTitle>Save {itemLabel} to Folder</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -154,7 +184,7 @@ export function TripFolderSelector({ tripId, onSave, children }: TripFolderSelec
 
           <div className="flex gap-2 pt-4">
             <Button onClick={handleSave} className="flex-1">
-              Save Trip
+              Save {itemLabel}
             </Button>
             <Button
               variant="outline"

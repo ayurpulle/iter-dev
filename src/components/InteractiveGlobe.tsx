@@ -124,7 +124,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
+        style: 'mapbox://styles/mapbox/dark-v11',
         projection: { name: 'globe' },
         zoom: 0.8,
         center: [30, 15],
@@ -150,11 +150,43 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       map.current.on('style.load', () => {
         if (map.current) {
           map.current.setFog({
-            color: 'rgb(220, 240, 255)',
-            'high-color': 'rgb(135, 206, 250)',
-            'horizon-blend': 0.1,
-            'space-color': 'rgb(240, 248, 255)',
-            'star-intensity': 0.2,
+            color: 'rgb(60, 80, 110)',
+            'high-color': 'rgb(20, 40, 80)',
+            'horizon-blend': 0.05,
+            'space-color': 'rgb(10, 15, 25)',
+            'star-intensity': 0.8,
+          });
+
+          // Add distinctive country borders
+          map.current.addLayer({
+            id: 'country-borders',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
+              'line-color': '#60a5fa',
+              'line-width': 1.5,
+              'line-opacity': 0.8
+            }
+          });
+
+          // Add admin boundaries for states/provinces
+          map.current.addLayer({
+            id: 'admin-borders',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.boundaries-adm1-v3'
+            },
+            'source-layer': 'boundaries_admin_1',
+            paint: {
+              'line-color': '#3b82f6',
+              'line-width': 0.8,
+              'line-opacity': 0.6
+            }
           });
         }
       });

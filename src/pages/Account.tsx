@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
-import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark } from "lucide-react";
+import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,9 +28,16 @@ interface SavedPost {
   };
 }
 
+interface ItemFolder {
+  id: string;
+  name: string;
+}
+
 const Account = () => {
   const [activeSection, setActiveSection] = useState<"posts" | "saved" | "world">("posts");
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
+  const [folders, setFolders] = useState<ItemFolder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -117,12 +125,41 @@ const Account = () => {
     totalDays: 156,
   };
 
-  // Load saved posts when saved section is selected
+  // Load saved posts and folders when saved section is selected
+  useEffect(() => {
+    if (activeSection === 'saved' && user) {
+      loadFolders();
+      loadSavedPosts();
+    }
+  }, [activeSection, user]);
+
+  // Reload saved posts when folder selection changes
   useEffect(() => {
     if (activeSection === 'saved' && user) {
       loadSavedPosts();
     }
-  }, [activeSection, user]);
+  }, [selectedFolder]);
+
+  const loadFolders = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: foldersData, error } = await supabase
+        .from('item_folders')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (error) {
+        console.error('Error loading folders:', error);
+        return;
+      }
+
+      setFolders(foldersData || []);
+    } catch (error) {
+      console.error('Error loading folders:', error);
+    }
+  };
 
   const loadSavedPosts = async () => {
     if (!user) return;
@@ -130,12 +167,22 @@ const Account = () => {
     try {
       setLoading(true);
       
-      const { data: savedPostsData, error } = await supabase
+      let query = supabase
         .from('saved_items')
-        .select('item_id')
+        .select('item_id, folder_id')
         .eq('user_id', user.id)
-        .eq('item_type', 'post')
-        .order('created_at', { ascending: false });
+        .eq('item_type', 'post');
+
+      // Filter by folder if not "all"
+      if (selectedFolder !== "all") {
+        if (selectedFolder === "none") {
+          query = query.is('folder_id', null);
+        } else {
+          query = query.eq('folder_id', selectedFolder);
+        }
+      }
+
+      const { data: savedPostsData, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading saved posts:', error);
@@ -340,6 +387,26 @@ const Account = () => {
         {activeSection === "saved" && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Saved Posts ({savedPosts.length})</h2>
+            
+            {/* Folder Tabs */}
+            <Tabs value={selectedFolder} onValueChange={setSelectedFolder} className="w-full">
+              <TabsList className="grid w-full grid-cols-auto gap-1 overflow-x-auto">
+                <TabsTrigger value="all" className="flex items-center gap-1 whitespace-nowrap">
+                  <FolderOpen size={14} />
+                  All Posts
+                </TabsTrigger>
+                <TabsTrigger value="none" className="flex items-center gap-1 whitespace-nowrap">
+                  <Folder size={14} />
+                  Unsorted
+                </TabsTrigger>
+                {folders.map((folder) => (
+                  <TabsTrigger key={folder.id} value={folder.id} className="flex items-center gap-1 whitespace-nowrap">
+                    <Folder size={14} />
+                    {folder.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
             
             {loading ? (
               <div className="text-center py-8">

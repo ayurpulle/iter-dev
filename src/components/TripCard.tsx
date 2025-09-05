@@ -82,23 +82,37 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const handleSave = async (folderId?: string) => {
     if (!currentUser) return;
     
-    // Check if this is a mock trip (doesn't start with a valid UUID pattern)
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(trip.id)) {
-      toast({
-        title: "Cannot save mock trip",
-        description: "This is a sample trip that cannot be saved",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     try {
+      let tripIdToSave = trip.id;
+      
+      // Check if this is a mock trip (doesn't start with a valid UUID pattern)
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(trip.id)) {
+        // Create a real trip entry for mock trips
+        const { data: newTrip, error: tripError } = await supabase
+          .from('trips')
+          .insert({
+            user_id: currentUser.id,
+            title: trip.title,
+            duration: trip.duration,
+            distance: trip.distance,
+            stops: trip.stops as any,
+            photo_count: trip.photoCount,
+            is_public: true
+          })
+          .select()
+          .single();
+
+        if (tripError) throw tripError;
+        tripIdToSave = newTrip.id;
+      }
+      
+      // Save the trip to the saved_items table
       const { error } = await supabase
         .from('saved_items')
         .insert({
           user_id: currentUser.id,
-          item_id: trip.id,
+          item_id: tripIdToSave,
           item_type: 'trip',
           folder_id: folderId || null
         });

@@ -124,9 +124,9 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11',
+        style: 'mapbox://styles/mapbox/light-v11',
         projection: { name: 'globe' },
-        zoom: 1.5,
+        zoom: 0.8,
         center: [30, 15],
         pitch: 0,
       });
@@ -150,11 +150,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       map.current.on('style.load', () => {
         if (map.current) {
           map.current.setFog({
-            color: 'rgb(186, 210, 235)',
-            'high-color': 'rgb(36, 92, 223)',
-            'horizon-blend': 0.02,
-            'space-color': 'rgb(11, 11, 25)',
-            'star-intensity': 0.6,
+            color: 'rgb(220, 240, 255)',
+            'high-color': 'rgb(135, 206, 250)',
+            'horizon-blend': 0.1,
+            'space-color': 'rgb(240, 248, 255)',
+            'star-intensity': 0.2,
           });
         }
       });

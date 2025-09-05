@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface SavedPost {
   id: string;
@@ -32,6 +33,7 @@ const Account = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Mock user data
   const userData = {
@@ -261,7 +263,11 @@ const Account = () => {
             <Button variant="outline" size="sm" className="flex-1">
               Edit Profile
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/settings')}
+            >
               <Settings size={16} />
             </Button>
           </div>

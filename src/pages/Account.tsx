@@ -42,71 +42,22 @@ const Account = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Mock user data
-  const userData = {
-    name: "John Doe",
-    username: "johndoe",
+  // User profile data
+  const [userProfile, setUserProfile] = useState({
+    name: "",
+    username: "",
     avatar: undefined,
     stats: {
-      posts: 24,
-      followers: 1234,
-      following: 567,
+      posts: 0,
+      followers: 0,
+      following: 0,
     },
-    bio: "Travel enthusiast exploring the world one city at a time ✈️",
-    joinDate: "March 2023",
-  };
+    bio: "",
+    joinDate: "",
+  });
 
-  // Mock user posts
-  const userPosts = [
-    {
-      id: 1,
-      title: "Japan Adventure",
-      image: "/placeholder.svg",
-      location: "Tokyo, Japan",
-      date: "Dec 2024",
-      likes: 156,
-    },
-    {
-      id: 2,
-      title: "European Tour",
-      image: "/placeholder.svg",
-      location: "Paris, France",
-      date: "Nov 2024",
-      likes: 234,
-    },
-    {
-      id: 3,
-      title: "Bali Getaway",
-      image: "/placeholder.svg",
-      location: "Bali, Indonesia",
-      date: "Oct 2024",
-      likes: 189,
-    },
-    {
-      id: 4,
-      title: "NYC Weekend",
-      image: "/placeholder.svg",
-      location: "New York, USA",
-      date: "Sep 2024",
-      likes: 267,
-    },
-    {
-      id: 5,
-      title: "Iceland Road Trip",
-      image: "/placeholder.svg",
-      location: "Reykjavik, Iceland",
-      date: "Aug 2024",
-      likes: 312,
-    },
-    {
-      id: 6,
-      title: "Thai Islands",
-      image: "/placeholder.svg",
-      location: "Phuket, Thailand",
-      date: "Jul 2024",
-      likes: 198,
-    },
-  ];
+  // User posts
+  const [userPosts, setUserPosts] = useState([]);
 
   // Mock visited countries for the map
   const visitedCountries = [
@@ -124,6 +75,14 @@ const Account = () => {
     totalDays: 156,
   };
 
+  // Load user profile and posts on mount
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+      loadUserPosts();
+    }
+  }, [user]);
+
   // Load saved posts and folders when saved section is selected
   useEffect(() => {
     if (activeSection === 'saved' && user) {
@@ -138,6 +97,70 @@ const Account = () => {
       loadSavedPosts();
     }
   }, [selectedFolder]);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setUserProfile({
+          name: profile.name || user.email?.split('@')[0] || '',
+          username: profile.username || user.email?.split('@')[0] || '',
+          avatar: profile.avatar,
+          stats: {
+            posts: 0, // Will be updated when posts are loaded
+            followers: 0,
+            following: 0,
+          },
+          bio: '', // No bio field in profiles table yet
+          joinDate: new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadUserPosts = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading posts:', error);
+        return;
+      }
+
+      setUserPosts(posts || []);
+      
+      // Update post count in profile
+      setUserProfile(prev => ({
+        ...prev,
+        stats: {
+          ...prev.stats,
+          posts: posts?.length || 0,
+        },
+      }));
+    } catch (error) {
+      console.error('Error loading posts:', error);
+    }
+  };
 
   const loadFolders = async () => {
     if (!user) return;
@@ -275,33 +298,33 @@ const Account = () => {
         {/* Profile Header */}
         <div className="text-center mb-6">
           <Avatar className="w-24 h-24 mx-auto mb-4">
-            <AvatarImage src={userData.avatar} />
+            <AvatarImage src={userProfile.avatar} />
             <AvatarFallback className="text-2xl font-semibold">
-              {userData.name.split(' ').map(n => n[0]).join('')}
+              {userProfile.name ? userProfile.name.split(' ').map(n => n[0]).join('').toUpperCase() : user?.email?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           
-          <h1 className="text-2xl font-bold mb-1">{userData.name}</h1>
-          <p className="text-muted-foreground mb-2">@{userData.username}</p>
-          <p className="text-sm mb-4">{userData.bio}</p>
+          <h1 className="text-2xl font-bold mb-1">{userProfile.name || user?.email?.split('@')[0] || 'User'}</h1>
+          <p className="text-muted-foreground mb-2">@{userProfile.username || user?.email?.split('@')[0] || 'user'}</p>
+          <p className="text-sm mb-4">{userProfile.bio || 'No bio yet'}</p>
           
           <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-4">
             <Calendar size={12} />
-            <span>Joined {userData.joinDate}</span>
+            <span>Joined {userProfile.joinDate || 'Recently'}</span>
           </div>
 
           {/* Stats */}
           <div className="flex justify-center gap-8 mb-6">
             <div className="text-center">
-              <div className="text-xl font-bold">{userData.stats.posts}</div>
+              <div className="text-xl font-bold">{userProfile.stats.posts}</div>
               <div className="text-xs text-muted-foreground">Posts</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold">{userData.stats.followers.toLocaleString()}</div>
+              <div className="text-xl font-bold">{userProfile.stats.followers.toLocaleString()}</div>
               <div className="text-xs text-muted-foreground">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold">{userData.stats.following}</div>
+              <div className="text-xl font-bold">{userProfile.stats.following}</div>
               <div className="text-xs text-muted-foreground">Following</div>
             </div>
           </div>
@@ -352,34 +375,65 @@ const Account = () => {
         {/* Content Sections */}
         {activeSection === "posts" && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">My Posts ({userData.stats.posts})</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {userPosts.map((post) => (
-                <Card key={post.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-                  <div className="aspect-square relative">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <h3 className="text-white text-sm font-medium truncate">{post.title}</h3>
-                      <div className="flex items-center gap-1 text-white/80 text-xs">
-                        <MapPin size={10} />
-                        <span className="truncate">{post.location}</span>
+            <h2 className="text-lg font-semibold">My Posts ({userProfile.stats.posts})</h2>
+            {userPosts.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">📝</div>
+                <p className="text-muted-foreground mb-2">No posts yet</p>
+                <p className="text-sm text-muted-foreground">Start sharing your travel experiences!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userPosts.map((post) => (
+                  <Card key={post.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3 mb-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={userProfile.avatar} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            {userProfile.name?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{userProfile.name || 'You'}</p>
+                              <p className="text-xs text-muted-foreground">@{userProfile.username || 'you'}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>{post.date}</span>
-                      <span>{post.likes} likes</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      
+                      <p className="text-sm mb-4">{post.content}</p>
+                      
+                      {post.image_url && (
+                        <div className="mb-4">
+                          <img
+                            src={post.image_url}
+                            alt="Post image"
+                            className="w-full rounded-lg max-h-64 object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Heart size={16} />
+                          <span className="text-sm">{post.likes_count}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MessageCircle size={16} />
+                          <span className="text-sm">{post.comments_count}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

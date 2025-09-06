@@ -86,69 +86,81 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    // Store markers in a ref to track them
+    const markers: mapboxgl.Marker[] = [];
+
     // Allow clicking to add route points
-    map.current.on('click', (e) => {
-      const newPoint = {
-        lat: e.lngLat.lat,
-        lng: e.lngLat.lng,
-        name: `Stop ${tripRoute.length + 1}`
-      };
-      
-      const newRoute = [...tripRoute, newPoint];
-      setTripRoute(newRoute);
-
-      // Add marker
-      new mapboxgl.Marker({ color: '#3b82f6' })
-        .setLngLat([e.lngLat.lng, e.lngLat.lat])
-        .addTo(map.current!);
-
-      // Draw route if we have multiple points
-      if (newRoute.length > 1) {
-        const coordinates = newRoute.map(point => [point.lng, point.lat]);
+    const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
+      setTripRoute(currentRoute => {
+        const newPoint = {
+          lat: e.lngLat.lat,
+          lng: e.lngLat.lng,
+          name: `Stop ${currentRoute.length + 1}`
+        };
         
-        if (map.current!.getSource('route')) {
-          (map.current!.getSource('route') as mapboxgl.GeoJSONSource).setData({
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates
-            }
-          });
-        } else {
-          map.current!.addSource('route', {
-            type: 'geojson',
-            data: {
+        const newRoute = [...currentRoute, newPoint];
+
+        // Add marker
+        const marker = new mapboxgl.Marker({ color: '#3b82f6' })
+          .setLngLat([e.lngLat.lng, e.lngLat.lat])
+          .addTo(map.current!);
+        
+        markers.push(marker);
+
+        // Draw route if we have multiple points
+        if (newRoute.length > 1) {
+          const coordinates = newRoute.map(point => [point.lng, point.lat]);
+          
+          if (map.current!.getSource('route')) {
+            (map.current!.getSource('route') as mapboxgl.GeoJSONSource).setData({
               type: 'Feature',
               properties: {},
               geometry: {
                 type: 'LineString',
                 coordinates: coordinates
               }
-            }
-          });
+            });
+          } else {
+            map.current!.addSource('route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: coordinates
+                }
+              }
+            });
 
-          map.current!.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#3b82f6',
-              'line-width': 3
-            }
-          });
+            map.current!.addLayer({
+              id: 'route',
+              type: 'line',
+              source: 'route',
+              layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+              },
+              paint: {
+                'line-color': '#3b82f6',
+                'line-width': 3
+              }
+            });
+          }
         }
-      }
-    });
+
+        return newRoute;
+      });
+    };
+
+    map.current.on('click', handleMapClick);
 
     return () => {
+      // Clean up markers
+      markers.forEach(marker => marker.remove());
       map.current?.remove();
     };
-  }, [selectedCountry, mapboxToken, userMapboxToken, tripRoute]);
+  }, [selectedCountry, mapboxToken, userMapboxToken]);
 
   const selectPhoto = async () => {
     try {

@@ -101,7 +101,7 @@ const TripPlanning = () => {
   }
 
   return (
-    <div className="px-4 py-6 max-w-md mx-auto">
+    <div className="px-4 py-6 pb-24 max-w-md mx-auto">
       <div className="space-y-4">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Plan Your Trip</h1>

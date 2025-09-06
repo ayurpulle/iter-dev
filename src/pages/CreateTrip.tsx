@@ -1,6 +1,6 @@
 import React from 'react';
-import EnhancedCreateTrip from '../components/enhanced-create-trip';
+import UploadPost from '../components/UploadPost';
 
 export default function CreateTrip() {
-  return <EnhancedCreateTrip />;
+  return <UploadPost />;
 }

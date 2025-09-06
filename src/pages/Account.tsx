@@ -125,7 +125,7 @@ const Account = () => {
             followers: 0,
             following: 0,
           },
-          bio: '', // No bio field in profiles table yet
+          bio: profile.bio || '',
           joinDate: new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         });
       }

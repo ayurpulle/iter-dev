@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Mail, Search, X } from "lucide-react";
+import { Bell, MessageCircle, Search, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -52,9 +52,9 @@ const TopBar = () => {
             variant="ghost" 
             size="sm" 
             className="h-8 w-8 p-0"
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/messages')}
           >
-            <Mail size={18} className="text-muted-foreground" />
+            <MessageCircle size={18} className="text-muted-foreground" />
           </Button>
           
           <Button 

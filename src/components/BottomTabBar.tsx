@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, PlusCircle, Bell, User, MessageCircle } from 'lucide-react';
+import { Home, Search, PlusCircle, User, Globe } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import NotificationBadge from './NotificationBadge';
 import { Button } from '@/components/ui/button';
@@ -42,20 +42,9 @@ const BottomTabBar = () => {
           variant="ghost" 
           size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-2"
-          onClick={() => navigate("/messages")}
+          onClick={() => navigate("/map")}
         >
-          <MessageCircle size={20} className={location.pathname === "/messages" ? "text-primary" : "text-muted-foreground"} />
-        </Button>
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2 relative"
-          onClick={() => navigate("/notifications")}
-        >
-          <NotificationBadge>
-            <Bell size={20} className={location.pathname === "/notifications" ? "text-primary" : "text-muted-foreground"} />
-          </NotificationBadge>
+          <Globe size={20} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 

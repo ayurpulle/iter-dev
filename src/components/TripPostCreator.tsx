@@ -24,6 +24,8 @@ interface Location {
   fullName: string;
   coordinates: [number, number];
   bbox?: [number, number, number, number];
+  countryCode?: string;
+  flag?: string;
 }
 
 const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
@@ -61,6 +63,18 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     fetchMapboxToken();
   }, []);
 
+  // Convert country code to flag emoji
+  const getFlagEmoji = (countryCode: string): string => {
+    if (!countryCode || countryCode.length !== 2) return '🌍';
+    
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    
+    return String.fromCodePoint(...codePoints);
+  };
+
   // Search locations using Mapbox Geocoding API
   const searchLocations = async (query: string) => {
     if (!query.trim() || query.length < 2) {
@@ -90,6 +104,21 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
           else if (placeType === 'place' || placeType === 'locality') type = 'city';
           else if (placeType === 'region') type = 'place';
 
+          // Extract country code from context
+          let countryCode = '';
+          if (type === 'country') {
+            // For countries, the feature properties should have the ISO code
+            countryCode = feature.properties?.short_code || feature.properties?.iso_3166_1_alpha_2 || '';
+          } else {
+            // For cities/places, look in the context for country information
+            const countryContext = feature.context?.find((ctx: any) => 
+              ctx.id.startsWith('country.')
+            );
+            countryCode = countryContext?.short_code || '';
+          }
+
+          const flag = getFlagEmoji(countryCode);
+
           return {
             id: feature.id,
             name: feature.text,
@@ -97,6 +126,8 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
             type,
             coordinates: feature.center as [number, number],
             bbox: feature.bbox as [number, number, number, number] | undefined,
+            countryCode,
+            flag,
           };
         });
         
@@ -322,10 +353,10 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
           {/* Selected Locations */}
           {selectedLocations.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {selectedLocations.map((location) => (
+               {selectedLocations.map((location) => (
                 <Badge key={location.id} variant="secondary" className="gap-1">
                   <span className="text-xs opacity-60">
-                    {location.type === 'country' ? '🏳️' : location.type === 'city' ? '🏙️' : '🏘️'}
+                    {location.flag || '🌍'}
                   </span>
                   {location.name}
                   <X 
@@ -378,10 +409,8 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                           className="cursor-pointer"
                         >
                           <div className="flex items-center gap-2 flex-1">
-                            <span>
-                              {location.type === 'country' ? '🏳️' : 
-                               location.type === 'city' ? '🏙️' : 
-                               location.type === 'place' ? '📍' : '🏘️'}
+                            <span className="text-lg">
+                              {location.flag || '🌍'}
                             </span>
                             <div className="flex-1">
                               <div className="font-medium">{location.name}</div>

@@ -349,32 +349,28 @@ const TripPlanning = () => {
               <DialogTitle>What's your budget?</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((level) => (
-                <div
-                  key={level}
-                  className={cn(
-                    "p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    formData.budget === level
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  )}
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, budget: level }));
-                    setBudgetDialogOpen(false);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-primary">
-                        {"$".repeat(level)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {getBudgetDescription(level)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <p className="text-sm text-muted-foreground">Select your budget level</p>
+              <div className="flex items-center justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <button
+                    key={level}
+                    className={cn(
+                      "text-3xl transition-colors hover:scale-110 transform transition-transform",
+                      level <= formData.budget ? "text-primary" : "text-muted-foreground"
+                    )}
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, budget: level }));
+                    }}
+                  >
+                    $
+                  </button>
+                ))}
+              </div>
+              {formData.budget > 0 && (
+                <p className="text-center text-sm text-muted-foreground">
+                  {getBudgetDescription(formData.budget)}
+                </p>
+              )}
             </div>
           </DialogContent>
         </Dialog>

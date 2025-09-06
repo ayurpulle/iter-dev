@@ -310,34 +310,26 @@ export default function EnhancedCreateTrip() {
             <DollarSign size={16} />
             Trip Budget Level
           </label>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((level) => (
-              <div
-                key={level}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  budget === level
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-                onClick={() => setBudget(level)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold text-primary">
-                      {"$".repeat(level)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getBudgetDescription(level)}
-                    </p>
-                  </div>
-                  {budget === level && (
-                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Select your budget level</p>
+            <div className="flex items-center justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  className={`text-3xl transition-colors hover:scale-110 transform transition-transform ${
+                    level <= budget ? "text-primary" : "text-muted-foreground"
+                  }`}
+                  onClick={() => setBudget(level)}
+                >
+                  $
+                </button>
+              ))}
+            </div>
+            {budget > 0 && (
+              <p className="text-center text-sm text-muted-foreground">
+                {getBudgetDescription(budget)}
+              </p>
+            )}
           </div>
         </div>
 

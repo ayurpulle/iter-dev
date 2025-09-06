@@ -49,6 +49,33 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          participants: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          participants: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          participants?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       friends: {
         Row: {
           created_at: string
@@ -100,10 +127,46 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
           data: Json | null
+          friend_request_id: string | null
           id: string
           message: string
           read: boolean
@@ -119,6 +182,7 @@ export type Database = {
         Insert: {
           created_at?: string
           data?: Json | null
+          friend_request_id?: string | null
           id?: string
           message: string
           read?: boolean
@@ -134,6 +198,7 @@ export type Database = {
         Update: {
           created_at?: string
           data?: Json | null
+          friend_request_id?: string | null
           id?: string
           message?: string
           read?: boolean
@@ -147,6 +212,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_friend_request_id_fkey"
+            columns: ["friend_request_id"]
+            isOneToOne: false
+            referencedRelation: "friends"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_related_comment_id_fkey"
             columns: ["related_comment_id"]
@@ -260,6 +332,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar: string | null
+          bio: string | null
           id: string
           name: string | null
           user_id: string
@@ -267,6 +340,7 @@ export type Database = {
         }
         Insert: {
           avatar?: string | null
+          bio?: string | null
           id?: string
           name?: string | null
           user_id: string
@@ -274,6 +348,7 @@ export type Database = {
         }
         Update: {
           avatar?: string | null
+          bio?: string | null
           id?: string
           name?: string | null
           user_id?: string

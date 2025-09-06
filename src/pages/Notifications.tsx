@@ -7,10 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useFriends } from "@/hooks/useFriends";
+import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
 const Notifications = () => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { acceptFriendRequest, rejectFriendRequest } = useFriends();
+  const { toast } = useToast();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {

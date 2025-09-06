@@ -20,44 +20,11 @@ interface TripPostCreatorProps {
 interface Location {
   id: string;
   name: string;
-  type: 'country' | 'city' | 'town';
-  country?: string;
+  type: 'country' | 'city' | 'town' | 'place';
+  fullName: string;
   coordinates: [number, number];
+  bbox?: [number, number, number, number];
 }
-
-const locations: Location[] = [
-  // Countries
-  { id: 'US', name: 'United States', type: 'country', coordinates: [-95.7129, 37.0902] },
-  { id: 'GB', name: 'United Kingdom', type: 'country', coordinates: [-3.4360, 55.3781] },
-  { id: 'FR', name: 'France', type: 'country', coordinates: [2.2137, 46.2276] },
-  { id: 'DE', name: 'Germany', type: 'country', coordinates: [10.4515, 51.1657] },
-  { id: 'IT', name: 'Italy', type: 'country', coordinates: [12.5674, 41.8719] },
-  { id: 'ES', name: 'Spain', type: 'country', coordinates: [-3.7492, 40.4637] },
-  { id: 'JP', name: 'Japan', type: 'country', coordinates: [138.2529, 36.2048] },
-  { id: 'AU', name: 'Australia', type: 'country', coordinates: [133.7751, -25.2744] },
-  { id: 'CA', name: 'Canada', type: 'country', coordinates: [-106.3468, 56.1304] },
-  { id: 'BR', name: 'Brazil', type: 'country', coordinates: [-51.9253, -14.2350] },
-  
-  // Cities and Towns
-  { id: 'NYC', name: 'New York City', type: 'city', country: 'US', coordinates: [-74.0060, 40.7128] },
-  { id: 'LAX', name: 'Los Angeles', type: 'city', country: 'US', coordinates: [-118.2437, 34.0522] },
-  { id: 'LON', name: 'London', type: 'city', country: 'GB', coordinates: [-0.1276, 51.5074] },
-  { id: 'PAR', name: 'Paris', type: 'city', country: 'FR', coordinates: [2.3522, 48.8566] },
-  { id: 'ROM', name: 'Rome', type: 'city', country: 'IT', coordinates: [12.4964, 41.9028] },
-  { id: 'TOK', name: 'Tokyo', type: 'city', country: 'JP', coordinates: [139.6503, 35.6762] },
-  { id: 'SYD', name: 'Sydney', type: 'city', country: 'AU', coordinates: [151.2093, -33.8688] },
-  { id: 'TOR', name: 'Toronto', type: 'city', country: 'CA', coordinates: [-79.3832, 43.6532] },
-  { id: 'BER', name: 'Berlin', type: 'city', country: 'DE', coordinates: [13.4050, 52.5200] },
-  { id: 'MAD', name: 'Madrid', type: 'city', country: 'ES', coordinates: [-3.7038, 40.4168] },
-  { id: 'RIO', name: 'Rio de Janeiro', type: 'city', country: 'BR', coordinates: [-43.1729, -22.9068] },
-  
-  // Towns
-  { id: 'ASP', name: 'Aspen', type: 'town', country: 'US', coordinates: [-106.8175, 39.1911] },
-  { id: 'CAN', name: 'Cannes', type: 'town', country: 'FR', coordinates: [7.0179, 43.5528] },
-  { id: 'SAL', name: 'Salzburg', type: 'town', country: 'AT', coordinates: [13.0550, 47.8095] },
-  { id: 'SAN', name: 'Santorini', type: 'town', country: 'GR', coordinates: [25.4615, 36.3932] },
-  { id: 'BAN', name: 'Banff', type: 'town', country: 'CA', coordinates: [-115.5708, 51.1784] },
-];
 
 const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   const navigate = useNavigate();
@@ -70,6 +37,8 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   const [tripRoute, setTripRoute] = useState<Array<{lat: number, lng: number, name: string}>>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Location[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -91,6 +60,63 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
     fetchMapboxToken();
   }, []);
+
+  // Search locations using Mapbox Geocoding API
+  const searchLocations = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    const token = mapboxToken || userMapboxToken;
+    if (!token) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,region,place,locality&limit=10`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const locations: Location[] = data.features.map((feature: any) => {
+          const placeType = feature.place_type[0];
+          let type: Location['type'] = 'place';
+          
+          if (placeType === 'country') type = 'country';
+          else if (placeType === 'place' || placeType === 'locality') type = 'city';
+          else if (placeType === 'region') type = 'place';
+
+          return {
+            id: feature.id,
+            name: feature.text,
+            fullName: feature.place_name,
+            type,
+            coordinates: feature.center as [number, number],
+            bbox: feature.bbox as [number, number, number, number] | undefined,
+          };
+        });
+        
+        setSearchResults(locations);
+      }
+    } catch (error) {
+      console.error('Error searching locations:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchLocations(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, mapboxToken, userMapboxToken]);
 
   useEffect(() => {
     const token = mapboxToken || userMapboxToken;
@@ -218,16 +244,12 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     }
     setSearchOpen(false);
     setSearchQuery('');
+    setSearchResults([]);
   };
 
   const removeLocation = (locationId: string) => {
     setSelectedLocations(prev => prev.filter(loc => loc.id !== locationId));
   };
-
-  const filteredLocations = locations.filter(location =>
-    location.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    !selectedLocations.find(selected => selected.id === location.id)
-  );
 
   const handleNext = () => {
     if (selectedLocations.length === 0) {
@@ -325,7 +347,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
               >
                 <Search className="h-4 w-4" />
                 <span className="text-muted-foreground">
-                  Search countries, cities, or towns...
+                  {isSearching ? 'Searching...' : 'Search destinations worldwide...'}
                 </span>
               </Button>
             </PopoverTrigger>
@@ -337,65 +359,41 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                   onValueChange={setSearchQuery}
                 />
                 <CommandList>
-                  <CommandEmpty>No destinations found.</CommandEmpty>
-                  <CommandGroup heading="Countries">
-                    {filteredLocations
-                      .filter(loc => loc.type === 'country')
-                      .map((location) => (
+                  {searchQuery.length < 2 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      Type at least 2 characters to search worldwide destinations
+                    </div>
+                  ) : isSearching ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      Searching...
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <CommandEmpty>No destinations found.</CommandEmpty>
+                  ) : (
+                    <CommandGroup heading="Search Results">
+                      {searchResults.map((location) => (
                         <CommandItem
                           key={location.id}
                           onSelect={() => addLocation(location)}
                           className="cursor-pointer"
                         >
-                          <div className="flex items-center gap-2">
-                            <span>🏳️</span>
-                            <span>{location.name}</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span>
+                              {location.type === 'country' ? '🏳️' : 
+                               location.type === 'city' ? '🏙️' : 
+                               location.type === 'place' ? '📍' : '🏘️'}
+                            </span>
+                            <div className="flex-1">
+                              <div className="font-medium">{location.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {location.fullName}
+                              </div>
+                            </div>
                           </div>
                         </CommandItem>
                       ))}
-                  </CommandGroup>
-                  <CommandGroup heading="Cities">
-                    {filteredLocations
-                      .filter(loc => loc.type === 'city')
-                      .map((location) => (
-                        <CommandItem
-                          key={location.id}
-                          onSelect={() => addLocation(location)}
-                          className="cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span>🏙️</span>
-                            <span>{location.name}</span>
-                            {location.country && (
-                              <span className="text-xs text-muted-foreground">
-                                {locations.find(l => l.id === location.country)?.name}
-                              </span>
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                  </CommandGroup>
-                  <CommandGroup heading="Towns">
-                    {filteredLocations
-                      .filter(loc => loc.type === 'town')
-                      .map((location) => (
-                        <CommandItem
-                          key={location.id}
-                          onSelect={() => addLocation(location)}
-                          className="cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span>🏘️</span>
-                            <span>{location.name}</span>
-                            {location.country && (
-                              <span className="text-xs text-muted-foreground">
-                                {locations.find(l => l.id === location.country)?.name}
-                              </span>
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                  </CommandGroup>
+                    </CommandGroup>
+                  )}
                 </CommandList>
               </Command>
             </PopoverContent>

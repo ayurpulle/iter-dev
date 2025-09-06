@@ -16,6 +16,7 @@ import Chat from "./pages/Chat";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
 import Settings from "./pages/Settings";
+import Messages from "./pages/Messages";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -64,6 +65,11 @@ const App = () => (
               <Route path="/chat" element={
                 <ProtectedRoute>
                   <Chat />
+                </ProtectedRoute>
+              } />
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <Messages />
                 </ProtectedRoute>
               } />
               <Route path="/notifications" element={

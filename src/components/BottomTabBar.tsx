@@ -1,10 +1,12 @@
-import { Home, Globe, Plus, User, Plane } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import React from 'react';
+import { Home, Search, PlusCircle, Bell, User, MessageCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import NotificationBadge from './NotificationBadge';
+import { Button } from '@/components/ui/button';
 
 const BottomTabBar = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2 safe-area-pb">
@@ -22,27 +24,38 @@ const BottomTabBar = () => {
           variant="ghost" 
           size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-2"
-          onClick={() => navigate("/map")}
+          onClick={() => navigate("/search")}
         >
-          <Globe size={20} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
+          <Search size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
-          variant="default" 
+          variant="ghost" 
           size="sm" 
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground"
+          className="flex flex-col items-center gap-1 h-auto p-2 relative"
           onClick={() => navigate("/create")}
         >
-          <Plus size={24} />
+          <PlusCircle size={24} className={location.pathname === "/create" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-2"
-          onClick={() => navigate("/search")}
+          onClick={() => navigate("/messages")}
         >
-          <Plane size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
+          <MessageCircle size={20} className={location.pathname === "/messages" ? "text-primary" : "text-muted-foreground"} />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex flex-col items-center gap-1 h-auto p-2 relative"
+          onClick={() => navigate("/notifications")}
+        >
+          <NotificationBadge>
+            <Bell size={20} className={location.pathname === "/notifications" ? "text-primary" : "text-muted-foreground"} />
+          </NotificationBadge>
         </Button>
         
         <Button 
@@ -51,7 +64,7 @@ const BottomTabBar = () => {
           className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/account")}
         >
-          <User size={20} className="text-muted-foreground" />
+          <User size={20} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />
         </Button>
       </div>
     </div>

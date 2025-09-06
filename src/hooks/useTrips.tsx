@@ -58,6 +58,9 @@ export const useTrips = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      console.log('Creating trip with data:', tripData);
+      console.log('User ID:', user.id);
+
       // Create trip record
       const { data: trip, error: tripError } = await supabase
         .from('trips')
@@ -75,12 +78,19 @@ export const useTrips = () => {
         .select()
         .single();
 
-      if (tripError) throw tripError;
+      if (tripError) {
+        console.error('Trip creation error:', tripError);
+        throw tripError;
+      }
+
+      console.log('Trip created successfully:', trip);
 
       // Upload photos if any
       let imageUrls: string[] = [];
       if (tripData.photos.length > 0) {
+        console.log('Uploading photos:', tripData.photos.length);
         imageUrls = await uploadTripPhotos(tripData.photos, trip.id, user.id);
+        console.log('Photos uploaded:', imageUrls);
         
         // Update trip with image URLs
         const { error: updateError } = await supabase
@@ -88,11 +98,15 @@ export const useTrips = () => {
           .update({ images: imageUrls })
           .eq('id', trip.id);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating trip with images:', updateError);
+          throw updateError;
+        }
       }
 
       // Create a post for the trip if it's public
       if (tripData.is_public) {
+        console.log('Creating public post for trip');
         const { error: postError } = await supabase
           .from('posts')
           .insert({
@@ -105,11 +119,15 @@ export const useTrips = () => {
         if (postError) {
           console.error('Error creating post:', postError);
           // Don't throw here as trip creation succeeded
+        } else {
+          console.log('Post created successfully');
         }
       }
 
+      console.log('Returning trip:', { ...trip, images: imageUrls });
       return { ...trip, images: imageUrls };
     } catch (err) {
+      console.error('Trip creation failed:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create trip';
       setError(errorMessage);
       throw err;

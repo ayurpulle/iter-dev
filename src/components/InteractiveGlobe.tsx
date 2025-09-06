@@ -330,9 +330,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
   }
 
   return (
-    <div className="relative w-full h-96 rounded-2xl overflow-hidden bg-slate-900">
-      <div ref={mapContainer} className="absolute inset-0" />
-      <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+    <div className="relative w-full h-full bg-transparent">
+      <div ref={mapContainer} className="absolute inset-0 rounded-2xl" style={{
+        background: 'radial-gradient(circle at center, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)'
+      }} />
+      <div className="absolute top-6 left-6 bg-black/30 border border-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg">
         <Globe size={16} />
         Interactive Globe • Click pins to explore
       </div>

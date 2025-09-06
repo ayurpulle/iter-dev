@@ -65,7 +65,7 @@ serve(async (req) => {
       .from('posts')
       .select(`
         *,
-        profiles:user_id(display_name, avatar_url)
+        profiles:user_id(name, username, avatar)
       `)
       .ilike('content', `%${destination}%`)
       .order('created_at', { ascending: false })
@@ -79,98 +79,138 @@ serve(async (req) => {
 
     // Prepare context from saved posts
     const postsContext = posts?.map(post => 
-      `Post by ${post.profiles?.display_name || 'Anonymous'}: ${post.content}`
+      `Post by ${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
     ).join('\n\n') || 'No relevant saved posts found.';
 
-    // Create comprehensive prompt for GPT-4
-    const prompt = `You are an expert travel planner. Generate a detailed day-by-day itinerary based on the following requirements and context:
+    // Handle OpenAI API quota issues gracefully
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
+      return new Response(
+        JSON.stringify({ error: 'AI service temporarily unavailable' }),
+        { 
+          status: 503, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
-TRIP REQUIREMENTS:
-- Destination: ${destination}
-- Dates: ${startDate} to ${endDate}
-- Budget: ${budget || 'Not specified'}
-- Interests: ${interests || 'General tourism'}
-- Travel Style: ${travelStyle || 'Balanced'}
+    // Create comprehensive prompt for a natural-sounding itinerary
+    const prompt = `Create a detailed travel itinerary for ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
 
-CONTEXT FROM SAVED TRAVEL POSTS:
-${postsContext}
+Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}
+Interests: ${interests || 'General exploration'}
+${travelStyle ? `Travel notes: ${travelStyle}` : ''}
 
-Please create a comprehensive itinerary that includes:
-1. Day-by-day breakdown with specific activities and timings
-2. Recommended restaurants and local cuisine
-3. Transportation suggestions between locations
-4. Accommodation recommendations (if budget specified)
-5. Cultural highlights and must-see attractions
-6. Hidden gems and local experiences
-7. Budget estimates for major activities
-8. Practical tips specific to the destination
+${postsContext !== 'No relevant saved posts found.' ? `\nInsider recommendations from travelers:\n${postsContext}\n` : ''}
 
-Format the response as a well-structured itinerary that's easy to read and follow. Be specific with locations, times, and practical details.`;
+Write this as a clean, professional itinerary guide with:
+- Clear daily schedules with realistic timings
+- Specific venue names and neighborhoods
+- Transportation details between locations
+- Price ranges for activities and meals
+- Local insider tips
+- Weather/seasonal considerations
+
+Use a natural, informative tone like a travel guidebook. Avoid phrases like "I recommend" or "you should". Write directly about the activities.
+
+Format with clear sections for each day.`;
 
     console.log('Calling OpenAI API...');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are an expert travel planner with extensive knowledge of destinations worldwide. Create detailed, practical itineraries that combine popular attractions with authentic local experiences.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        max_completion_tokens: 2000,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', response.status, errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('OpenAI response received');
     
-    const generatedItinerary = data.choices[0].message.content;
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a professional travel writer creating guidebook-style itineraries. Write in a direct, informative style without personal pronouns. Focus on practical details and authentic experiences.' 
+            },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 2000,
+          temperature: 0.7,
+        }),
+      });
 
-    // Save the generated itinerary as a trip
-    const { data: newTrip, error: tripError } = await supabaseClient
-      .from('trips')
-      .insert({
-        user_id: user.id,
-        title: `${destination} Itinerary`,
-        description: generatedItinerary,
-        destination: destination,
-        start_date: startDate,
-        end_date: endDate,
-        budget: budget ? parseFloat(budget) : null,
-      })
-      .select()
-      .single();
-
-    if (tripError) {
-      console.error('Error saving trip:', tripError);
-      // Still return the itinerary even if saving fails
-    } else {
-      console.log('Trip saved successfully:', newTrip.id);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        itinerary: generatedItinerary,
-        tripId: newTrip?.id,
-        postsUsed: posts?.length || 0
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error:', response.status, errorData);
+        
+        // Handle quota exceeded specifically
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'AI service temporarily unavailable', 
+              message: 'Please try again later or contact support if this continues.' 
+            }),
+            { 
+              status: 503, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
-    );
+
+      const data = await response.json();
+      console.log('OpenAI response received');
+      
+      const generatedItinerary = data.choices[0].message.content;
+
+      // Save the generated itinerary as a trip
+      const { data: newTrip, error: tripError } = await supabaseClient
+        .from('trips')
+        .insert({
+          user_id: user.id,
+          title: `${destination} Itinerary`,
+          description: generatedItinerary,
+          destination: destination,
+          start_date: startDate,
+          end_date: endDate,
+          budget: budget ? parseFloat(budget) : null,
+        })
+        .select()
+        .single();
+
+      if (tripError) {
+        console.error('Error saving trip:', tripError);
+        // Still return the itinerary even if saving fails
+      } else {
+        console.log('Trip saved successfully:', newTrip.id);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          itinerary: generatedItinerary,
+          tripId: newTrip?.id,
+          postsUsed: posts?.length || 0,
+          destination: destination
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+
+    } catch (aiError) {
+      console.error('Error with AI generation:', aiError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to generate itinerary', 
+          message: 'AI service is currently unavailable. Please try again later.' 
+        }),
+        { 
+          status: 503, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error in generate-itinerary function:', error);

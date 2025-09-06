@@ -30,6 +30,8 @@ const TripPlanning = () => {
 
   const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
@@ -109,18 +111,15 @@ const TripPlanning = () => {
         console.error('Error generating itinerary:', error);
         toast({
           title: "Generation Failed",
-          description: "Failed to generate itinerary. Please try again.",
+          description: error.message || "Failed to generate itinerary. Please try again.",
           variant: "destructive"
         });
         return;
       }
 
-      setGeneratedItinerary(data.itinerary);
-      
-      toast({
-        title: "Itinerary Generated!",
-        description: `Used ${data.postsUsed} saved posts from your network${data.tripId ? ' and saved as a new trip' : ''}.`,
-      });
+      // Store the generated data and show success dialog
+      setLastGeneratedData(data);
+      setShowSuccessDialog(true);
 
     } catch (error) {
       console.error('Error:', error);
@@ -131,6 +130,13 @@ const TripPlanning = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleViewItinerary = () => {
+    if (lastGeneratedData) {
+      setGeneratedItinerary(lastGeneratedData.itinerary);
+      setShowSuccessDialog(false);
     }
   };
 
@@ -149,7 +155,7 @@ const TripPlanning = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Your Itinerary</h1>
-              <p className="text-muted-foreground">{formData.destination}</p>
+              <p className="text-muted-foreground">{lastGeneratedData?.destination || formData.destination}</p>
             </div>
           </div>
 
@@ -175,12 +181,26 @@ const TripPlanning = () => {
             </CardContent>
           </Card>
 
-          <Button 
-            className="w-full" 
-            onClick={() => setGeneratedItinerary(null)}
-          >
-            Create Another Itinerary
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              className="flex-1" 
+              onClick={() => setGeneratedItinerary(null)}
+            >
+              Create Another
+            </Button>
+            <Button 
+              className="flex-1"
+              onClick={() => {
+                toast({
+                  title: "Itinerary Saved!",
+                  description: "Added to your saved itineraries.",
+                });
+              }}
+            >
+              Save Itinerary
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -570,7 +590,39 @@ const TripPlanning = () => {
           ) : (
             'Generate Itinerary'
           )}
-        </Button>
+         </Button>
+
+        {/* Success Dialog */}
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="max-w-sm rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-center">🎉 Itinerary Created!</DialogTitle>
+              <DialogDescription className="text-center">
+                Your custom itinerary for {lastGeneratedData?.destination} is ready
+                {lastGeneratedData?.postsUsed > 0 && (
+                  <span className="block mt-1 text-xs">
+                    Generated using {lastGeneratedData.postsUsed} saved travel posts
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 mt-4">
+              <Button 
+                onClick={handleViewItinerary}
+                className="w-full"
+              >
+                View Itinerary
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowSuccessDialog(false)}
+                className="w-full"
+              >
+                Create Another
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

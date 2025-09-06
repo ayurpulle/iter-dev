@@ -292,8 +292,14 @@ const Account = () => {
     }
   };
 
+  const handleBackFromEdit = () => {
+    setShowEditProfile(false);
+    // Reload profile data when returning from edit
+    loadUserProfile();
+  };
+
   if (showEditProfile) {
-    return <EditProfile onBack={() => setShowEditProfile(false)} />;
+    return <EditProfile onBack={handleBackFromEdit} />;
   }
 
   return (

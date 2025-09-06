@@ -5,13 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'reply' | 'friend_post' | 'iter_inspiration';
+  type: 'like' | 'comment' | 'reply' | 'friend_post' | 'iter_inspiration' | 'friend_request';
   title: string;
   message: string;
   read: boolean;
   related_user_id?: string;
   related_trip_id?: string;
   related_comment_id?: string;
+  friend_request_id?: string;
   data?: any;
   created_at: string;
   profiles?: {
@@ -33,41 +34,50 @@ export const useNotifications = () => {
 
     setLoading(true);
     try {
+      // Fetch notifications without foreign key joins to avoid relationship errors
       const { data, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          profiles!notifications_related_user_id_fkey (
-            name,
-            username,
-            avatar
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
       
-      // Transform and type the data properly
-      const typedNotifications: Notification[] = (data || []).map(item => ({
-        id: item.id,
-        type: item.type as Notification['type'],
-        title: item.title,
-        message: item.message,
-        read: item.read,
-        related_user_id: item.related_user_id,
-        related_trip_id: item.related_trip_id,
-        related_comment_id: item.related_comment_id,
-        data: item.data,
-        created_at: item.created_at,
-        profiles: Array.isArray(item.profiles) && item.profiles.length > 0 ? item.profiles[0] : undefined
-      }));
+      // Manually fetch profile data for related users
+      const notificationsWithProfiles = await Promise.all(
+        (data || []).map(async (item) => {
+          let profile = undefined;
+          if (item.related_user_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('name, username, avatar')
+              .eq('user_id', item.related_user_id)
+              .maybeSingle();
+            profile = profileData;
+          }
+
+          return {
+            id: item.id,
+            type: item.type as Notification['type'],
+            title: item.title,
+            message: item.message,
+            read: item.read,
+            related_user_id: item.related_user_id,
+            related_trip_id: item.related_trip_id,
+            related_comment_id: item.related_comment_id,
+            friend_request_id: item.friend_request_id,
+            data: item.data,
+            created_at: item.created_at,
+            profiles: profile
+          };
+        })
+      );
       
-      setNotifications(typedNotifications);
+      setNotifications(notificationsWithProfiles);
       
       // Count unread notifications
-      const unread = typedNotifications.filter(n => !n.read).length;
+      const unread = notificationsWithProfiles.filter(n => !n.read).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error('Error fetching notifications:', error);

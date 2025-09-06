@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
-import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen } from "lucide-react";
+import EditProfile from "@/components/EditProfile";
+import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen, Edit, LogOut } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +39,8 @@ const Account = () => {
   const [folders, setFolders] = useState<ItemFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>("all");
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -290,6 +292,10 @@ const Account = () => {
     }
   };
 
+  if (showEditProfile) {
+    return <EditProfile onBack={() => setShowEditProfile(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
@@ -331,7 +337,13 @@ const Account = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-2 mb-6">
-            <Button variant="outline" size="sm" className="flex-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => setShowEditProfile(true)}
+            >
+              <Edit size={16} className="mr-2" />
               Edit Profile
             </Button>
             <Button 

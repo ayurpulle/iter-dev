@@ -235,7 +235,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between z-10">
-        <Button variant="ghost" size="sm" onClick={onBack}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Cancel
         </Button>

@@ -9,15 +9,12 @@ import { useSavedPosts } from "@/hooks/useSavedPosts";
 
 const MapView = () => {
   const [showPostsList, setShowPostsList] = useState(false);
-  const [viewMode, setViewMode] = useState<"yours" | "friends">("yours");
-  const { yourSavedPosts, friendsSavedPosts, loading } = useSavedPosts();
+  const { yourSavedPosts, loading } = useSavedPosts();
 
-  // Mock pins for the globe based on saved posts
+  // Create pins from user's saved posts only
   const createPinsFromPosts = () => {
-    const allPosts = viewMode === "yours" ? yourSavedPosts : friendsSavedPosts;
-    
     // Convert saved posts to pins format for the globe
-    return allPosts
+    return yourSavedPosts
       .filter(savedPost => savedPost.posts?.trips?.stops)
       .flatMap(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];
@@ -25,7 +22,7 @@ const MapView = () => {
           location: stop.name || `Stop ${index + 1}`,
           lat: stop.lat || 0,
           lng: stop.lng || 0,
-          friends: [savedPost.posts?.profiles?.name || 'Unknown'],
+          friends: [savedPost.posts?.profiles?.name || 'You'],
           trips: 1
         }));
       });
@@ -94,41 +91,10 @@ const MapView = () => {
       <div className={`relative transition-all duration-500 ease-out ${
         showPostsList ? 'h-1/2' : 'h-full'
       } pt-16 pb-20`}>
-        {/* Toggle Button - Below TopBar */}
-        <div className="absolute top-6 left-6 z-50">
-          <div className="flex bg-black/30 backdrop-blur-md rounded-xl p-1 border border-white/20 shadow-2xl">
-            <Button
-              variant={viewMode === "yours" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("yours")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                viewMode === "yours" 
-                  ? "bg-white/20 text-white shadow-lg" 
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <User size={16} />
-              Yours
-            </Button>
-            <Button
-              variant={viewMode === "friends" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("friends")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                viewMode === "friends" 
-                  ? "bg-white/20 text-white shadow-lg" 
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <Users size={16} />
-              Friends
-            </Button>
-          </div>
-        </div>
 
         {/* Swipe up indicator - Above bottom bar */}
         {!showPostsList && (
-          <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
+          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20 shadow-lg">
               <p className="text-white/70 font-medium text-sm">Swipe up to see saved posts</p>
             </div>
@@ -149,9 +115,6 @@ const MapView = () => {
       }`} style={{ height: '50vh' }}>
         <SavedPostsList
           yourSavedPosts={yourSavedPosts}
-          friendsSavedPosts={friendsSavedPosts}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           onHide={() => setShowPostsList(false)}
         />
       </div>

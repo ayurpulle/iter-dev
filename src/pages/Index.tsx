@@ -41,7 +41,7 @@ interface Profile {
 }
 
 interface PostWithProfile extends Post {
-  profiles?: Profile;
+  profiles?: Profile | null;
 }
 
 const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId: string) => void }) => {
@@ -216,7 +216,7 @@ const Index = () => {
         .from('posts')
         .select(`
           *,
-          profiles (
+          profiles!posts_user_id_profiles_fkey (
             id,
             user_id,
             name,

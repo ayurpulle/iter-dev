@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +131,7 @@ const TripPlanning = () => {
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>Where to?</DialogTitle>
+              <DialogDescription>Search and select your destination</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="relative">
@@ -212,6 +213,7 @@ const TripPlanning = () => {
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>When's your trip?</DialogTitle>
+              <DialogDescription>Select your travel dates</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -296,6 +298,7 @@ const TripPlanning = () => {
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>What type of trip?</DialogTitle>
+              <DialogDescription>Choose your holiday types</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
@@ -347,9 +350,9 @@ const TripPlanning = () => {
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>What's your budget?</DialogTitle>
+              <DialogDescription>Select your budget level</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Select your budget level</p>
               <div className="flex items-center justify-center gap-2">
                 {[1, 2, 3, 4, 5].map((level) => (
                   <button

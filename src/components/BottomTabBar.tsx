@@ -1,4 +1,4 @@
-import { Home, Globe, Plus, User, Search } from "lucide-react";
+import { Home, Globe, Plus, User, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -42,7 +42,7 @@ const BottomTabBar = () => {
           className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/search")}
         >
-          <Search size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
+          <Plane size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 

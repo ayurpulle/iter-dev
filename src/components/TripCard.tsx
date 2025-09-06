@@ -38,6 +38,7 @@ interface TripCardProps {
     companions?: number;
     description?: string;
     highlights?: string[];
+    hashtags?: string[];
     cost?: string;
     rating?: number;
   };

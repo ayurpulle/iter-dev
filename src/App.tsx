@@ -15,6 +15,7 @@ import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
+import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Messages from "./pages/Messages";
 import Auth from "./pages/Auth";
@@ -80,6 +81,11 @@ const App = () => (
               <Route path="/account" element={
                 <ProtectedRoute>
                   <Account />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search as SearchIcon, Users, MapPin, Hash, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +41,7 @@ interface Trip {
 }
 
 const GlobalSearchPage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -366,6 +368,14 @@ const GlobalSearchPage = () => {
     }
   };
 
+  const handleResultClick = (result: SearchResult) => {
+    if (result.type === 'user') {
+      // Navigate to user profile with user data
+      navigate('/profile', { state: { userData: result.data } });
+    }
+    // For location and hashtag results, we could implement filtering or navigation in the future
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
@@ -426,8 +436,12 @@ const GlobalSearchPage = () => {
                         <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                           Results
                         </h3>
-                        {filteredResults.map((result) => (
-                          <Card key={result.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                         {filteredResults.map((result) => (
+                           <Card 
+                             key={result.id} 
+                             className="cursor-pointer hover:bg-muted/50 transition-colors"
+                             onClick={() => handleResultClick(result)}
+                           >
                             <CardContent className="p-4">
                               <div className="flex items-center gap-3">
                                 {result.type === 'user' ? (

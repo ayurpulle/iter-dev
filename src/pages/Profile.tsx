@@ -1,80 +1,217 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import InteractiveMap from "@/components/InteractiveMap";
-import TripCard from "@/components/TripCard";
-import { Card, CardContent } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
-import BottomTabBar from "@/components/BottomTabBar";
-
-const mockProfile = {
-  posts: 12,
-  followed: 45,
-  following: 67,
-  trips: [
-    // Mock trips similar to Index.tsx
-    {
-      title: "Colombia — Solo Travel",
-      duration: "25 hours",
-      distance: "1000km",
-      stops: [{ name: "Medellín", lat: 6.2442, lng: -75.5812 }, { name: "Bogotá", lat: 4.7110, lng: -74.0721 }],
-      photoCount: 12,
-    },
-    // Add more mocks
-  ],
-  stats: {
-    countries: 9,
-    cities: 16,
-    kmTravelled: 2222,
-  },
-  visitedLocations: [
-    // Mock locations for map
-    { latitude: 6.2442, longitude: -75.5812, name: "Medellín" },
-    // Add more
-  ],
-};
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Calendar, MessageCircle, UserPlus, MapPin, Heart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 const Profile = () => {
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [profileData, setProfileData] = useState<any>(null);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  useEffect(() => {
+    if (state?.userData) {
+      setProfileData(state.userData);
+      loadUserPosts(state.userData.user_id);
+    }
+  }, [state]);
+
+  const loadUserPosts = async (userId: string) => {
+    try {
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setUserPosts(posts || []);
+    } catch (error) {
+      console.error('Error loading user posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user || !profileData) return;
+
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .insert({
+          user_id: user.id,
+          friend_id: profileData.user_id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setIsFollowing(true);
+      toast({
+        title: "Follow request sent",
+        description: `Follow request sent to ${profileData.name || profileData.username}`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send follow request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleMessage = () => {
+    navigate('/messages', { state: { userId: profileData.user_id } });
+  };
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">No profile data available</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopBar />
-      
-      <main className="px-4 py-6 max-w-md mx-auto">
-        <Tabs defaultValue="posts" className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="posts">#{mockProfile.posts} posts</TabsTrigger>
-            <TabsTrigger value="followed">#{mockProfile.followed} followed</TabsTrigger>
-            <TabsTrigger value="following">#{mockProfile.following} following</TabsTrigger>
-          </TabsList>
-          <TabsContent value="posts">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between z-10">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <h1 className="font-semibold">Profile</h1>
+        <div></div>
+      </div>
+
+      <main className="p-4 space-y-6 max-w-md mx-auto">
+        {/* Profile Header */}
+        <div className="text-center space-y-4">
+          <Avatar className="h-24 w-24 mx-auto">
+            <AvatarImage src={profileData.avatar} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+              {(profileData.name || profileData.username || 'U')[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div>
+            <h2 className="text-2xl font-bold">{profileData.name || 'Unknown User'}</h2>
+            <p className="text-muted-foreground">@{profileData.username || 'unknown'}</p>
+            {profileData.bio && (
+              <p className="text-sm mt-2">{profileData.bio}</p>
+            )}
+            
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mt-2">
+              <Calendar size={12} />
+              <span>Member since 2024</span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          {user?.id !== profileData.user_id && (
+            <div className="flex gap-2 justify-center">
+              <Button
+                size="sm"
+                onClick={handleFollow}
+                disabled={isFollowing}
+                className="flex-1 max-w-32"
+              >
+                <UserPlus size={16} className="mr-2" />
+                {isFollowing ? 'Requested' : 'Follow'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMessage}
+                className="flex-1 max-w-32"
+              >
+                <MessageCircle size={16} className="mr-2" />
+                Message
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Posts Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Posts ({userPosts.length})</h3>
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading posts...</p>
+            </div>
+          ) : userPosts.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">📝</div>
+              <p className="text-muted-foreground">No posts yet</p>
+            </div>
+          ) : (
             <div className="space-y-4">
-              {mockProfile.trips.map((trip, index) => (
-                <TripCard 
-                  key={index} 
-                  trip={{...trip, id: `trip-${index}`}} 
-                  user={{ name: "You", username: "you" }} 
-                  stats={{ likes: 0, comments: 0 }} 
-                />
+              {userPosts.map((post) => (
+                <Card key={post.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={profileData.avatar} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {(profileData.name || profileData.username || 'U')[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{profileData.name || 'Unknown User'}</p>
+                            <p className="text-xs text-muted-foreground">@{profileData.username || 'unknown'}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm mb-4">{post.content}</p>
+                    
+                    {post.image_url && (
+                      <div className="mb-4 rounded-lg overflow-hidden">
+                        <img
+                          src={post.image_url}
+                          alt="Post image"
+                          className="w-full h-auto max-h-80 object-cover"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Heart size={16} />
+                        <span className="text-sm">{post.likes_count || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MessageCircle size={16} />
+                        <span className="text-sm">{post.comments_count || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </TabsContent>
-          <TabsContent value="followed">{/* Mock followed list */}</TabsContent>
-          <TabsContent value="following">{/* Mock following list */}</TabsContent>
-        </Tabs>
-
-        <Card className="mb-6">
-          <CardContent>
-            <h2>Your Map</h2>
-            <InteractiveMap /* Pass visitedLocations as prop if needed */ />
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-3 gap-4">
-          <Card><CardContent>{mockProfile.stats.countries}/ countries</CardContent></Card>
-          <Card><CardContent>{mockProfile.stats.cities} cities</CardContent></Card>
-          <Card><CardContent>{mockProfile.stats.kmTravelled} km travelled</CardContent></Card>
+          )}
         </div>
       </main>
-      
-      <BottomTabBar />
     </div>
   );
 };

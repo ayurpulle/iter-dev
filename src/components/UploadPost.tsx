@@ -6,17 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, MapPin, Users, Hash } from 'lucide-react';
 import PhotoSelector from './PhotoSelector';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadPostProps {
   onBack?: () => void;
 }
 
 const UploadPost = ({ onBack }: UploadPostProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<'photos' | 'details'>('photos');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
   const [tags, setTags] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
 
   const handlePhotosSelected = (photos: string[]) => {
     setSelectedPhotos(photos);
@@ -28,14 +34,47 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
     }
   };
 
-  const handlePost = () => {
-    // Handle post creation logic here
-    console.log('Creating post with:', {
-      photos: selectedPhotos,
-      caption,
-      location,
-      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean)
-    });
+  const handlePost = async () => {
+    if (!user || !caption.trim()) return;
+
+    try {
+      setIsPosting(true);
+
+      // For now, just take the first photo as the main image
+      const mainImage = selectedPhotos.length > 0 ? selectedPhotos[0] : null;
+
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          content: caption,
+          image_url: mainImage,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your post has been shared!"
+      });
+
+      // Reset form and go back
+      setSelectedPhotos([]);
+      setCaption('');
+      setLocation('');
+      setTags('');
+      onBack?.();
+
+    } catch (error: any) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create post",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -67,9 +106,9 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
           <Button
             size="sm"
             onClick={handlePost}
-            disabled={!caption.trim()}
+            disabled={!caption.trim() || isPosting}
           >
-            Share
+            {isPosting ? 'Sharing...' : 'Share'}
           </Button>
         )}
       </div>

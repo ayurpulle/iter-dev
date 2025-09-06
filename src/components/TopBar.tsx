@@ -5,14 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import NotificationBadge from "./NotificationBadge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import GlobalSearch from "./GlobalSearch";
 
 const TopBar = () => {
   const { signOut } = useAuth();
@@ -65,29 +57,14 @@ const TopBar = () => {
             <Mail size={18} className="text-muted-foreground" />
           </Button>
           
-          <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Search size={18} className="text-muted-foreground" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-hidden p-0">
-              <div className="flex items-center justify-between p-4 border-b">
-                <DialogTitle>Search</DialogTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSearchOpen(false)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X size={16} />
-                </Button>
-              </div>
-              <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
-                <GlobalSearch onClose={() => setSearchOpen(false)} />
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0"
+            onClick={() => navigate('/global-search')}
+          >
+            <Search size={18} className="text-muted-foreground" />
+          </Button>
         </div>
       </div>
     </div>

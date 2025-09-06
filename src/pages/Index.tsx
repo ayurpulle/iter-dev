@@ -1,81 +1,256 @@
 import { useState, useEffect } from 'react';
 import TopBar from "@/components/TopBar";
-import TripCard from "@/components/TripCard";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Heart, MessageCircle, Share, Trash2, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface Post {
+  id: string;
+  content: string;
+  image_url?: string;
+  user_id: string;
+  trip_id?: string;
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
+}
+
+interface Profile {
+  id: string;
+  user_id: string;
+  name?: string;
+  username?: string;
+  avatar?: string;
+}
+
+interface PostWithProfile extends Post {
+  profiles?: Profile;
+}
+
+const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId: string) => void }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const isOwnPost = user?.id === post.user_id;
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link copied",
+      description: "Post link copied to clipboard",
+    });
+  };
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Post deleted",
+        description: "Your post has been deleted successfully",
+      });
+      
+      onDelete(post.id);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+    }
+    setShowDeleteDialog(false);
+  };
+
+  const userName = post.profiles?.name || 'User';
+  const username = post.profiles?.username || 'user';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  return (
+    <>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-4 pb-2">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={post.profiles?.avatar} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="font-medium text-sm">{userName}</p>
+              <p className="text-xs text-muted-foreground">
+                @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share size={14} className="mr-2" />
+                  Share
+                </DropdownMenuItem>
+                {isOwnPost && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 size={14} className="mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Content */}
+          {post.content && (
+            <div className="px-4 pb-3">
+              <p className="text-sm">{post.content}</p>
+            </div>
+          )}
+
+          {/* Image */}
+          {post.image_url && (
+            <div className="w-full">
+              <img 
+                src={post.image_url} 
+                alt="Post image" 
+                className="w-full h-64 object-cover"
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="p-4">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
+                onClick={handleLike}
+              >
+                <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                <span className="text-sm">{likesCount}</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
+                <MessageCircle size={18} />
+                <span className="text-sm">{post.comments_count}</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<PostWithProfile[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Mock trips data (keeping this as the main content)
-  const mockTrips = [
-    {
-      user: {
-        name: "Shreyas Athreya",
-        username: "shreyasathreya",
-        avatar: undefined,
-      },
-      trip: {
-        title: "Colombia — Solo Travel",
-        duration: "25 hours",
-        distance: "1000km",
-        stops: [
-          { name: "Medellín", lat: 6.2442, lng: -75.5812 },
-          { name: "Bogotá", lat: 4.7110, lng: -74.0721 },
-        ],
-        photoCount: 12,
-      },
-      stats: {
-        likes: 24,
-        comments: 3,
-      },
-      photoUrls: ["url1", "url2"],
-      map: "mock map",
-    },
-    {
-      user: {
-        name: "Ayur Palle",
-        username: "ayurpalle",
-        avatar: undefined,
-      },
-      trip: {
-        title: "Portugal — Summer and 3 others",
-        duration: "3 hours",
-        distance: "215 km",
-        stops: [
-          { name: "Porto", lat: 41.1579, lng: -8.6291 },
-          { name: "Évora", lat: 38.5714, lng: -7.9036 },
-          { name: "Lisbon", lat: 38.7223, lng: -9.1393 },
-        ],
-        photoCount: 18,
-      },
-      stats: {
-        likes: 42,
-        comments: 7,
-      },
-      photoUrls: ["url3", "url4"],
-      map: "mock map 2",
-    },
-  ];
-
-  // Simulate loading for consistent UX
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    fetchPosts();
   }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load posts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setPosts(prev => prev.filter(post => post.id !== postId));
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading trips...</p>
+          <p className="text-muted-foreground">Loading posts...</p>
         </div>
       </div>
     );
@@ -87,10 +262,15 @@ const Index = () => {
       
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
-          {/* Trip Cards */}
-          {mockTrips.map((trip, index) => (
-            <TripCard key={index} user={trip.user} trip={{...trip.trip, id: `trip-${index}`}} stats={trip.stats} />
-          ))}
+          {posts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No posts yet. Be the first to share your journey!</p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
+            ))
+          )}
         </div>
       </main>
       

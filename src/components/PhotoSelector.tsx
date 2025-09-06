@@ -102,23 +102,32 @@ const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps)
 
       {/* Initial Selection */}
       {selectedPhotos.length === 0 && (
-        <Card className="p-8 text-center space-y-4">
+        <Card className="p-6 text-center space-y-4">
           <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
             <ImageIcon className="h-8 w-8 text-muted-foreground" />
           </div>
-          <div className="space-y-2">
-            <h3 className="font-semibold">No photos selected</h3>
+          <div className="space-y-3">
+            <h3 className="font-semibold">Add Photos to Your Trip</h3>
             <p className="text-sm text-muted-foreground">
-              Tap the button below to access your photo gallery
+              Share your travel memories with photos from your gallery
             </p>
           </div>
-          <Button 
-            onClick={selectPhotos} 
-            disabled={isSelecting}
-            className="w-full"
-          >
-            {isSelecting ? 'Accessing Gallery...' : 'Select from Gallery'}
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={selectPhotos} 
+              disabled={isSelecting}
+              className="w-full"
+            >
+              {isSelecting ? 'Accessing Gallery...' : 'Select from Gallery'}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => onPhotosSelected([])}
+              className="w-full"
+            >
+              Skip Photos
+            </Button>
+          </div>
         </Card>
       )}
 

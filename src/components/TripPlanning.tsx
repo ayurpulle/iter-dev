@@ -81,7 +81,7 @@ const TripPlanning = () => {
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
-  const handleGenerateItinerary = async () => {
+  const generateItinerary = async () => {
     if (!formData.destination) {
       toast({
         title: "Missing Information",
@@ -556,10 +556,10 @@ const TripPlanning = () => {
           </CardContent>
         </Card>
 
-        {/* Generate Iter Button */}
+        {/* Generate Itinerary Button */}
         <Button 
           className="w-full h-12 text-lg" 
-          onClick={handleGenerateItinerary}
+          onClick={generateItinerary}
           disabled={isLoading}
         >
           {isLoading ? (

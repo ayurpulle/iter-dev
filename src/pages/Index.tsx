@@ -296,19 +296,12 @@ const Index = () => {
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_profiles_fkey (
+          profiles!inner (
             id,
             user_id,
             name,
             username,
             avatar
-          ),
-          trips (
-            id,
-            title,
-            duration,
-            distance,
-            stops
           )
         `)
         .order('created_at', { ascending: false });

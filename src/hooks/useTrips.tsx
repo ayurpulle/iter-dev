@@ -1,0 +1,182 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface TripData {
+  title: string;
+  description: string;
+  country_code: string;
+  cost?: string;
+  companions?: string;
+  route: Array<{lat: number, lng: number, name: string}>;
+  photos: string[];
+  is_public?: boolean;
+}
+
+export const useTrips = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const uploadTripPhotos = async (photos: string[], tripId: string, userId: string) => {
+    const uploadedUrls: string[] = [];
+    
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      try {
+        // Convert data URL to blob
+        const response = await fetch(photo);
+        const blob = await response.blob();
+        
+        const fileName = `${tripId}/photo-${i + 1}-${Date.now()}.jpg`;
+        const filePath = `${userId}/${fileName}`;
+        
+        const { data, error } = await supabase.storage
+          .from('trip-photos')
+          .upload(filePath, blob);
+          
+        if (error) throw error;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('trip-photos')
+          .getPublicUrl(filePath);
+          
+        uploadedUrls.push(publicUrl);
+      } catch (err) {
+        console.error('Error uploading photo:', err);
+        // Continue with other photos even if one fails
+      }
+    }
+    
+    return uploadedUrls;
+  };
+
+  const createTrip = async (tripData: TripData) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Create trip record
+      const { data: trip, error: tripError } = await supabase
+        .from('trips')
+        .insert({
+          title: tripData.title,
+          description: tripData.description,
+          country_code: tripData.country_code,
+          cost: tripData.cost,
+          companions: tripData.companions,
+          stops: tripData.route,
+          photo_count: tripData.photos.length,
+          is_public: tripData.is_public || false,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (tripError) throw tripError;
+
+      // Upload photos if any
+      let imageUrls: string[] = [];
+      if (tripData.photos.length > 0) {
+        imageUrls = await uploadTripPhotos(tripData.photos, trip.id, user.id);
+        
+        // Update trip with image URLs
+        const { error: updateError } = await supabase
+          .from('trips')
+          .update({ images: imageUrls })
+          .eq('id', trip.id);
+          
+        if (updateError) throw updateError;
+      }
+
+      // Create a post for the trip if it's public
+      if (tripData.is_public) {
+        const { error: postError } = await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            trip_id: trip.id,
+            content: tripData.description,
+            image_url: imageUrls[0] || null // Use first image as post image
+          });
+
+        if (postError) {
+          console.error('Error creating post:', postError);
+          // Don't throw here as trip creation succeeded
+        }
+      }
+
+      return { ...trip, images: imageUrls };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create trip';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserTrips = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: trips, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return trips;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch trips';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPublicTrips = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data: trips, error } = await supabase
+        .from('trips')
+        .select(`
+          *,
+          profiles:user_id (
+            name,
+            username,
+            avatar
+          )
+        `)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return trips;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch public trips';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    createTrip,
+    getUserTrips,
+    getPublicTrips,
+    loading,
+    error
+  };
+};

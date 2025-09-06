@@ -318,11 +318,16 @@ export type Database = {
       }
       trips: {
         Row: {
+          companions: string | null
+          cost: string | null
+          country_code: string | null
           created_at: string | null
+          description: string | null
           distance: string | null
           duration: string | null
           hashtags: string[] | null
           id: string
+          images: string[] | null
           is_public: boolean | null
           photo_count: number | null
           stops: Json | null
@@ -330,11 +335,16 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          companions?: string | null
+          cost?: string | null
+          country_code?: string | null
           created_at?: string | null
+          description?: string | null
           distance?: string | null
           duration?: string | null
           hashtags?: string[] | null
           id?: string
+          images?: string[] | null
           is_public?: boolean | null
           photo_count?: number | null
           stops?: Json | null
@@ -342,11 +352,16 @@ export type Database = {
           user_id: string
         }
         Update: {
+          companions?: string | null
+          cost?: string | null
+          country_code?: string | null
           created_at?: string | null
+          description?: string | null
           distance?: string | null
           duration?: string | null
           hashtags?: string[] | null
           id?: string
+          images?: string[] | null
           is_public?: boolean | null
           photo_count?: number | null
           stops?: Json | null

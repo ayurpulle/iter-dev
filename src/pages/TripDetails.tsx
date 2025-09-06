@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, DollarSign, Users, FileText, Star } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, DollarSign, Users, FileText, Star, Loader2 } from 'lucide-react';
+import { useTrips } from '@/hooks/useTrips';
+import { useToast } from '@/hooks/use-toast';
 
 interface TripData {
   country: string;
@@ -17,33 +20,56 @@ interface TripData {
 const TripDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { createTrip, loading } = useTrips();
+  const { toast } = useToast();
   const tripData = location.state as TripData;
   
   const [tripTitle, setTripTitle] = useState('');
   const [tripDescription, setTripDescription] = useState('');
   const [cost, setCost] = useState('');
   const [companions, setCompanions] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
 
   const handleBack = () => {
     navigate('/create', { state: tripData });
   };
 
-  const handleCreateTrip = () => {
-    const finalTripData = {
-      ...tripData,
-      title: tripTitle,
-      description: tripDescription,
-      cost,
-      companions
-    };
-    
-    console.log('Final trip data:', finalTripData);
-    
-    // Here you would typically save to database
-    alert(`Trip "${tripTitle}" created successfully!`);
-    
-    // Navigate back to home or trip view
-    navigate('/');
+  const handleCreateTrip = async () => {
+    if (!tripTitle.trim() || !tripDescription.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the trip title and description.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const newTrip = await createTrip({
+        title: tripTitle,
+        description: tripDescription,
+        country_code: tripData?.country || '',
+        cost,
+        companions,
+        route: tripData?.route || [],
+        photos: tripData?.photos || [],
+        is_public: isPublic
+      });
+
+      toast({
+        title: "Trip Created!",
+        description: `Your trip "${tripTitle}" has been successfully created.`,
+      });
+
+      // Navigate to home or profile
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create trip",
+        variant: "destructive"
+      });
+    }
   };
 
   const costOptions = [
@@ -68,9 +94,16 @@ const TripDetails = () => {
         <Button
           size="sm"
           onClick={handleCreateTrip}
-          disabled={!tripTitle.trim() || !tripDescription.trim()}
+          disabled={!tripTitle.trim() || !tripDescription.trim() || loading}
         >
-          Create Trip
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Trip'
+          )}
         </Button>
       </div>
 
@@ -168,7 +201,22 @@ const TripDetails = () => {
           </p>
         </Card>
 
-        {/* Photo Preview */}
+        {/* Privacy Setting */}
+        <Card className="p-4 space-y-3">
+          <Label className="font-medium">Privacy Settings</Label>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Make trip public</p>
+              <p className="text-xs text-muted-foreground">
+                Public trips can be discovered by other users and will appear in the community feed
+              </p>
+            </div>
+            <Switch
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+            />
+          </div>
+        </Card>
         {tripData?.photos && tripData.photos.length > 0 && (
           <Card className="p-4 space-y-3">
             <h3 className="font-medium">Selected Photos</h3>
@@ -199,9 +247,16 @@ const TripDetails = () => {
             className="w-full"
             size="lg"
             onClick={handleCreateTrip}
-            disabled={!tripTitle.trim() || !tripDescription.trim()}
+            disabled={!tripTitle.trim() || !tripDescription.trim() || loading}
           >
-            Create My Trip Post
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating Trip...
+              </>
+            ) : (
+              'Create My Trip Post'
+            )}
           </Button>
           {(!tripTitle.trim() || !tripDescription.trim()) && (
             <p className="text-xs text-muted-foreground mt-2 text-center">

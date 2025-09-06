@@ -15,8 +15,8 @@ export default function EnhancedCreateTrip() {
   const [highlights, setHighlights] = useState<string[]>([]);
   const [currentHighlight, setCurrentHighlight] = useState('');
   const [description, setDescription] = useState('');
-  const [budget, setBudget] = useState('');
-  const [budgetCurrency, setBudgetCurrency] = useState('USD');
+  const [budget, setBudget] = useState(0); // 0 = not set, 1-5 = $ signs
+  const [budgetCurrency, setBudgetCurrency] = useState('USD'); // Keep for future use
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [duration, setDuration] = useState('');
@@ -74,6 +74,23 @@ export default function EnhancedCreateTrip() {
 
   const removePhoto = (index: number) => {
     setPhotos(photos.filter((_, i) => i !== index));
+  };
+
+  const getBudgetDisplay = (budget: number) => {
+    if (budget === 0) return "Select budget level";
+    return "$".repeat(budget);
+  };
+
+  const getBudgetDescription = (budget: number) => {
+    const descriptions = {
+      0: "",
+      1: "Budget-friendly",
+      2: "Moderate", 
+      3: "Comfortable",
+      4: "Luxury",
+      5: "Ultra-luxury"
+    };
+    return descriptions[budget as keyof typeof descriptions] || "";
   };
 
   const handleSubmit = () => {
@@ -291,25 +308,36 @@ export default function EnhancedCreateTrip() {
         <div>
           <label className="flex items-center gap-2 text-sm font-medium mb-2">
             <DollarSign size={16} />
-            Trip Budget
+            Trip Budget Level
           </label>
-          <div className="flex gap-2">
-            <input 
-              type="text"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              placeholder="Total budget"
-              className="flex-1 p-3 border rounded-lg bg-background"
-            />
-            <select 
-              value={budgetCurrency} 
-              onChange={(e) => setBudgetCurrency(e.target.value)}
-              className="p-3 border rounded-lg bg-background"
-            >
-              {currencies.map(currency => (
-                <option key={currency} value={currency}>{currency}</option>
-              ))}
-            </select>
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <div
+                key={level}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  budget === level
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                }`}
+                onClick={() => setBudget(level)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold text-primary">
+                      {"$".repeat(level)}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getBudgetDescription(level)}
+                    </p>
+                  </div>
+                  {budget === level && (
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-white"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

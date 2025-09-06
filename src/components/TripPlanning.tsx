@@ -20,6 +20,7 @@ const TripPlanning = () => {
     startDate: null as Date | null,
     endDate: null as Date | null,
     holidayTypes: [] as string[],
+    budget: 0, // 0 = not set, 1-5 = $ signs
     inspirationSource: "none" as "none" | "all" | "folder" | "search",
     inspirationFolder: "",
     notes: ""
@@ -30,6 +31,7 @@ const TripPlanning = () => {
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   
   const { savedPosts } = useSavedPosts();
 
@@ -56,6 +58,23 @@ const TripPlanning = () => {
         ? prev.holidayTypes.filter(t => t !== type)
         : [...prev.holidayTypes, type]
     }));
+  };
+
+  const getBudgetDisplay = (budget: number) => {
+    if (budget === 0) return "Select budget";
+    return "$".repeat(budget);
+  };
+
+  const getBudgetDescription = (budget: number) => {
+    const descriptions = {
+      0: "",
+      1: "Budget-friendly",
+      2: "Moderate", 
+      3: "Comfortable",
+      4: "Luxury",
+      5: "Ultra-luxury"
+    };
+    return descriptions[budget as keyof typeof descriptions] || "";
   };
 
   const handleGenerate = () => {
@@ -109,7 +128,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-sm mx-4 rounded-2xl">
             <DialogHeader>
               <DialogTitle>Where to?</DialogTitle>
             </DialogHeader>
@@ -190,7 +209,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-sm mx-4 rounded-2xl">
             <DialogHeader>
               <DialogTitle>When's your trip?</DialogTitle>
             </DialogHeader>
@@ -274,7 +293,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-sm mx-4 rounded-2xl">
             <DialogHeader>
               <DialogTitle>What type of trip?</DialogTitle>
             </DialogHeader>
@@ -298,6 +317,64 @@ const TripPlanning = () => {
                   </p>
                 </div>
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Budget */}
+        <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+          <DialogTrigger asChild>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-primary text-xl">$</div>
+                    <div>
+                      <p className="font-medium text-sm">Budget</p>
+                      <p className="text-muted-foreground text-sm">
+                        {getBudgetDisplay(formData.budget)}
+                        {formData.budget > 0 && (
+                          <span className="ml-2 text-xs">({getBudgetDescription(formData.budget)})</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown size={16} className="text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm mx-4 rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>What's your budget?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <div
+                  key={level}
+                  className={cn(
+                    "p-4 rounded-lg border-2 cursor-pointer transition-all",
+                    formData.budget === level
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  )}
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, budget: level }));
+                    setBudgetDialogOpen(false);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-primary">
+                        {"$".repeat(level)}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {getBudgetDescription(level)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </DialogContent>
         </Dialog>

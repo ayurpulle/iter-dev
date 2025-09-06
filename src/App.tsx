@@ -16,10 +16,10 @@ import Chat from "./pages/Chat";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
 import Messages from "./pages/Messages";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 

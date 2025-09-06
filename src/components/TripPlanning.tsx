@@ -9,10 +9,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Calendar, Heart, Users, Search, ChevronDown } from "lucide-react";
+import { MapPin, Calendar, Heart, Users, Search, ChevronDown, Loader2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useSavedPosts } from "@/hooks/useSavedPosts";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const TripPlanning = () => {
   const [formData, setFormData] = useState({
@@ -26,7 +28,8 @@ const TripPlanning = () => {
     notes: ""
   });
 
-  const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
@@ -34,6 +37,7 @@ const TripPlanning = () => {
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   
   const { savedPosts } = useSavedPosts();
+  const { toast } = useToast();
 
   const holidayTypes = [
     "Adventure & Outdoor",
@@ -77,25 +81,107 @@ const TripPlanning = () => {
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
-  const handleGenerate = () => {
-    // Mock generation
-    setGeneratedPlan({
-      map: "Mock Map",
-      time: "3 days",
-      distance: "200km",
-      itinerary: ["Day 1: ...", "Day 2: ..."],
-    });
+  const handleGenerateItinerary = async () => {
+    if (!formData.destination) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a destination to generate an itinerary.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-itinerary', {
+        body: {
+          destination: formData.destination,
+          startDate: formData.startDate?.toISOString(),
+          endDate: formData.endDate?.toISOString(),
+          budget: formData.budget > 0 ? formData.budget : null,
+          interests: formData.holidayTypes.join(', '),
+          travelStyle: formData.notes
+        }
+      });
+
+      if (error) {
+        console.error('Error generating itinerary:', error);
+        toast({
+          title: "Generation Failed",
+          description: "Failed to generate itinerary. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setGeneratedItinerary(data.itinerary);
+      
+      toast({
+        title: "Itinerary Generated!",
+        description: `Used ${data.postsUsed} saved posts from your network${data.tripId ? ' and saved as a new trip' : ''}.`,
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (generatedPlan) {
+  if (generatedItinerary) {
     return (
-      <div>
-        <h2>Plan Your Trip</h2>
-        <div className="h-40 bg-muted">{generatedPlan.map}</div>
-        <p>Time: {generatedPlan.time}</p>
-        <p>Distance: {generatedPlan.distance}</p>
-        <h3>Itinerary:</h3>
-        {generatedPlan.itinerary.map((item, idx) => <p key={idx}>{item}</p>)}
+      <div className="px-4 py-6 pb-24 max-w-md mx-auto">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setGeneratedItinerary(null)}
+              className="p-1"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Your Itinerary</h1>
+              <p className="text-muted-foreground">{formData.destination}</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="prose prose-sm max-w-none text-foreground">
+                {generatedItinerary.split('\n').map((line, idx) => {
+                  if (line.startsWith('# ')) {
+                    return <h1 key={idx} className="text-xl font-bold mt-4 mb-2">{line.slice(2)}</h1>;
+                  } else if (line.startsWith('## ')) {
+                    return <h2 key={idx} className="text-lg font-semibold mt-3 mb-2">{line.slice(3)}</h2>;
+                  } else if (line.startsWith('### ')) {
+                    return <h3 key={idx} className="text-md font-medium mt-2 mb-1">{line.slice(4)}</h3>;
+                  } else if (line.startsWith('- ')) {
+                    return <p key={idx} className="ml-4 mb-1">• {line.slice(2)}</p>;
+                  } else if (line.trim() === '') {
+                    return <br key={idx} />;
+                  } else {
+                    return <p key={idx} className="mb-2">{line}</p>;
+                  }
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button 
+            className="w-full" 
+            onClick={() => setGeneratedItinerary(null)}
+          >
+            Create Another Itinerary
+          </Button>
+        </div>
       </div>
     );
   }
@@ -471,8 +557,19 @@ const TripPlanning = () => {
         </Card>
 
         {/* Generate Iter Button */}
-        <Button className="w-full h-12 text-lg" onClick={handleGenerate}>
-          Generate Iter
+        <Button 
+          className="w-full h-12 text-lg" 
+          onClick={handleGenerateItinerary}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            'Generate Itinerary'
+          )}
         </Button>
       </div>
     </div>

@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share, Trash2, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import CountryMap from "@/components/CountryMap";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +42,17 @@ interface Profile {
   avatar?: string;
 }
 
+interface Trip {
+  id: string;
+  title?: string;
+  duration?: string;
+  distance?: string;
+  stops?: any;
+}
+
 interface PostWithProfile extends Post {
   profiles?: Profile | null;
+  trips?: Trip | null;
 }
 
 const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId: string) => void }) => {
@@ -50,8 +61,15 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string>("");
 
   const isOwnPost = user?.id === post.user_id;
+
+  // Try to get mapbox token from localStorage for enhanced map view
+  useEffect(() => {
+    const token = localStorage.getItem('mapbox_token');
+    if (token) setMapboxToken(token);
+  }, []);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -95,6 +113,24 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const userName = post.profiles?.name || 'User';
   const username = post.profiles?.username || 'user';
   const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  // Parse image URLs - could be single URL or JSON array
+  const getImageUrls = () => {
+    if (!post.image_url) return [];
+    
+    try {
+      // Try to parse as JSON array first
+      const parsed = JSON.parse(post.image_url);
+      return Array.isArray(parsed) ? parsed : [post.image_url];
+    } catch {
+      // If not JSON, treat as single URL
+      return [post.image_url];
+    }
+  };
+
+  const images = getImageUrls();
+  const hasImages = images.length > 0;
+  const hasTrip = post.trips && post.trips.stops && post.trips.stops.length > 0;
 
   return (
     <>
@@ -145,14 +181,58 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
             </div>
           )}
 
-          {/* Image */}
-          {post.image_url && (
+          {/* Image/Map Carousel */}
+          {(hasTrip || hasImages) && (
             <div className="w-full">
-              <img 
-                src={post.image_url} 
-                alt="Post image" 
-                className="w-full h-64 object-cover"
-              />
+              <div className="h-64 bg-muted overflow-hidden">
+                <Carousel className="w-full h-full">
+                  <CarouselContent className="h-full">
+                    {/* Trip Map - Always First if available */}
+                    {hasTrip && (
+                      <CarouselItem className="h-full">
+                        <div className="h-full">
+                          <CountryMap 
+                            stops={post.trips!.stops || []} 
+                            className="h-full w-full" 
+                            mapboxToken={mapboxToken}
+                          />
+                        </div>
+                      </CarouselItem>
+                    )}
+                    
+                    {/* Images */}
+                    {images.map((imageUrl, index) => (
+                      <CarouselItem key={index} className="h-full">
+                        <div className="h-full">
+                          <img 
+                            src={imageUrl} 
+                            alt={`Post image ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {(hasTrip || images.length > 1) && (
+                    <>
+                      <CarouselPrevious className="left-2" />
+                      <CarouselNext className="right-2" />
+                    </>
+                  )}
+                </Carousel>
+              </div>
+            </div>
+          )}
+
+          {/* Trip Info */}
+          {hasTrip && (
+            <div className="px-4 py-2 bg-muted/30">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                {post.trips?.title && <span className="font-medium">{post.trips.title}</span>}
+                {post.trips?.duration && <span>{post.trips.duration}</span>}
+                {post.trips?.distance && <span>{post.trips.distance}</span>}
+                {post.trips?.stops && <span>{post.trips.stops.length} stops</span>}
+              </div>
             </div>
           )}
 
@@ -222,6 +302,13 @@ const Index = () => {
             name,
             username,
             avatar
+          ),
+          trips (
+            id,
+            title,
+            duration,
+            distance,
+            stops
           )
         `)
         .order('created_at', { ascending: false });

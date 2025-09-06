@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import MapView from "./pages/MapView";
 import CreateTrip from "./pages/CreateTrip";
+import TripDetails from "./pages/TripDetails";
 import Search from "./pages/Search";
 import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
@@ -43,6 +44,11 @@ const App = () => (
               <Route path="/create" element={
                 <ProtectedRoute>
                   <CreateTrip />
+                </ProtectedRoute>
+              } />
+              <Route path="/trip-details" element={
+                <ProtectedRoute>
+                  <TripDetails />
                 </ProtectedRoute>
               } />
               <Route path="/search" element={

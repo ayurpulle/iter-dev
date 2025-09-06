@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ const countries = [
 ];
 
 const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
+  const navigate = useNavigate();
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [isSelectingPhoto, setIsSelectingPhoto] = useState(false);
@@ -188,16 +190,19 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   };
 
   const handleNext = () => {
-    // Handle navigation to next step with current data
-    console.log('Trip data:', {
+    if (!selectedCountry) {
+      alert('Please select a country first');
+      return;
+    }
+    
+    // Navigate to trip details page with current data
+    const tripData = {
       country: selectedCountry,
       photos: selectedPhotos,
       route: tripRoute
-    });
+    };
     
-    // Here you would typically navigate to the next step or save the trip
-    // For now, showing an alert to demonstrate it works
-    alert(`Trip created!\nCountry: ${countries.find(c => c.code === selectedCountry)?.name}\nPhotos: ${selectedPhotos.length}\nRoute stops: ${tripRoute.length}`);
+    navigate('/trip-details', { state: tripData });
   };
 
   const handleSkipPhotos = () => {

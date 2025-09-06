@@ -128,7 +128,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-sm mx-4 rounded-2xl">
+          <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>Where to?</DialogTitle>
             </DialogHeader>
@@ -209,7 +209,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-sm mx-4 rounded-2xl">
+          <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>When's your trip?</DialogTitle>
             </DialogHeader>
@@ -293,7 +293,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-sm mx-4 rounded-2xl">
+          <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>What type of trip?</DialogTitle>
             </DialogHeader>
@@ -344,7 +344,7 @@ const TripPlanning = () => {
               </CardContent>
             </Card>
           </DialogTrigger>
-          <DialogContent className="max-w-sm mx-4 rounded-2xl">
+          <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>What's your budget?</DialogTitle>
             </DialogHeader>

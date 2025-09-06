@@ -188,12 +188,42 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   };
 
   const handleNext = () => {
-    // Handle navigation to next step
+    // Handle navigation to next step with current data
     console.log('Trip data:', {
       country: selectedCountry,
       photos: selectedPhotos,
       route: tripRoute
     });
+    
+    // Here you would typically navigate to the next step or save the trip
+    // For now, showing an alert to demonstrate it works
+    alert(`Trip created!\nCountry: ${countries.find(c => c.code === selectedCountry)?.name}\nPhotos: ${selectedPhotos.length}\nRoute stops: ${tripRoute.length}`);
+  };
+
+  const handleSkipPhotos = () => {
+    setSelectedPhotos([]);
+    // Indicate photos were skipped
+    console.log('Photos skipped');
+  };
+
+  const handleGenerateTripMap = () => {
+    if (!selectedCountry) {
+      alert('Please select a country first');
+      return;
+    }
+    
+    // Generate trip map logic
+    const tripData = {
+      country: selectedCountry,
+      photos: selectedPhotos,
+      route: tripRoute
+    };
+    
+    console.log('Generating trip map for:', tripData);
+    alert(`Generating trip map for ${countries.find(c => c.code === selectedCountry)?.name} with ${tripRoute.length} stops and ${selectedPhotos.length} photos`);
+    
+    // Here you could navigate to a trip preview/generation page
+    // or show a modal with the generated trip
   };
 
   return (
@@ -364,7 +394,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                   <Button
                     variant="ghost"
                     className="w-full text-muted-foreground"
-                    onClick={() => setSelectedPhotos([])}
+                    onClick={handleSkipPhotos}
                   >
                     Skip Photos
                   </Button>
@@ -379,14 +409,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
           <Button
             className="w-full"
             disabled={!selectedCountry}
-            onClick={() => {
-              // Generate trip map logic
-              console.log('Generating trip map for:', {
-                country: selectedCountry,
-                route: tripRoute,
-                photos: selectedPhotos
-              });
-            }}
+            onClick={handleGenerateTripMap}
           >
             Generate Trip Map
           </Button>

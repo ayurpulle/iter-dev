@@ -14,7 +14,7 @@ interface SavedPostsListProps {
 }
 
 const SavedPostsList = ({ 
-  yourSavedPosts, 
+  yourSavedPosts = [], 
   onHide 
 }: SavedPostsListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);

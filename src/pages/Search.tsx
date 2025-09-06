@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search as SearchIcon, Users, MapPin, Hash, X } from "lucide-react";
+import { MapPin, Hash, Plane } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,361 +8,74 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
-import TripCard from "@/components/TripCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface SearchResult {
-  id: string;
-  type: 'user' | 'location' | 'hashtag';
-  title: string;
-  subtitle?: string;
-  avatar?: string;
-  initials?: string;
-  tripCount?: number;
-  data?: any;
-}
-
-interface Trip {
-  id: string;
-  title: string;
-  duration: string;
-  distance: string;
-  stops: any;
-  photo_count: number;
-  hashtags: string[];
-  user_id: string;
-  profiles: {
-    name: string;
-    username: string;
-    avatar: string;
-  } | null;
-}
-
 const Search = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [exploreTrips, setExploreTrips] = useState<Trip[]>([]);
+  const [destination, setDestination] = useState("");
+  const [selectedWhen, setSelectedWhen] = useState("flexible");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [friendsInspiration, setFriendsInspiration] = useState("no");
   const [loading, setLoading] = useState(false);
-  const [exploreLoading, setExploreLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
 
-  const loadExploreContent = async () => {
-    setExploreLoading(true);
-    try {
-      // Fetch popular public trips - ordered by created_at for now, 
-      // could be enhanced with engagement metrics
-      const { data: publicTrips, error } = await supabase
-        .from('trips')
-        .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id,
-          created_at
-        `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(20);
+  // Mock data for recently saved and recent searches
+  const recentlySaved = [
+    { name: "Colombia", icon: "🇨🇴" },
+    { name: "Guatemala", icon: "🇬🇹" }
+  ];
 
-      if (error) throw error;
+  const recentSearches = [
+    { name: "Kyrgyzstan", icon: "🇰🇬" },
+    { name: "Albania", icon: "🇦🇱" },
+    { name: "Bodra Delhi, India", icon: "🇮🇳" }
+  ];
 
-      // Manually join with profiles
-      const userIds = [...new Set(publicTrips?.map(trip => trip.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', userIds);
+  const tripTypes = [
+    "Relaxing", "Beach", "Ski", "Hike", "Adventure", "Culture", "Flexible"
+  ];
 
-      // Transform the data to match our interface
-      const transformedTrips: Trip[] = (publicTrips || []).map(trip => {
-        const userProfile = profiles?.find(p => p.user_id === trip.user_id);
-        return {
-          id: trip.id,
-          title: trip.title,
-          duration: trip.duration,
-          distance: trip.distance,
-          stops: trip.stops,
-          photo_count: trip.photo_count,
-          hashtags: trip.hashtags || [],
-          user_id: trip.user_id,
-          profiles: userProfile ? {
-            name: userProfile.name,
-            username: userProfile.username,
-            avatar: userProfile.avatar
-          } : null
-        };
-      });
-
-      setExploreTrips(transformedTrips);
-    } catch (error) {
-      console.error('Explore loading error:', error);
-      toast({
-        title: "Loading Error",
-        description: "Failed to load explore content. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setExploreLoading(false);
-    }
+  const handleTypeToggle = (type: string) => {
+    setSelectedTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
   };
 
-  // Load explore content on component mount
-  useEffect(() => {
-    loadExploreContent();
-  }, []);
-
-  const performSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setTrips([]);
+  const handleGenerateItinerary = async () => {
+    if (!destination.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a destination to generate an itinerary.",
+        variant: "destructive",
+      });
       return;
     }
 
     setLoading(true);
     try {
-      const results: SearchResult[] = [];
-
-      // Search users
-      const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`name.ilike.%${query}%,username.ilike.%${query}%`)
-        .limit(10);
-
-      if (usersError) throw usersError;
-
-      users?.forEach(user => {
-        results.push({
-          id: user.id,
-          type: 'user',
-          title: user.name || user.username || 'Unknown User',
-          subtitle: user.username ? `@${user.username}` : undefined,
-          avatar: user.avatar,
-          initials: (user.name || user.username || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase(),
-          data: user
-        });
-      });
-
-      // Search locations in trips
-      const { data: locationTrips, error: locationError } = await supabase
-        .from('trips')
-        .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id
-        `)
-        .eq('is_public', true)
-        .limit(10);
-
-      if (locationError) throw locationError;
-
-      // Get profiles for location trips
-      const locationUserIds = [...new Set(locationTrips?.map(trip => trip.user_id) || [])];
-      const { data: locationProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', locationUserIds);
-
-      // Group by location
-      const locationMap = new Map();
-      locationTrips?.forEach(trip => {
-        if (trip.stops && Array.isArray(trip.stops)) {
-          (trip.stops as any[]).forEach((stop: any) => {
-            if (stop.name && stop.name.toLowerCase().includes(query.toLowerCase())) {
-              const locationKey = stop.name;
-              if (!locationMap.has(locationKey)) {
-                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
-                const tripWithProfile = {
-                  ...trip,
-                  profiles: userProfile ? {
-                    name: userProfile.name,
-                    username: userProfile.username,
-                    avatar: userProfile.avatar
-                  } : null
-                };
-                
-                locationMap.set(locationKey, {
-                  id: `location-${locationKey}`,
-                  type: 'location',
-                  title: locationKey,
-                  subtitle: `Visited by friends`,
-                  tripCount: 1,
-                  data: { name: locationKey, trips: [tripWithProfile] }
-                });
-              } else {
-                const existing = locationMap.get(locationKey);
-                existing.tripCount++;
-                
-                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
-                const tripWithProfile = {
-                  ...trip,
-                  profiles: userProfile ? {
-                    name: userProfile.name,
-                    username: userProfile.username,
-                    avatar: userProfile.avatar
-                  } : null
-                };
-                
-                existing.data.trips.push(tripWithProfile);
-              }
-            }
-          });
-        }
-      });
-
-      locationMap.forEach(location => results.push(location));
-
-      // Search hashtags
-      const { data: hashtagTrips, error: hashtagError } = await supabase
-        .from('trips')
-        .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id
-        `)
-        .eq('is_public', true)
-        .limit(10);
-
-      if (hashtagError) throw hashtagError;
-
-      // Get profiles for hashtag trips
-      const hashtagUserIds = [...new Set(hashtagTrips?.map(trip => trip.user_id) || [])];
-      const { data: hashtagProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', hashtagUserIds);
-
-      // Group by hashtag - filter in memory for now
-      const hashtagMap = new Map();
-      hashtagTrips?.forEach(trip => {
-        if (trip.hashtags && Array.isArray(trip.hashtags)) {
-          trip.hashtags.forEach((hashtag: string) => {
-            if (hashtag.toLowerCase().includes(query.toLowerCase())) {
-              const userProfile = hashtagProfiles?.find(p => p.user_id === trip.user_id);
-              const tripWithProfile = {
-                ...trip,
-                profiles: userProfile ? {
-                  name: userProfile.name,
-                  username: userProfile.username,
-                  avatar: userProfile.avatar
-                } : null
-              };
-              
-              if (!hashtagMap.has(hashtag)) {
-                hashtagMap.set(hashtag, {
-                  id: `hashtag-${hashtag}`,
-                  type: 'hashtag',
-                  title: `#${hashtag}`,
-                  subtitle: `Used in trips`,
-                  tripCount: 1,
-                  data: { hashtag, trips: [tripWithProfile] }
-                });
-              } else {
-                const existing = hashtagMap.get(hashtag);
-                existing.tripCount++;
-                existing.data.trips.push(tripWithProfile);
-              }
-            }
-          });
-        }
-      });
-
-      hashtagMap.forEach(hashtag => results.push(hashtag));
-
-      // Get all trips for trip results - combine all profiles
-      const allProfiles = [...(locationProfiles || []), ...(hashtagProfiles || [])];
-      const allTrips: Trip[] = [
-        ...(locationTrips || []),
-        ...(hashtagTrips || [])
-      ]
-      .filter((trip, index, self) => 
-        index === self.findIndex(t => t.id === trip.id)
-      )
-      .map(trip => {
-        const userProfile = allProfiles.find(p => p.user_id === trip.user_id);
-        return {
-          id: trip.id,
-          title: trip.title,
-          duration: trip.duration,
-          distance: trip.distance,
-          stops: trip.stops,
-          photo_count: trip.photo_count,
-          hashtags: trip.hashtags || [],
-          user_id: trip.user_id,
-          profiles: userProfile ? {
-            name: userProfile.name,
-            username: userProfile.username,
-            avatar: userProfile.avatar
-          } : null
-        };
-      });
-
-      setSearchResults(results);
-      setTrips(allTrips);
-
-    } catch (error) {
-      console.error('Search error:', error);
+      // This would integrate with your AI planning functionality
       toast({
-        title: "Search Error",
-        description: "Failed to search. Please try again.",
+        title: "Generating Itinerary",
+        description: `Creating a personalized itinerary for ${destination}...`,
+      });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Itinerary Generated!",
+        description: "Your personalized trip plan is ready.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate itinerary. Please try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      performSearch(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
-
-  const filteredResults = searchResults.filter(result => {
-    if (activeTab === "all") return true;
-    return result.type === activeTab;
-  });
-
-  const filteredTrips = trips.filter(trip => {
-    if (activeTab === "all") return true;
-    if (activeTab === "location") {
-      return Array.isArray(trip.stops) && trip.stops.some((stop: any) => 
-        stop.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    if (activeTab === "hashtag") {
-      return Array.isArray(trip.hashtags) && trip.hashtags.some((hashtag: string) => 
-        hashtag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return false;
-  });
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'user': return <Users size={16} className="text-blue-500" />;
-      case 'location': return <MapPin size={16} className="text-green-500" />;
-      case 'hashtag': return <Hash size={16} className="text-purple-500" />;
-      default: return <SearchIcon size={16} />;
     }
   };
 
@@ -372,250 +85,167 @@ const Search = () => {
       
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
-          {/* Search Header Update */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">
-              {searchQuery ? 'Search Results' : 'Explore & Search'}
-            </h1>
-            <p className="text-muted-foreground">
-              {searchQuery ? `Results for "${searchQuery}"` : 'Discover popular trips and find users, locations, or hashtags'}
-            </p>
-          </div>
-
-          {/* Search Input */}
-          <div className="relative">
-            <SearchIcon size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search users, locations, or hashtags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-              >
-                <X size={16} />
-              </Button>
-            )}
-          </div>
-
-          {/* Results Tabs */}
-          {searchQuery && (
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="user">Users</TabsTrigger>
-                <TabsTrigger value="location">Places</TabsTrigger>
-                <TabsTrigger value="hashtag">Tags</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value={activeTab} className="mt-6">
-                {loading ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Searching...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Search Results */}
-                    {filteredResults.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                          Results
-                        </h3>
-                        {filteredResults.map((result) => (
-                          <Card key={result.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-4">
-                              <div className="flex items-center gap-3">
-                                {result.type === 'user' ? (
-                                  <Avatar className="w-10 h-10">
-                                    <AvatarImage src={result.avatar} />
-                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                                      {result.initials}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                ) : (
-                                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                                    {getIcon(result.type)}
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm truncate">{result.title}</p>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {result.type}
-                                    </Badge>
-                                  </div>
-                                  {result.subtitle && (
-                                    <p className="text-xs text-muted-foreground">{result.subtitle}</p>
-                                  )}
-                                  {result.tripCount && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {result.tripCount} trip{result.tripCount !== 1 ? 's' : ''}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Trip Results */}
-                    {filteredTrips.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                          Trips
-                        </h3>
-                        {filteredTrips.map((trip) => (
-                          <TripCard
-                            key={trip.id}
-                            user={{
-                              name: trip.profiles?.name || 'Unknown User',
-                              username: trip.profiles?.username || 'unknown',
-                              avatar: trip.profiles?.avatar
-                            }}
-                            trip={{
-                              id: trip.id,
-                              title: trip.title || 'Untitled Trip',
-                              duration: trip.duration || '0 hours',
-                              distance: trip.distance || '0 km',
-                              stops: Array.isArray(trip.stops) ? trip.stops : [],
-                              photoCount: trip.photo_count || 0
-                            }}
-                            stats={{
-                              likes: 0,
-                              comments: 0
-                            }}
-                            expandable={true}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* No Results */}
-                    {!loading && searchQuery && filteredResults.length === 0 && filteredTrips.length === 0 && (
-                      <div className="text-center py-8">
-                        <SearchIcon size={48} className="mx-auto text-muted-foreground/50 mb-4" />
-                        <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Try searching for users, locations, or hashtags
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
-
-          {/* Search Suggestions */}
-          {!searchQuery && !exploreLoading && exploreTrips.length === 0 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                Explore Popular Trips
-              </h3>
-              
-              {exploreLoading ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Loading popular trips...</p>
-                </div>
-              ) : exploreTrips.length > 0 ? (
-                <div className="space-y-4">
-                  {exploreTrips.map((trip) => (
-                    <TripCard
-                      key={trip.id}
-                      user={{
-                        name: trip.profiles?.name || 'Unknown User',
-                        username: trip.profiles?.username || 'unknown',
-                        avatar: trip.profiles?.avatar
-                      }}
-                       trip={{
-                         id: trip.id,
-                         title: trip.title || 'Untitled Trip',
-                         duration: trip.duration || '0 hours',
-                         distance: trip.distance || '0 km',
-                         stops: Array.isArray(trip.stops) ? trip.stops : [],
-                         photoCount: trip.photo_count || 0
-                       }}
-                      stats={{
-                        likes: Math.floor(Math.random() * 50), // Mock engagement data
-                        comments: Math.floor(Math.random() * 20)
-                      }}
-                      expandable={true}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <SearchIcon size={48} className="mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No public trips to explore yet</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Check back later for popular content
-                  </p>
-                </div>
-              )}
+          {/* Where Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">Where?</h2>
+            
+            {/* Search Input */}
+            <div className="relative">
+              <MapPin size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search destinations"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          )}
 
-          {/* Search Guidance - Only show if no explore content */}
-          {!searchQuery && exploreTrips.length === 0 && !exploreLoading && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                Search Suggestions
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardContent className="p-4">
+            {/* Near to you */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <MapPin size={16} className="text-muted-foreground" />
+                <h3 className="font-medium text-sm">Near to you</h3>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Recently Saved</h4>
+                {recentlySaved.map((item, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="w-full justify-start h-auto p-2"
+                    onClick={() => setDestination(item.name)}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                        <Users size={16} className="text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Search Users</p>
-                        <p className="text-xs text-muted-foreground">Find friends and travelers</p>
-                      </div>
+                      <Plane size={16} className="text-muted-foreground" />
+                      <span className="text-sm">{item.name}</span>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardContent className="p-4">
+                  </Button>
+                ))}
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <h4 className="text-sm font-medium">Recent Searches</h4>
+                {recentSearches.map((item, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="w-full justify-start h-auto p-2"
+                    onClick={() => setDestination(item.name)}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                        <MapPin size={16} className="text-green-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Search Locations</p>
-                        <p className="text-xs text-muted-foreground">Discover travel destinations</p>
-                      </div>
+                      <Plane size={16} className="text-muted-foreground" />
+                      <span className="text-sm">{item.name}</span>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                        <Hash size={16} className="text-purple-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Search Hashtags</p>
-                        <p className="text-xs text-muted-foreground">Find trips by theme</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </Button>
+                ))}
               </div>
             </div>
-          )}
+          </div>
+
+          {/* When Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">When?</h2>
+            
+            <Tabs value={selectedWhen} onValueChange={setSelectedWhen} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="dates">Dates</TabsTrigger>
+                <TabsTrigger value="months">Months</TabsTrigger>
+                <TabsTrigger value="flexible">Flexible</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="dates" className="mt-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground">Select specific travel dates</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="months" className="mt-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground">Choose preferred months</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="flexible" className="mt-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground">I'm flexible with timing</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Type Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">Type?</h2>
+            
+            <div className="flex flex-wrap gap-2">
+              {tripTypes.map((type) => (
+                <Button
+                  key={type}
+                  variant={selectedTypes.includes(type) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleTypeToggle(type)}
+                  className="text-xs"
+                >
+                  {type}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Friends Inspiration Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">Take inspiration from your friends?</h2>
+            
+            <div className="flex gap-2">
+              <Button
+                variant={friendsInspiration === "saved" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFriendsInspiration("saved")}
+                className="flex-1"
+              >
+                Yes, see saved
+              </Button>
+              <Button
+                variant={friendsInspiration === "search" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFriendsInspiration("search")}
+                className="flex-1"
+              >
+                Yes, search for
+              </Button>
+              <Button
+                variant={friendsInspiration === "no" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFriendsInspiration("no")}
+                className="flex-1"
+              >
+                No
+              </Button>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <div className="pt-4">
+            <Button 
+              onClick={handleGenerateItinerary}
+              disabled={loading}
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              <Plane className="mr-2 h-5 w-5" />
+              {loading ? "Generating..." : "Generate Itiner!"}
+            </Button>
+          </div>
         </div>
       </main>
-      
+
       <BottomTabBar />
     </div>
   );

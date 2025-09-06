@@ -7,7 +7,7 @@ import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
 import EditProfile from "@/components/EditProfile";
-import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen, Edit, LogOut } from "lucide-react";
+import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen, Edit, LogOut, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -159,6 +159,28 @@ const Account = () => {
           posts: posts?.length || 0,
         },
       }));
+
+      // Set up real-time subscription for posts
+      const channel = supabase
+        .channel('user-posts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'posts',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Reload posts when changes occur
+            loadUserPosts();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } catch (error) {
       console.error('Error loading posts:', error);
     }
@@ -296,6 +318,32 @@ const Account = () => {
     setShowEditProfile(false);
     // Reload profile data when returning from edit
     loadUserProfile();
+  };
+  
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setUserPosts(prev => prev.filter(p => p.id !== postId));
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully"
+      });
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete post",
+        variant: "destructive"
+      });
+    }
   };
 
   if (showEditProfile) {
@@ -437,15 +485,25 @@ const Account = () => {
                         </div>
                       )}
                       
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Heart size={16} />
-                          <span className="text-sm">{post.likes_count}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Heart size={16} />
+                            <span className="text-sm">{post.likes_count}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MessageCircle size={16} />
+                            <span className="text-sm">{post.comments_count}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MessageCircle size={16} />
-                          <span className="text-sm">{post.comments_count}</span>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePost(post.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './useAuth';
 
-interface Notification {
+export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'reply' | 'friend_post' | 'iter_inspiration' | 'friend_request';
+  type: 'like' | 'comment' | 'friend_request' | 'follow' | 'trip_like';
   title: string;
   message: string;
   read: boolean;
@@ -23,18 +22,16 @@ interface Notification {
 }
 
 export const useNotifications = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  const { toast } = useToast();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
-
+    
     setLoading(true);
     try {
-      // Fetch notifications without foreign key joins to avoid relationship errors
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -79,17 +76,13 @@ export const useNotifications = () => {
       // Count unread notifications
       const unread = notificationsWithProfiles.filter(n => !n.read).length;
       setUnreadCount(unread);
+      
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
@@ -105,9 +98,7 @@ export const useNotifications = () => {
 
       // Update local state
       setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -143,6 +134,7 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
+    // Set up real-time subscription
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -154,7 +146,19 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          fetchNotifications(); // Refetch when new notification arrives
+          fetchNotifications(); // Reload when new notifications arrive
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchNotifications(); // Reload when notifications are updated
         }
       )
       .subscribe();
@@ -162,14 +166,14 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   return {
     notifications,
     unreadCount,
     loading,
-    fetchNotifications,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    refetch: fetchNotifications
   };
 };

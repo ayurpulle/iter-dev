@@ -18,12 +18,13 @@ const Profile = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'following'>('none');
 
   useEffect(() => {
     if (state?.userData) {
       setProfileData(state.userData);
       loadUserPosts(state.userData.user_id);
+      checkFollowStatus(state.userData.user_id);
     }
   }, [state]);
 
@@ -45,6 +46,30 @@ const Profile = () => {
     }
   };
 
+  const checkFollowStatus = async (otherUserId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('friends')
+        .select('*')
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},friend_id.eq.${user.id})`)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        if (data.status === 'accepted') {
+          setFollowStatus('following');
+        } else if (data.status === 'pending') {
+          setFollowStatus('pending');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  };
+
   const handleFollow = async () => {
     if (!user || !profileData) return;
 
@@ -59,7 +84,7 @@ const Profile = () => {
 
       if (error) throw error;
 
-      setIsFollowing(true);
+      setFollowStatus('pending');
       toast({
         title: "Follow request sent",
         description: `Follow request sent to ${profileData.name || profileData.username}`
@@ -126,11 +151,11 @@ const Profile = () => {
               <Button
                 size="sm"
                 onClick={handleFollow}
-                disabled={isFollowing}
+                disabled={followStatus !== 'none'}
                 className="flex-1 max-w-32"
               >
                 <UserPlus size={16} className="mr-2" />
-                {isFollowing ? 'Requested' : 'Follow'}
+                {followStatus === 'following' ? 'Following' : followStatus === 'pending' ? 'Requested' : 'Follow'}
               </Button>
               <Button
                 variant="outline"

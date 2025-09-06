@@ -191,11 +191,8 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   }
 
   return (
-    <div className="flex items-center justify-center py-8 px-4">
-      <div className="relative w-full max-w-sm aspect-square">
-        <div ref={mapContainer} className="absolute inset-0 rounded-xl shadow-lg overflow-hidden" />
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/5 rounded-xl" />
-      </div>
+    <div className="absolute inset-0">
+      <div ref={mapContainer} className="w-full h-full" />
     </div>
   );
 };

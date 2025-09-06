@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InteractiveMapProps {
   onLocationClick?: (location: string) => void;
@@ -14,6 +12,8 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [isTokenSet, setIsTokenSet] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
 
   // Enhanced trip locations with friends' data
   const tripLocations = [
@@ -29,6 +29,31 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
     { name: "Chiang Mai", latitude: 18.7061, longitude: 98.9817, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
     { name: "Phuket", latitude: 7.8804, longitude: 98.3923, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
   ];
+
+  // Fetch Mapbox token from secure edge function
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) throw error;
+        
+        if (data?.token) {
+          setMapboxToken(data.token);
+          setIsTokenSet(true);
+        } else {
+          setError('Mapbox token not available');
+        }
+      } catch (err) {
+        console.error('Error fetching Mapbox token:', err);
+        setError('Failed to load map token');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMapboxToken();
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || !isTokenSet || !mapboxToken) return;
@@ -146,45 +171,23 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
     };
   }, [isTokenSet, mapboxToken]);
 
-  const handleTokenSubmit = () => {
-    if (mapboxToken.trim()) {
-      setIsTokenSet(true);
-    }
-  };
-
-  if (!isTokenSet) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center py-8 px-4">
-        <div className="w-full max-w-sm aspect-square bg-muted rounded-xl flex items-center justify-center">
-          <div className="w-full max-w-md space-y-4 p-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-lg font-semibold">Enter Mapbox Token</h2>
-              <p className="text-sm text-muted-foreground">
-                Get your free token from{" "}
-                <a 
-                  href="https://mapbox.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  mapbox.com
-                </a>
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
-              <Input
-                id="mapbox-token"
-                type="text"
-                placeholder="pk.eyJ1..."
-                value={mapboxToken}
-                onChange={(e) => setMapboxToken(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleTokenSubmit} className="w-full">
-              Load Map
-            </Button>
-          </div>
+      <div className="absolute inset-0 flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading map...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !isTokenSet) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <p className="text-destructive mb-2">{error || 'Map unavailable'}</p>
+          <p className="text-sm text-muted-foreground">Please check your connection</p>
         </div>
       </div>
     );
@@ -193,6 +196,13 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full" />
+      
+      {/* Swipe up indicator at bottom */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="bg-background/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+          <p className="text-sm text-white/70 font-medium">Swipe up to explore</p>
+        </div>
+      </div>
     </div>
   );
 };

@@ -14,6 +14,7 @@ interface SimpleTripVisualProps {
 }
 
 const SimpleTripVisual = ({ stops, className }: SimpleTripVisualProps) => {
+  console.log('=== DEBUG: SimpleTripVisual received stops ===', stops);
   if (!stops || stops.length === 0) {
     return (
       <div className={`bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center ${className}`}>

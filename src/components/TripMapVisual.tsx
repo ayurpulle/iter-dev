@@ -1,7 +1,47 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
+
+// Add Mapbox CSS directly to avoid import issues
+const mapboxCSS = `
+  .mapboxgl-map {
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    overflow: hidden;
+    position: relative;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+  }
+  .mapboxgl-canvas-container.mapboxgl-interactive,
+  .mapboxgl-ctrl-group button.mapboxgl-ctrl-compass {
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+    cursor: grab;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  .mapboxgl-canvas-container.mapboxgl-interactive.mapboxgl-track-pointer {
+    cursor: pointer;
+  }
+  .mapboxgl-canvas-container.mapboxgl-interactive:active,
+  .mapboxgl-ctrl-group button.mapboxgl-ctrl-compass:active {
+    cursor: -webkit-grabbing;
+    cursor: -moz-grabbing;
+    cursor: grabbing;
+  }
+  .mapboxgl-canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  .mapboxgl-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+`;
 
 interface TripStop {
   name: string;
@@ -20,6 +60,16 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Inject Mapbox CSS
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = mapboxCSS;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchMapboxToken = async () => {
@@ -62,89 +112,42 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
     console.log('=== DEBUG: Initializing map ===');
 
     try {
-      // Initialize map
+      // Initialize map with minimal configuration
       mapboxgl.accessToken = mapboxToken;
+      
+      console.log('=== DEBUG: Creating map with container ===', mapContainer.current);
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/streets-v11', // Try a different style
         center: [stops[0].lng, stops[0].lat],
-        zoom: stops.length === 1 ? 10 : 8,
-        interactive: true
+        zoom: 8,
+        interactive: true,
+        preserveDrawingBuffer: true
       });
 
+      console.log('=== DEBUG: Map created ===', map.current);
+
+      // Add a simple marker after map loads
       map.current.on('load', () => {
-        console.log('=== DEBUG: Map loaded successfully ===');
-        if (!map.current) return;
-
-        // Add markers for each stop
-        stops.forEach((stop, index) => {
-          console.log('=== DEBUG: Adding marker for ===', stop);
-          
-          // Create marker element
-          const el = document.createElement('div');
-          el.className = 'trip-marker';
-          el.style.backgroundImage = 'url(data:image/svg+xml;base64,' + btoa(`
-            <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 0C6.7 0 0 6.7 0 15c0 11.3 15 25 15 25s15-13.7 15-25C30 6.7 23.3 0 15 0z" fill="#3B82F6"/>
-              <circle cx="15" cy="15" r="8" fill="white"/>
-              <text x="15" y="20" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#3B82F6">${index + 1}</text>
-            </svg>
-          `) + ')';
-          el.style.width = '30px';
-          el.style.height = '40px';
-          el.style.backgroundSize = 'contain';
-          el.style.backgroundRepeat = 'no-repeat';
-          el.style.cursor = 'pointer';
-
-          // Add marker to map
-          new mapboxgl.Marker(el)
-            .setLngLat([stop.lng, stop.lat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div class="font-semibold">${stop.name}</div>`
-            ))
+        console.log('=== DEBUG: Map load event fired ===');
+        
+        // Just add a simple marker for the first stop
+        if (stops[0]) {
+          const marker = new mapboxgl.Marker({ color: 'red' })
+            .setLngLat([stops[0].lng, stops[0].lat])
             .addTo(map.current!);
-        });
-
-        // Draw route lines if multiple stops
-        if (stops.length > 1) {
-          console.log('=== DEBUG: Adding route line ===');
-          const coordinates = stops.map(stop => [stop.lng, stop.lat]);
-          
-          map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: coordinates
-              }
-            }
-          });
-
-          map.current.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#3B82F6',
-              'line-width': 3,
-              'line-opacity': 0.8
-            }
-          });
+          console.log('=== DEBUG: Simple marker added ===', marker);
         }
+      });
 
-        // Fit map to show all stops
-        if (stops.length > 1) {
-          const bounds = new mapboxgl.LngLatBounds();
-          stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
-          map.current.fitBounds(bounds, { padding: 50 });
-        }
+      // Log any style load events
+      map.current.on('styledata', () => {
+        console.log('=== DEBUG: Map style loaded ===');
+      });
+
+      map.current.on('sourcedata', (e) => {
+        console.log('=== DEBUG: Map source data ===', e.sourceDataType);
       });
 
       map.current.on('error', (e) => {

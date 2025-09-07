@@ -77,17 +77,22 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
   // Search locations using Mapbox Geocoding API
   const searchLocations = async (query: string) => {
+    console.log('searchLocations called with query:', query);
+    
     if (!query.trim() || query.length < 2) {
+      console.log('Query too short, clearing results');
       setSearchResults([]);
       return;
     }
 
     const token = mapboxToken || userMapboxToken;
     if (!token) {
+      console.log('No token available');
       setSearchResults([]);
       return;
     }
 
+    console.log('Starting search with token available');
     setIsSearching(true);
     try {
       const response = await fetch(
@@ -96,6 +101,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Search API response:', data);
         const locations: Location[] = data.features.map((feature: any) => {
           const placeType = feature.place_type[0];
           let type: Location['type'] = 'place';
@@ -131,7 +137,10 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
           };
         });
         
+        console.log('Processed locations:', locations);
         setSearchResults(locations);
+      } else {
+        console.log('Search API response not ok:', response.status);
       }
     } catch (error) {
       console.error('Error searching locations:', error);
@@ -383,11 +392,14 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <CommandInput 
                   placeholder="Search destinations..." 
                   value={searchQuery}
-                  onValueChange={setSearchQuery}
+                  onValueChange={(value) => {
+                    console.log('Command input value changed:', value);
+                    setSearchQuery(value);
+                  }}
                 />
                 <CommandList>
                   {searchQuery.length < 2 ? (
@@ -405,6 +417,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                       {searchResults.map((location) => (
                         <CommandItem
                           key={location.id}
+                          value={location.name}
                           onSelect={() => addLocation(location)}
                           className="cursor-pointer"
                         >

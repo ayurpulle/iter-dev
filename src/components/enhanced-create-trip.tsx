@@ -373,33 +373,18 @@ export default function EnhancedCreateTrip() {
           </div>
         </div>
 
-        {/* Duration & Distance */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Trip Duration
-            </label>
-            <input 
-              type="text"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="e.g., 7 days"
-              className="w-full p-3 border rounded-lg bg-background"
-            />
-          </div>
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Navigation size={16} />
-              Distance Traveled
-            </label>
-            <input 
-              type="text"
-              value={distance}
-              onChange={(e) => setDistance(e.target.value)}
-              placeholder="e.g., 2000 km"
-              className="w-full p-3 border rounded-lg bg-background"
-            />
-          </div>
+        {/* Duration Only */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Trip Duration
+          </label>
+          <input 
+            type="text"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="e.g., 7 days"
+            className="w-full p-3 border rounded-lg bg-background"
+          />
         </div>
       </div>
     </div>

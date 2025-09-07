@@ -521,6 +521,13 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       route: [...tripRoute, ...photoLocations]
     };
     
+    console.log('=== DEBUG: TripPostCreator navigation data ===');
+    console.log('selectedLocations:', selectedLocations);
+    console.log('tripRoute:', tripRoute);
+    console.log('photoLocations:', photoLocations);
+    console.log('combined route:', [...tripRoute, ...photoLocations]);
+    console.log('final tripData:', tripData);
+    
     navigate('/trip-details', { state: tripData });
   };
 

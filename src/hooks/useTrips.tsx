@@ -60,8 +60,10 @@ export const useTrips = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      console.log('=== DEBUG: useTrips createTrip called ===');
       console.log('Creating trip with data:', tripData);
       console.log('tripData.route (will be saved as stops):', tripData.route);
+      console.log('tripData.route length:', tripData.route?.length);
       console.log('User ID:', user.id);
 
       // Create trip record

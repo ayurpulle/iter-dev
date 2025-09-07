@@ -332,7 +332,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar: string | null
+          base_location: string | null
           bio: string | null
+          default_currency: string | null
           id: string
           name: string | null
           user_id: string
@@ -340,7 +342,9 @@ export type Database = {
         }
         Insert: {
           avatar?: string | null
+          base_location?: string | null
           bio?: string | null
+          default_currency?: string | null
           id?: string
           name?: string | null
           user_id: string
@@ -348,7 +352,9 @@ export type Database = {
         }
         Update: {
           avatar?: string | null
+          base_location?: string | null
           bio?: string | null
+          default_currency?: string | null
           id?: string
           name?: string | null
           user_id?: string
@@ -398,13 +404,16 @@ export type Database = {
           country_code: string | null
           created_at: string | null
           description: string | null
+          destination: string | null
           distance: string | null
           duration: string | null
+          end_date: string | null
           hashtags: string[] | null
           id: string
           images: string[] | null
           is_public: boolean | null
           photo_count: number | null
+          start_date: string | null
           stops: Json | null
           title: string | null
           user_id: string
@@ -415,13 +424,16 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           description?: string | null
+          destination?: string | null
           distance?: string | null
           duration?: string | null
+          end_date?: string | null
           hashtags?: string[] | null
           id?: string
           images?: string[] | null
           is_public?: boolean | null
           photo_count?: number | null
+          start_date?: string | null
           stops?: Json | null
           title?: string | null
           user_id: string
@@ -432,13 +444,16 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           description?: string | null
+          destination?: string | null
           distance?: string | null
           duration?: string | null
+          end_date?: string | null
           hashtags?: string[] | null
           id?: string
           images?: string[] | null
           is_public?: boolean | null
           photo_count?: number | null
+          start_date?: string | null
           stops?: Json | null
           title?: string | null
           user_id?: string

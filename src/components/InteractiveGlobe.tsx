@@ -262,7 +262,10 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       });
 
       // Add pins to map
+      console.log('Adding pins to Mapbox map:', pins);
       pins.forEach((pin, index) => {
+        console.log(`Creating marker for pin ${index}:`, pin);
+        
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';
         markerElement.style.cssText = `
@@ -288,33 +291,41 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
           document.head.appendChild(style);
         }
 
-        const marker = new mapboxgl.Marker(markerElement)
-          .setLngLat([pin.lng, pin.lat])
-          .addTo(map.current!);
+        try {
+          const marker = new mapboxgl.Marker(markerElement)
+            .setLngLat([pin.lng, pin.lat])
+            .addTo(map.current!);
 
-        markerElement.addEventListener('click', () => {
-          onPinClick(pin);
-        });
+          console.log(`Marker added for ${pin.location} at [${pin.lng}, ${pin.lat}]`);
 
-        const popup = new mapboxgl.Popup({
-          offset: 25,
-          closeButton: false,
-          closeOnClick: false
-        }).setHTML(`
-          <div style="font-family: system-ui; padding: 4px; color: #333;">
-            <strong>${pin.location}</strong><br>
-            ${pin.friends.length} friends visited<br>
-            ${pin.trips} trips
-          </div>
-        `);
+          markerElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Pin clicked:', pin);
+            onPinClick(pin);
+          });
 
-        markerElement.addEventListener('mouseenter', () => {
-          popup.setLngLat([pin.lng, pin.lat]).addTo(map.current!);
-        });
+          const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: false,
+            closeOnClick: false
+          }).setHTML(`
+            <div style="font-family: system-ui; padding: 4px; color: #333;">
+              <strong>${pin.location}</strong><br>
+              ${pin.friends.length} friends visited<br>
+              ${pin.trips} trips
+            </div>
+          `);
 
-        markerElement.addEventListener('mouseleave', () => {
-          popup.remove();
-        });
+          markerElement.addEventListener('mouseenter', () => {
+            popup.setLngLat([pin.lng, pin.lat]).addTo(map.current!);
+          });
+
+          markerElement.addEventListener('mouseleave', () => {
+            popup.remove();
+          });
+        } catch (error) {
+          console.error(`Error creating marker for ${pin.location}:`, error);
+        }
       });
 
       setTimeout(spinGlobe, 2000);

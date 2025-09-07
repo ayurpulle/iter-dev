@@ -50,16 +50,12 @@ const MapView = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900">
+    <div className="fixed inset-0">
       <TopBar />
       
       {/* Globe Container - Full height between bars */}
-      <div className="absolute top-16 bottom-20 left-0 right-0 overflow-hidden">
-        
-        {/* Interactive Globe - Full container size */}
-        <div className="w-full h-full">
-          <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
-        </div>
+      <div className="absolute top-16 bottom-20 left-0 right-0">
+        <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
       </div>
 
       {/* Drag Area - Only bottom portion for swipe gesture */}

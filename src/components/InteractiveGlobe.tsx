@@ -49,19 +49,25 @@ const FallbackGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick }) =>
         </div>
         
         {/* Pins */}
-        {pins.map((pin, idx) => (
-          <button
-            key={idx}
-            onClick={() => onPinClick(pin)}
-            className="absolute w-4 h-4 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform border-2 border-white"
-            style={{
-              top: `${pin.lat}%`,
-              left: `${pin.lng}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-            title={`${pin.location} - ${pin.friends.length} friends visited`}
-          />
-        ))}
+        {pins.map((pin, idx) => {
+          // Convert lat/lng to approximate percentage positions on the sphere
+          const x = ((pin.lng + 180) / 360) * 100;
+          const y = ((90 - pin.lat) / 180) * 100;
+          
+          return (
+            <button
+              key={idx}
+              onClick={() => onPinClick(pin)}
+              className="absolute w-4 h-4 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform border-2 border-white z-10"
+              style={{
+                left: `${Math.max(10, Math.min(90, x))}%`,
+                top: `${Math.max(10, Math.min(90, y))}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+              title={`${pin.location} - ${pin.friends.length} friends visited`}
+            />
+          );
+        })}
       </div>
       
       <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm flex items-center gap-2">
@@ -236,7 +242,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       });
 
       // Add pins to map
-      console.log('InteractiveGlobe received pins:', pins);
       pins.forEach((pin, index) => {
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';

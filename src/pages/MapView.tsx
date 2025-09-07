@@ -15,23 +15,14 @@ const MapView = () => {
 
   // Create pins from user's saved posts only
   const createPinsFromPosts = () => {
-    console.log('Creating pins from saved posts:', yourSavedPosts);
-    
     // Group saved posts by location
     const locationGroups: { [key: string]: { location: string; lat: number; lng: number; posts: SavedPost[] } } = {};
     
     yourSavedPosts
-      .filter(savedPost => {
-        console.log('Checking savedPost:', savedPost);
-        const hasTripsWithStops = savedPost.posts?.trips?.stops;
-        console.log('Has trips with stops:', hasTripsWithStops);
-        return hasTripsWithStops;
-      })
+      .filter(savedPost => savedPost.posts?.trips?.stops)
       .forEach(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];
-        console.log('Processing stops for savedPost:', stops);
         stops.forEach((stop: any) => {
-          console.log('Processing stop:', stop);
           const locationKey = `${stop.lat}-${stop.lng}`;
           if (!locationGroups[locationKey]) {
             locationGroups[locationKey] = {
@@ -46,7 +37,7 @@ const MapView = () => {
       });
 
     // Convert to pins format
-    const pins = Object.values(locationGroups).map(group => ({
+    return Object.values(locationGroups).map(group => ({
       location: group.location,
       lat: group.lat,
       lng: group.lng,
@@ -54,14 +45,9 @@ const MapView = () => {
       trips: group.posts.length,
       posts: group.posts // Add posts data for click handling
     }));
-    
-    console.log('Generated pins:', pins);
-    console.log('Number of pins generated:', pins.length);
-    return pins;
   };
 
   const pins = createPinsFromPosts();
-  console.log('Pins being passed to InteractiveGlobe:', pins);
 
   // Remove the global drag listeners since we now use a specific drag area
   // No useEffect needed for drag handling

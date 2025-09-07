@@ -4,11 +4,8 @@ import { X } from "lucide-react";
 import CompactFriendsList from "./CompactFriendsList";
 import { Badge } from "@/components/ui/badge";
 
-const mockTopTrips = [
-  { title: "Private: 2 months, 353 km, 5 hours", tags: ["#adventure", "#party"] },
-  // More mocks
-];
-const mockSuggested = ["Accent 1", "Accent 2"];
+const topTrips: any[] = [];
+const suggestedAccents: any[] = [];
 
 interface LocationTripsProps {
   location: string;
@@ -33,15 +30,23 @@ const LocationTrips = ({ location, onClose, onTripClick }: LocationTripsProps) =
 
           <div className="space-y-4">
             <h2>Top Trips</h2>
-            {mockTopTrips.map((trip, idx) => (
-              <div key={idx}>
-                {trip.title}
-                {trip.tags.map(tag => <Badge key={tag}>{tag}</Badge>)}
-              </div>
-            ))}
+            {topTrips.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No trips found for this location.</p>
+            ) : (
+              topTrips.map((trip, idx) => (
+                <div key={idx}>
+                  {trip.title}
+                  {trip.tags?.map((tag: string) => <Badge key={tag}>{tag}</Badge>)}
+                </div>
+              ))
+            )}
 
             <h2>Suggested Accents</h2>
-            {mockSuggested.map((accent, idx) => <div key={idx}>{accent}</div>)}
+            {suggestedAccents.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No suggestions available.</p>
+            ) : (
+              suggestedAccents.map((accent, idx) => <div key={idx}>{accent}</div>)
+            )}
 
             <CompactFriendsList filterLocation={location} onTripClick={onTripClick} />
           </div>

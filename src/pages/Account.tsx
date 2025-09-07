@@ -61,20 +61,17 @@ const Account = () => {
   // User posts
   const [userPosts, setUserPosts] = useState([]);
 
-  // Mock visited countries for the map
-  const visitedCountries = [
-    "Japan", "France", "Indonesia", "USA", "Iceland", "Thailand",
-    "Germany", "Italy", "Spain", "Australia", "Canada", "Mexico"
-  ];
+  // Real visited countries from user data
+  const visitedCountries: string[] = [];
 
-  // Mock travel statistics
+  // Real travel statistics
   const travelStats = {
     countriesVisited: visitedCountries.length,
     totalCountries: 195,
-    citiesVisited: 48,
+    citiesVisited: 0,
     totalCities: 10000,
-    totalDistance: 87540,
-    totalDays: 156,
+    totalDistance: 0,
+    totalDays: 0,
   };
 
   // Load user profile and posts on mount

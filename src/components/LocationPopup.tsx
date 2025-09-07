@@ -10,7 +10,6 @@ interface LocationPopupProps {
 }
 
 const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => {
-  // Mock data - should match the trips from CompactFriendsList
   const friendsTrips = [
     {
       friend: {

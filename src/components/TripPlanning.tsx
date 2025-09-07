@@ -370,12 +370,15 @@ const TripPlanning = () => {
             notes: ""
           });
           setGeneratedItinerary(itinerary.itinerary_content);
+          setFriendRecommendations(itinerary.friend_recommendations || {});
           setLastGeneratedData({
             destination: itinerary.destination,
             startDate: itinerary.start_date ? new Date(itinerary.start_date) : null,
             endDate: itinerary.end_date ? new Date(itinerary.end_date) : null,
             budget: itinerary.budget || 0,
             interests: itinerary.interests || [],
+            itinerary: itinerary.itinerary_content,
+            friendRecommendations: itinerary.friend_recommendations || {}
           });
           setCurrentView('planning');
         }}
@@ -838,9 +841,7 @@ const TripPlanning = () => {
                     <SelectValue placeholder="Select a folder" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="europe-2024">Europe 2024</SelectItem>
-                    <SelectItem value="asia-adventures">Asia Adventures</SelectItem>
-                    <SelectItem value="beach-destinations">Beach Destinations</SelectItem>
+                    {/* Real folders will be loaded from useSavedPosts hook */}
                   </SelectContent>
                 </Select>
               </div>

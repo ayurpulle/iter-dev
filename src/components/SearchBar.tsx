@@ -2,8 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
-const mockRecent = ["Johnson -> Colombia"];
-const mockSuggested = ["Guatemala"];
+const recentSearches: string[] = [];
+const suggestedSearches: string[] = [];
 
 const SearchBar = () => {
   return (
@@ -14,9 +14,17 @@ const SearchBar = () => {
       </div>
       <div>
         <h3>Recent</h3>
-        {mockRecent.map((item, idx) => <div key={idx}>{item}</div>)}
+        {recentSearches.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No recent searches</p>
+        ) : (
+          recentSearches.map((item, idx) => <div key={idx}>{item}</div>)
+        )}
         <h3>Suggested</h3>
-        {mockSuggested.map((item, idx) => <div key={idx}>{item} [Follow]</div>)}
+        {suggestedSearches.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No suggestions</p>
+        ) : (
+          suggestedSearches.map((item, idx) => <div key={idx}>{item} [Follow]</div>)
+        )}
       </div>
     </div>
   );

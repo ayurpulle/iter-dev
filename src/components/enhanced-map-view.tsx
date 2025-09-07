@@ -24,11 +24,7 @@ const TripPlanning = () => {
 
   const availableTripTypes = ['Adventure', 'Relaxing', 'Cultural', 'Beach', 'City', 'Nature', 'Food', 'Luxury', 'Budget', 'Family'];
 
-  const savedTripsList = [
-    { id: 1, title: 'Japan Adventure', location: 'Japan', user: 'Sarah Chen' },
-    { id: 2, title: 'Italian Renaissance', location: 'Italy', user: 'Alex Martinez' },
-    { id: 3, title: 'Thai Island Paradise', location: 'Thailand', user: 'Maya Patel' },
-  ];
+  const savedTripsList: any[] = [];
 
   // Fetch folders when component mounts and user is authenticated
   useEffect(() => {
@@ -108,26 +104,8 @@ const TripPlanning = () => {
       {/* Saved Iters Section */}
       <div>
         <h3 className="text-lg font-semibold mb-3">Your Saved Iters</h3>
-        <div className="grid grid-cols-1 gap-3">
-          {/* Mock saved iters - in real app, fetch from database */}
-          <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-medium text-sm">Tokyo Adventure Iter</h4>
-                <p className="text-xs text-muted-foreground">7 days • Created 3 days ago</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-xs">View</Button>
-            </div>
-          </div>
-          <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-medium text-sm">European Backpacking Iter</h4>
-                <p className="text-xs text-muted-foreground">14 days • Created 1 week ago</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-xs">View</Button>
-            </div>
-          </div>
+        <div className="space-y-3">
+          <p className="text-muted-foreground text-sm">No saved itineraries yet. Create your first trip plan!</p>
         </div>
       </div>
 
@@ -330,14 +308,8 @@ export default function EnhancedMapView() {
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [showLocationDetails, setShowLocationDetails] = useState(false);
 
-  // Mock pins data
-  const friendPins = [
-    { location: 'Tokyo', lat: 35, lng: 60, friends: ['Sarah Chen', 'Mike Johnson'], trips: 3 },
-    { location: 'Paris', lat: 40, lng: 45, friends: ['Emma Wilson'], trips: 1 },
-    { location: 'Bali', lat: 55, lng: 65, friends: ['Alex Martinez', 'Maya Patel'], trips: 2 },
-    { location: 'Rome', lat: 42, lng: 48, friends: ['Sophie Brown'], trips: 1 },
-    { location: 'Bangkok', lat: 50, lng: 62, friends: ['Maya Patel'], trips: 1 },
-  ];
+  // Fetch real friend pins from database
+  const friendPins: any[] = [];
 
   const handlePinClick = (pin: any) => {
     setSelectedLocation(pin);

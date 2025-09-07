@@ -88,35 +88,8 @@ const Chat = () => {
     if (!user) return;
 
     try {
-      // Mock data for conversations
-      const mockConversations: Conversation[] = [
-        {
-          id: "conv1",
-          other_user: {
-            id: "user1",
-            name: "Sarah Johnson",
-            username: "sarah_j",
-            avatar: ""
-          },
-          last_message: "Thanks for the travel tips!",
-          last_message_time: new Date(Date.now() - 3600000).toISOString(),
-          unread_count: 2
-        },
-        {
-          id: "conv2",
-          other_user: {
-            id: "user2",
-            name: "Mike Chen",
-            username: "mike_c",
-            avatar: ""
-          },
-          last_message: "Let's plan a trip together soon",
-          last_message_time: new Date(Date.now() - 7200000).toISOString(),
-          unread_count: 0
-        }
-      ];
-      
-      setConversations(mockConversations);
+      // For now, set empty conversations until real implementation
+      setConversations([]);
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -128,44 +101,8 @@ const Chat = () => {
     if (!user) return;
 
     try {
-      // Mock messages for specific conversation
-      const mockMessages: ChatMessage[] = [
-        {
-          id: "1",
-          user_id: "user1",
-          content: "Hey! How was your trip to Japan?",
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-          profiles: {
-            name: "Sarah Johnson",
-            username: "sarah_j",
-            avatar: ""
-          }
-        },
-        {
-          id: "2",
-          user_id: user.id,
-          content: "It was amazing! The cherry blossoms were incredible",
-          created_at: new Date(Date.now() - 5400000).toISOString(),
-          profiles: {
-            name: "You",
-            username: "you",
-            avatar: ""
-          }
-        },
-        {
-          id: "3",
-          user_id: "user1",
-          content: "Thanks for the travel tips!",
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          profiles: {
-            name: "Sarah Johnson",
-            username: "sarah_j",
-            avatar: ""
-          }
-        }
-      ];
-      
-      setMessages(mockMessages);
+      // For now, set empty messages until real implementation
+      setMessages([]);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -178,19 +115,8 @@ const Chat = () => {
     if (!newMessage.trim() || !user || !selectedConversation) return;
 
     try {
-      const mockMessage: ChatMessage = {
-        id: Date.now().toString(),
-        user_id: user.id,
-        content: newMessage,
-        created_at: new Date().toISOString(),
-        profiles: {
-          name: "You",
-          username: "you",
-          avatar: ""
-        }
-      };
-
-      setMessages(prev => [...prev, mockMessage]);
+      // For now, just show a success message until real implementation
+      setNewMessage("");
       setNewMessage("");
       
       toast({

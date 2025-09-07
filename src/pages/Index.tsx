@@ -65,18 +65,95 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+  const [isLiking, setIsLiking] = useState(false);
 
   const isOwnPost = user?.id === post.user_id;
 
-  // Try to get mapbox token from localStorage for enhanced map view
+  // Check if user has liked this post and get mapbox token
   useEffect(() => {
+    const checkLikeStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setIsLiked(true);
+        }
+      } catch (error) {
+        console.log('No existing like found');
+      }
+    };
+
     const token = localStorage.getItem('mapbox_token');
     if (token) setMapboxToken(token);
-  }, []);
+    
+    checkLikeStatus();
+  }, [post.id, user?.id]);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+  const handleLike = async () => {
+    if (!user?.id || isLiking) return;
+    
+    setIsLiking(true);
+    
+    try {
+      if (isLiked) {
+        // Unlike the post
+        const { error } = await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        // Update post likes count
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ likes_count: Math.max(0, likesCount - 1) })
+          .eq('id', post.id);
+        
+        if (updateError) throw updateError;
+        
+        setIsLiked(false);
+        setLikesCount(prev => Math.max(0, prev - 1));
+      } else {
+        // Like the post
+        const { error } = await supabase
+          .from('post_likes')
+          .insert({
+            post_id: post.id,
+            user_id: user.id
+          });
+        
+        if (error) throw error;
+        
+        // Update post likes count
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ likes_count: likesCount + 1 })
+          .eq('id', post.id);
+        
+        if (updateError) throw updateError;
+        
+        setIsLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update like",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const handleShare = () => {
@@ -254,6 +331,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 size="sm" 
                 className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
                 onClick={handleLike}
+                disabled={isLiking}
               >
                 <Heart size={18} className={isLiked ? 'fill-current' : ''} />
                 <span className="text-sm">{likesCount}</span>

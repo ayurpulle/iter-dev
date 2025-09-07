@@ -262,52 +262,42 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         }
       });
 
-      // Debug map container and state
-      console.log('🔍 Map container:', mapContainer.current);
-      console.log('🔍 Map instance:', map.current);
-      console.log('🔍 Map loaded state:', map.current.loaded());
-      console.log('🔍 Map style loaded:', map.current.isStyleLoaded());
-      console.log('🔍 Map center:', map.current.getCenter());
-      console.log('🔍 Map zoom:', map.current.getZoom());
-
-      // Test with a simple marker first
-      const testMarker = () => {
-        console.log('🧪 Creating test marker at NYC coordinates');
-        const testElement = document.createElement('div');
-        testElement.style.cssText = `
-          width: 40px;
-          height: 40px;
-          background-color: #00ff00;
-          border: 3px solid yellow;
-          border-radius: 50%;
-          position: absolute;
-        `;
-        
-        const testMarkerInstance = new mapboxgl.Marker(testElement)
-          .setLngLat([-74.005994, 40.712749]) // NYC coordinates
-          .addTo(map.current!);
-          
-        console.log('🧪 Test marker created:', testMarkerInstance);
-        
-        // Get marker's DOM element position
-        setTimeout(() => {
-          const markerEl = testElement;
-          const rect = markerEl.getBoundingClientRect();
-          console.log('🧪 Test marker DOM position:', rect);
-          console.log('🧪 Test marker computed style:', window.getComputedStyle(markerEl));
-        }, 1000);
+      // Function to determine continent based on coordinates
+      const getContinentColor = (lng: number, lat: number, location: string) => {
+        // North America: roughly -170 to -50 longitude, 15 to 75 latitude
+        if (lng >= -170 && lng <= -50 && lat >= 15 && lat <= 75) {
+          return '#ef4444'; // Red for North America
+        }
+        // Europe: roughly -25 to 60 longitude, 35 to 75 latitude
+        if (lng >= -25 && lng <= 60 && lat >= 35 && lat <= 75) {
+          return '#3b82f6'; // Blue for Europe
+        }
+        // Asia: roughly 60 to 180 longitude, 5 to 75 latitude
+        if (lng >= 60 && lng <= 180 && lat >= 5 && lat <= 75) {
+          return '#10b981'; // Green for Asia
+        }
+        // Africa: roughly -20 to 55 longitude, -35 to 40 latitude
+        if (lng >= -20 && lng <= 55 && lat >= -35 && lat <= 40) {
+          return '#f59e0b'; // Yellow for Africa
+        }
+        // South America: roughly -85 to -30 longitude, -60 to 15 latitude
+        if (lng >= -85 && lng <= -30 && lat >= -60 && lat <= 15) {
+          return '#8b5cf6'; // Purple for South America
+        }
+        // Oceania: roughly 110 to 180 longitude, -50 to -5 latitude
+        if (lng >= 110 && lng <= 180 && lat >= -50 && lat <= -5) {
+          return '#ec4899'; // Pink for Oceania
+        }
+        // Default fallback
+        return '#6b7280'; // Gray for unknown
       };
 
-      // Function to add actual pins
+      // Function to add pins after map is ready
       const addPinsToMap = () => {
-        console.log('📍 Starting to add pins. Map state check:');
-        console.log('- Map loaded:', map.current.loaded());
-        console.log('- Style loaded:', map.current.isStyleLoaded());
-        console.log('- Container dimensions:', mapContainer.current?.getBoundingClientRect());
+        console.log('📍 Adding standardized pins to map...');
         
         pins.forEach((pin, index) => {
-          console.log(`\n📍 Processing pin ${index + 1}/${pins.length}: ${pin.location}`);
-          console.log(`   Coordinates: lng=${pin.lng}, lat=${pin.lat}`);
+          console.log(`📍 Creating pin for ${pin.location}`);
           
           const lng = Number(pin.lng);
           const lat = Number(pin.lat);
@@ -317,9 +307,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             return;
           }
           
-          // Create pin icon instead of simple dot
-          const colors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
-          const color = colors[index % colors.length];
+          // Get continent-based color
+          const pinColor = getContinentColor(lng, lat, pin.location);
           
           const markerElement = document.createElement('div');
           markerElement.style.cssText = `
@@ -327,11 +316,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             transform: translate(-50%, -100%);
           `;
           
-          // Create the pin icon using SVG
+          // Create standardized pin with continent color
           markerElement.innerHTML = `
-            <svg width="32" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${color}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+            <svg width="28" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${pinColor}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
               <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3" fill="${color}" stroke="white" stroke-width="1"/>
+              <circle cx="12" cy="10" r="3" fill="${pinColor}" stroke="white" stroke-width="1"/>
             </svg>
             <div style="
               position: absolute;
@@ -351,27 +340,15 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
           `;
 
           try {
-            console.log(`   Creating Mapbox marker...`);
             const marker = new mapboxgl.Marker(markerElement)
               .setLngLat([lng, lat])
               .addTo(map.current!);
 
-            console.log(`   ✅ Marker created for ${pin.location}`);
-            
-            // Check marker position after creation
-            setTimeout(() => {
-              const rect = markerElement.getBoundingClientRect();
-              console.log(`   📐 ${pin.location} marker position:`, {
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height
-              });
-            }, 500);
+            console.log(`✅ Pin added for ${pin.location} with color ${pinColor}`);
 
+            // Add click handler
             markerElement.addEventListener('click', (e) => {
               e.stopPropagation();
-              console.log('🖱️ Pin clicked:', pin);
               onPinClick(pin);
             });
 
@@ -387,28 +364,22 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             });
 
           } catch (error) {
-            console.error(`❌ Error creating marker for ${pin.location}:`, error);
+            console.error(`❌ Error creating pin for ${pin.location}:`, error);
           }
         });
+        
+        console.log(`✅ Finished adding ${pins.length} standardized pins`);
       };
 
       // Wait for map to be fully ready
-      const initMarkers = () => {
-        console.log('🚀 Initializing markers...');
-        testMarker();
-        setTimeout(() => {
-          addPinsToMap();
-        }, 1500);
-      };
-
       if (map.current.loaded()) {
-        console.log('✅ Map already loaded');
-        initMarkers();
+        console.log('✅ Map ready, adding pins');
+        setTimeout(addPinsToMap, 500);
       } else {
         console.log('⏳ Waiting for map to load...');
         map.current.on('load', () => {
-          console.log('✅ Map load event fired');
-          initMarkers();
+          console.log('✅ Map loaded, adding pins');
+          addPinsToMap();
         });
       }
 

@@ -12,9 +12,10 @@ import { useTrips } from '@/hooks/useTrips';
 import { useToast } from '@/hooks/use-toast';
 
 interface TripData {
-  country: string;
-  photos: string[];
-  route: Array<{lat: number, lng: number, name: string}>;
+  country?: string;
+  photos?: string[];
+  route?: Array<{lat: number, lng: number, name: string}>;
+  locations?: Array<{lat: number, lng: number, name: string}>; // TripPostCreator uses this
 }
 
 const TripDetails = () => {
@@ -50,7 +51,12 @@ const TripDetails = () => {
       console.log('=== DEBUG: Creating trip with data ===');
       console.log('tripData from location.state:', tripData);
       console.log('tripData.route:', tripData?.route);
+      console.log('tripData.locations:', tripData?.locations); // TripPostCreator data
       console.log('tripData.route length:', tripData?.route?.length);
+      console.log('tripData.locations length:', tripData?.locations?.length);
+
+      // Use route from enhanced-create-trip OR locations from TripPostCreator
+      const routeData = tripData?.route || tripData?.locations || [];
 
       const newTrip = await createTrip({
         title: tripTitle,
@@ -60,7 +66,7 @@ const TripDetails = () => {
         companions,
         duration,
         distance,
-        route: tripData?.route || [],
+        route: routeData,
         photos: tripData?.photos || [],
         is_public: isPublic
       });

@@ -30,11 +30,13 @@ const MapView = () => {
 
   const pins = createPinsFromPosts();
 
-  // Handle swipe up gesture
+  // Handle swipe up gesture and mouse drag
   useEffect(() => {
     let startY = 0;
     let currentY = 0;
+    let isDragging = false;
     
+    // Touch events (mobile)
     const handleTouchStart = (e: TouchEvent) => {
       startY = e.touches[0].clientY;
     };
@@ -55,15 +57,53 @@ const MapView = () => {
         setShowPostsList(false);
       }
     };
+
+    // Mouse events (laptop/desktop)
+    const handleMouseDown = (e: MouseEvent) => {
+      startY = e.clientY;
+      isDragging = true;
+      e.preventDefault();
+    };
     
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      currentY = e.clientY;
+      e.preventDefault();
+    };
+    
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      const deltaY = startY - currentY;
+      
+      // If dragged up by at least 50px, show posts list
+      if (deltaY > 50 && !showPostsList) {
+        setShowPostsList(true);
+      }
+      // If dragged down by at least 50px, hide posts list
+      else if (deltaY < -50 && showPostsList) {
+        setShowPostsList(false);
+      }
+      
+      e.preventDefault();
+    };
+    
+    // Add event listeners
     document.addEventListener('touchstart', handleTouchStart);
     document.addEventListener('touchmove', handleTouchMove);
     document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
     
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [showPostsList]);
 
@@ -96,7 +136,7 @@ const MapView = () => {
         {!showPostsList && (
           <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20 shadow-lg">
-              <p className="text-white/70 font-medium text-sm">Swipe up to see saved posts</p>
+              <p className="text-white/70 font-medium text-sm">Drag up to see saved posts</p>
             </div>
           </div>
         )}

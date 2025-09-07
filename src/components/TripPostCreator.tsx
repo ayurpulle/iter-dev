@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, MapPin, Route, Search, X, Plus } from 'lucide-react';
+import { ArrowLeft, MapPin, Route, Search, X, Plus, Trash2 } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+// @ts-ignore
+import EXIF from 'exif-js';
 
 interface TripPostCreatorProps {
   onBack?: () => void;
@@ -30,8 +33,10 @@ interface Location {
 
 const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedLocations, setSelectedLocations] = useState<Location[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [photoLocations, setPhotoLocations] = useState<Array<{lat: number, lng: number, name: string, photoIndex: number}>>([]);
   const [isSelectingPhoto, setIsSelectingPhoto] = useState(false);
   const [mapboxToken, setMapboxToken] = useState('');
   const [userMapboxToken, setUserMapboxToken] = useState('');
@@ -160,19 +165,26 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
   useEffect(() => {
     const token = mapboxToken || userMapboxToken;
-    if (!mapContainer.current || !token || selectedLocations.length === 0) return;
+    if (!mapContainer.current || !token || (selectedLocations.length === 0 && photoLocations.length === 0)) return;
 
     mapboxgl.accessToken = token;
 
-    // Calculate center based on selected locations
-    const avgLng = selectedLocations.reduce((sum, loc) => sum + loc.coordinates[0], 0) / selectedLocations.length;
-    const avgLat = selectedLocations.reduce((sum, loc) => sum + loc.coordinates[1], 0) / selectedLocations.length;
+    // Calculate center based on all locations (selected + photo locations)
+    const allLocations = [
+      ...selectedLocations.map(loc => ({ lat: loc.coordinates[1], lng: loc.coordinates[0] })),
+      ...photoLocations
+    ];
+    
+    if (allLocations.length === 0) return;
+
+    const avgLng = allLocations.reduce((sum, loc) => sum + loc.lng, 0) / allLocations.length;
+    const avgLat = allLocations.reduce((sum, loc) => sum + loc.lat, 0) / allLocations.length;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
       center: [avgLng, avgLat],
-      zoom: selectedLocations.length > 1 ? 4 : 6,
+      zoom: allLocations.length > 1 ? 4 : 6,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -180,7 +192,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     // Store markers in a ref to track them
     const markers: mapboxgl.Marker[] = [];
 
-    // Add markers for selected locations
+    // Add markers for selected locations (red)
     selectedLocations.forEach((location, index) => {
       const marker = new mapboxgl.Marker({ 
         color: '#ef4444', // Red color for selected locations
@@ -197,6 +209,36 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       
       markers.push(marker);
     });
+
+    // Add markers for photo locations (green with photo info)
+    photoLocations.forEach((photoLoc, index) => {
+      const markerElement = document.createElement('div');
+      markerElement.className = 'photo-location-marker';
+      markerElement.innerHTML = `
+        <div style="background: #22c55e; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; position: relative;">
+          📷
+          <button onclick="removePhotoLocation(${photoLoc.photoIndex})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+        </div>
+      `;
+      
+      const marker = new mapboxgl.Marker({ 
+        element: markerElement
+      })
+        .setLngLat([photoLoc.lng, photoLoc.lat])
+        .setPopup(new mapboxgl.Popup().setHTML(`
+          <div class="p-2">
+            <h3 class="font-semibold">${photoLoc.name}</h3>
+            <p class="text-sm text-gray-600">From photo location data</p>
+            <button onclick="removePhotoLocation(${photoLoc.photoIndex})" class="mt-2 px-2 py-1 bg-red-500 text-white text-xs rounded">Remove Pin</button>
+          </div>
+        `))
+        .addTo(map.current!);
+      
+      markers.push(marker);
+    });
+
+    // Make remove function globally available
+    (window as any).removePhotoLocation = removePhotoLocation;
 
     // If we have multiple locations, draw a route line between them
     if (selectedLocations.length > 1) {
@@ -312,7 +354,42 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       markers.forEach(marker => marker.remove());
       map.current?.remove();
     };
-  }, [selectedLocations, mapboxToken, userMapboxToken]);
+  }, [selectedLocations, photoLocations, mapboxToken, userMapboxToken]);
+
+  // Extract GPS coordinates from photo EXIF data
+  const extractGPSFromPhoto = (dataUrl: string): Promise<{lat: number, lng: number} | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          EXIF.getData(img as any, function(this: any) {
+            const lat = EXIF.getTag(this, "GPSLatitude");
+            const lon = EXIF.getTag(this, "GPSLongitude");
+            const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+            const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+            
+            if (lat && lon && latRef && lonRef) {
+              // Convert DMS to decimal degrees
+              const latDecimal = lat[0] + lat[1]/60 + lat[2]/3600;
+              const lonDecimal = lon[0] + lon[1]/60 + lon[2]/3600;
+              
+              const finalLat = latRef === "S" ? -latDecimal : latDecimal;
+              const finalLon = lonRef === "W" ? -lonDecimal : lonDecimal;
+              
+              resolve({ lat: finalLat, lng: finalLon });
+            } else {
+              resolve(null);
+            }
+          });
+        } catch (error) {
+          console.log('No EXIF data found in photo');
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  };
 
   const selectPhoto = async () => {
     try {
@@ -326,7 +403,26 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       });
 
       if (photo.dataUrl) {
+        const newPhotoIndex = selectedPhotos.length;
         setSelectedPhotos(prev => [...prev, photo.dataUrl]);
+        
+        // Extract GPS coordinates from photo
+        const gpsCoords = await extractGPSFromPhoto(photo.dataUrl);
+        if (gpsCoords) {
+          const photoLocation = {
+            lat: gpsCoords.lat,
+            lng: gpsCoords.lng,
+            name: `Photo ${newPhotoIndex + 1}`,
+            photoIndex: newPhotoIndex
+          };
+          
+          setPhotoLocations(prev => [...prev, photoLocation]);
+          
+          toast({
+            title: "Location detected",
+            description: `GPS coordinates found in photo and added to map`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error selecting photo:', error);
@@ -337,6 +433,12 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
   const removePhoto = (index: number) => {
     setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
+    // Remove corresponding photo location if it exists
+    setPhotoLocations(prev => prev.filter(loc => loc.photoIndex !== index));
+    // Update photo indices for remaining photos
+    setPhotoLocations(prev => prev.map(loc => 
+      loc.photoIndex > index ? { ...loc, photoIndex: loc.photoIndex - 1, name: `Photo ${loc.photoIndex}` } : loc
+    ));
   };
 
   const addLocation = (location: Location) => {
@@ -352,6 +454,14 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     setSelectedLocations(prev => prev.filter(loc => loc.id !== locationId));
   };
 
+  const removePhotoLocation = (photoIndex: number) => {
+    setPhotoLocations(prev => prev.filter(loc => loc.photoIndex !== photoIndex));
+    toast({
+      title: "Location removed",
+      description: "Photo location pin removed from map",
+    });
+  };
+
   const handleNext = () => {
     if (selectedLocations.length === 0) {
       alert('Please select at least one location first');
@@ -362,7 +472,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     const tripData = {
       locations: selectedLocations,
       photos: selectedPhotos,
-      route: tripRoute
+      route: [...tripRoute, ...photoLocations]
     };
     
     navigate('/trip-details', { state: tripData });
@@ -370,29 +480,9 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
   const handleSkipPhotos = () => {
     setSelectedPhotos([]);
+    setPhotoLocations([]);
     // Indicate photos were skipped
     console.log('Photos skipped');
-  };
-
-  const handleGenerateTripMap = () => {
-    if (selectedLocations.length === 0) {
-      alert('Please select at least one location first');
-      return;
-    }
-    
-    // Generate trip map logic
-    const tripData = {
-      locations: selectedLocations,
-      photos: selectedPhotos,
-      route: tripRoute
-    };
-    
-    console.log('Generating trip map for:', tripData);
-    const locationNames = selectedLocations.map(loc => loc.name).join(', ');
-    alert(`Generating trip map for ${locationNames} with ${tripRoute.length} stops and ${selectedPhotos.length} photos`);
-    
-    // Here you could navigate to a trip preview/generation page
-    // or show a modal with the generated trip
   };
 
   return (
@@ -562,6 +652,10 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                       <span>Selected cities</span>
                     </div>
                     <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Photo locations</span>
+                    </div>
+                    <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <span>Click to add custom stops</span>
                     </div>
@@ -572,7 +666,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                   <div className="text-center space-y-2">
                     <MapPin className="h-8 w-8 mx-auto text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      {selectedLocations.length === 0 ? 'Select destinations to view map' : 'Add Mapbox token to view map'}
+                      {(selectedLocations.length === 0 && photoLocations.length === 0) ? 'Select destinations or add photos with location data' : 'Add Mapbox token to view map'}
                     </p>
                   </div>
                 </div>
@@ -587,7 +681,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                 <h3 className="font-medium">Photos</h3>
                 {selectedPhotos.length > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''}
+                    {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''} • {photoLocations.length} with location data
                   </span>
                 )}
               </div>
@@ -609,6 +703,11 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                       >
                         ×
                       </Button>
+                      {photoLocations.find(loc => loc.photoIndex === index) && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-1 rounded">
+                          📍
+                        </div>
+                      )}
                       {index === 0 && (
                         <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
                           Main
@@ -650,17 +749,6 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
             </div>
           </Card>
         </div>
-
-        {/* Generate Trip Map Button */}
-        <Card className="p-4">
-          <Button
-            className="w-full"
-            disabled={selectedLocations.length === 0}
-            onClick={handleGenerateTripMap}
-          >
-            Generate Trip Map
-          </Button>
-        </Card>
       </div>
     </div>
   );

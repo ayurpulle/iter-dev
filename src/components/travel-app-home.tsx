@@ -63,58 +63,80 @@ const TripPost = ({ trip }) => {
         <span className="text-xs text-gray-500">{trip.date}</span>
       </div>
 
-      {/* Country Map */}
-      <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 h-64">
-        <div className="absolute inset-0 flex items-center justify-center text-blue-500 dark:text-blue-400 opacity-20">
-          {countryMaps[trip.country] || countryMaps['Japan']}
-        </div>
-        <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg px-3 py-2">
-          <p className="font-bold text-lg">{trip.country}</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">{trip.cities.join(' • ')}</p>
-        </div>
-        <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
-          {trip.duration}
-        </div>
-      </div>
-
-      {/* Photo Carousel */}
-      {trip.photos && trip.photos.length > 0 && (
-        <div className="relative bg-gray-100 dark:bg-gray-800">
-          <div className="aspect-[4/3] relative overflow-hidden">
-            <img 
-              src={trip.photos[currentPhotoIndex]} 
-              alt={`Photo ${currentPhotoIndex + 1}`}
-              className="w-full h-full object-cover"
-            />
-            {trip.photos.length > 1 && (
-              <>
-                <button 
-                  onClick={() => setCurrentPhotoIndex((prev) => (prev - 1 + trip.photos.length) % trip.photos.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
-                >
-                  ←
-                </button>
-                <button 
-                  onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % trip.photos.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
-                >
-                  →
-                </button>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                  {trip.photos.map((_, idx) => (
+      {/* Media Carousel */}
+      <div className="w-full">
+        <div className="h-64 bg-muted overflow-hidden">
+          <div className="relative bg-gray-100 dark:bg-gray-800 h-full">
+            <div className="h-full relative overflow-hidden">
+              {currentPhotoIndex === 0 ? (
+                // Journey Map - Always First
+                <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 h-full">
+                  <div className="absolute inset-0 flex items-center justify-center text-blue-500 dark:text-blue-400 opacity-20">
+                    {countryMaps[trip.country] || countryMaps['Japan']}
+                  </div>
+                  <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <p className="font-bold text-lg">{trip.country}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{trip.cities.join(' • ')}</p>
+                  </div>
+                  <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                    {trip.duration}
+                  </div>
+                </div>
+              ) : (
+                // Photos
+                trip.photos && trip.photos.length > 0 && (
+                  <img 
+                    src={trip.photos[currentPhotoIndex - 1]} 
+                    alt={`Photo ${currentPhotoIndex}`}
+                    className="w-full h-full object-cover"
+                  />
+                )
+              )}
+              
+              {/* Navigation buttons - only show if there are photos */}
+              {trip.photos && trip.photos.length > 0 && (
+                <>
+                  <button 
+                    onClick={() => setCurrentPhotoIndex((prev) => {
+                      const totalItems = 1 + trip.photos.length; // 1 for map + photos
+                      return (prev - 1 + totalItems) % totalItems;
+                    })}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    ←
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPhotoIndex((prev) => {
+                      const totalItems = 1 + trip.photos.length; // 1 for map + photos
+                      return (prev + 1) % totalItems;
+                    })}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    →
+                  </button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    {/* Map indicator */}
                     <div 
-                      key={idx}
                       className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                        idx === currentPhotoIndex ? 'bg-white' : 'bg-white/50'
+                        currentPhotoIndex === 0 ? 'bg-white' : 'bg-white/50'
                       }`}
                     />
-                  ))}
-                </div>
-              </>
-            )}
+                    {/* Photo indicators */}
+                    {trip.photos.map((_, idx) => (
+                      <div 
+                        key={idx}
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                          idx + 1 === currentPhotoIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Trip Title & Quick Stats */}
       <div className="p-4">

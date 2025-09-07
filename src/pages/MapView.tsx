@@ -5,27 +5,46 @@ import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import InteractiveGlobe from "@/components/InteractiveGlobe";
 import SavedPostsList from "@/components/SavedPostsList";
-import { useSavedPosts } from "@/hooks/useSavedPosts";
+import LocationPostsList from "@/components/LocationPostsList";
+import { useSavedPosts, SavedPost } from "@/hooks/useSavedPosts";
 
 const MapView = () => {
   const [showPostsList, setShowPostsList] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{location: string; posts: SavedPost[]} | null>(null);
   const { yourSavedPosts, loading } = useSavedPosts();
 
   // Create pins from user's saved posts only
   const createPinsFromPosts = () => {
-    // Convert saved posts to pins format for the globe
-    return yourSavedPosts
+    // Group saved posts by location
+    const locationGroups: { [key: string]: { location: string; lat: number; lng: number; posts: SavedPost[] } } = {};
+    
+    yourSavedPosts
       .filter(savedPost => savedPost.posts?.trips?.stops)
-      .flatMap(savedPost => {
+      .forEach(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];
-        return stops.map((stop: any, index: number) => ({
-          location: stop.name || `Stop ${index + 1}`,
-          lat: stop.lat || 0,
-          lng: stop.lng || 0,
-          friends: [savedPost.posts?.profiles?.name || 'You'],
-          trips: 1
-        }));
+        stops.forEach((stop: any) => {
+          const locationKey = `${stop.lat}-${stop.lng}`;
+          if (!locationGroups[locationKey]) {
+            locationGroups[locationKey] = {
+              location: stop.name || 'Unknown Location',
+              lat: stop.lat || 0,
+              lng: stop.lng || 0,
+              posts: []
+            };
+          }
+          locationGroups[locationKey].posts.push(savedPost);
+        });
       });
+
+    // Convert to pins format
+    return Object.values(locationGroups).map(group => ({
+      location: group.location,
+      lat: group.lat,
+      lng: group.lng,
+      friends: Array.from(new Set(group.posts.map(post => post.posts?.profiles?.name || 'Unknown'))),
+      trips: group.posts.length,
+      posts: group.posts // Add posts data for click handling
+    }));
   };
 
   const pins = createPinsFromPosts();
@@ -34,8 +53,11 @@ const MapView = () => {
   // No useEffect needed for drag handling
 
   const handlePinClick = (pin: any) => {
-    // Could implement pin detail functionality here
-    console.log('Pin clicked:', pin);
+    // Show posts for this location
+    setSelectedLocation({
+      location: pin.location,
+      posts: pin.posts || []
+    });
   };
 
   if (loading) {
@@ -125,6 +147,15 @@ const MapView = () => {
           />
         )}
       </div>
+
+      {/* Location Posts Modal */}
+      {selectedLocation && (
+        <LocationPostsList
+          location={selectedLocation.location}
+          posts={selectedLocation.posts}
+          onClose={() => setSelectedLocation(null)}
+        />
+      )}
 
       {/* Bottom Tab Bar - Always visible at bottom */}
       <BottomTabBar />

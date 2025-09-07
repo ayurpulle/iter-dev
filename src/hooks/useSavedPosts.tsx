@@ -89,9 +89,7 @@ export const useSavedPosts = () => {
 
   // Filter posts by type
   const getYourSavedPosts = () => {
-    return savedPosts.filter(post => 
-      post.posts?.user_id === user?.id
-    );
+    return savedPosts;  // Return all saved posts, not just user's own posts
   };
 
   const getFriendsSavedPosts = () => {

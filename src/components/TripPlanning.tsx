@@ -853,6 +853,15 @@ const TripPlanning = () => {
           )}
          </Button>
 
+        {/* Show Saved Trips Button */}
+        <Button 
+          variant="outline"
+          className="w-full" 
+          onClick={() => setCurrentView('savedTrips')}
+        >
+          Show Saved Trips
+        </Button>
+
         {/* Success Dialog */}
         <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
           <DialogContent className="max-w-sm rounded-2xl">
@@ -881,15 +890,6 @@ const TripPlanning = () => {
               >
                 Create Another
          </Button>
-
-        {/* Show Saved Trips Button */}
-        <Button 
-          variant="outline"
-          className="w-full" 
-          onClick={() => setCurrentView('savedTrips')}
-        >
-          Show Saved Trips
-        </Button>
             </div>
           </DialogContent>
         </Dialog>

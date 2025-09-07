@@ -470,6 +470,7 @@ export type Database = {
           start_date: string | null
           stops: Json | null
           title: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -490,6 +491,7 @@ export type Database = {
           start_date?: string | null
           stops?: Json | null
           title?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -510,6 +512,7 @@ export type Database = {
           start_date?: string | null
           stops?: Json | null
           title?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [

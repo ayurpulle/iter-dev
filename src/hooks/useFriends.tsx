@@ -108,6 +108,12 @@ export const useFriends = () => {
         });
     }
 
+    // Force refresh of friends list and profile counts
+    await fetchMutualFriends();
+    
+    // Manually trigger profile count refresh
+    window.dispatchEvent(new CustomEvent('profile-counts-changed'));
+
     return data;
   };
 
@@ -128,7 +134,12 @@ export const useFriends = () => {
       .eq('friend_request_id', requestId)
       .eq('type', 'friend_request');
     
+    // Force refresh of friends list and profile counts
     await fetchMutualFriends();
+    
+    // Manually trigger profile count refresh
+    window.dispatchEvent(new CustomEvent('profile-counts-changed'));
+    
     return data;
   };
 

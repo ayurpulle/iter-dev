@@ -128,37 +128,47 @@ const Account = () => {
           bio: profile.bio || '',
           joinDate: new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         });
-
-        // Set up real-time subscription for profile changes
-        const channel = supabase
-          .channel('profile-changes')
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'profiles',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              if (payload.new) {
-                setUserProfile(prev => ({
-                  ...prev,
-                  stats: {
-                    ...prev.stats,
-                    followers: payload.new.followers_count || 0,
-                    following: payload.new.following_count || 0,
-                  }
-                }));
-              }
-            }
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
       }
+
+      // Set up real-time subscription for profile changes
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Profile updated:', payload.new);
+            if (payload.new) {
+              setUserProfile(prev => ({
+                ...prev,
+                stats: {
+                  ...prev.stats,
+                  followers: payload.new.followers_count || 0,
+                  following: payload.new.following_count || 0,
+                }
+              }));
+            }
+          }
+        )
+        .subscribe();
+
+      // Listen for manual refresh events
+      const handleProfileRefresh = async () => {
+        console.log('Manual profile refresh triggered');
+        await loadUserProfile();
+      };
+
+      window.addEventListener('profile-counts-changed', handleProfileRefresh);
+
+      return () => {
+        supabase.removeChannel(channel);
+        window.removeEventListener('profile-counts-changed', handleProfileRefresh);
+      };
     } catch (error) {
       console.error('Error loading profile:', error);
     }

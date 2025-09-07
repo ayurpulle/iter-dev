@@ -67,8 +67,16 @@ const Profile = () => {
           )
           .subscribe();
 
+        // Listen for manual refresh events
+        const handleProfileRefresh = async () => {
+          await loadProfileWithCounts(userId);
+        };
+
+        window.addEventListener('profile-counts-changed', handleProfileRefresh);
+
         return () => {
           supabase.removeChannel(channel);
+          window.removeEventListener('profile-counts-changed', handleProfileRefresh);
         };
       }
     } catch (error) {
@@ -127,6 +135,8 @@ const Profile = () => {
           title: "Now following",
           description: `You are now following ${profileData.name || profileData.username}`
         });
+        // Reload profile data to get updated counts
+        await loadProfileWithCounts(profileData.user_id);
       } else {
         setFollowStatus('pending');
         toast({

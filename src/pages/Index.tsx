@@ -306,18 +306,14 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
               <Carousel className="w-full h-full">
                 <CarouselContent className="h-full ml-0">
                   {/* Trip Map - ALWAYS FIRST when trip exists */}
-                  {hasTrip && (
-                    <CarouselItem className="h-full pl-0">
-                      <TripMapVisual 
-                        stops={post.trips?.stops || []} 
-                        className="w-full h-full"
-                      />
-                      {/* Trip overlay indicator */}
-                      <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs z-30">
-                        📍 Trip Route
-                      </div>
-                    </CarouselItem>
-                  )}
+                   {hasTrip && (
+                     <CarouselItem className="h-full pl-0">
+                       <TripMapVisual 
+                         stops={post.trips?.stops || []} 
+                         className="w-full h-full"
+                       />
+                     </CarouselItem>
+                   )}
                   
                   {/* Images - Come after trip map */}
                   {images.map((imageUrl, index) => (

@@ -86,6 +86,15 @@ export const useSavedItineraries = () => {
     }
 
     console.log('User authenticated, attempting to save:', user.id);
+    
+    // Test auth by making a simple query first
+    const { data: testQuery, error: testError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+    
+    console.log('Auth test query result:', { testQuery, testError, authUid: (await supabase.auth.getUser()).data.user?.id });
 
     try {
       console.log('Attempting to insert into saved_itineraries with user_id:', user.id);

@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
 import InteractiveItinerary from "./InteractiveItinerary";
+import SavedTripsView from "./SavedTripsView";
+import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 
 const TripPlanning = () => {
   const [formData, setFormData] = useState({
@@ -44,9 +46,14 @@ const TripPlanning = () => {
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+
+  // View state management
+  const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewItinerary'>('planning');
+  const [viewingItinerary, setViewingItinerary] = useState<any>(null);
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
+  const { saveItinerary } = useSavedItineraries();
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {
@@ -325,6 +332,51 @@ const TripPlanning = () => {
     ];
   };
 
+  // Handle different view states
+  if (currentView === 'savedTrips') {
+    return (
+      <SavedTripsView 
+        onBack={() => setCurrentView('planning')}
+        onViewItinerary={(itinerary) => {
+          setViewingItinerary(itinerary);
+          setCurrentView('viewItinerary');
+        }}
+      />
+    );
+  }
+
+  if (currentView === 'viewItinerary' && viewingItinerary) {
+    return (
+      <div className="px-4 py-6 pb-24 max-w-md mx-auto">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setCurrentView('savedTrips')}
+              className="p-1"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{viewingItinerary.title}</h1>
+              <p className="text-muted-foreground">{viewingItinerary.destination}</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="pt-6">
+              <InteractiveItinerary 
+                itinerary={viewingItinerary.itinerary_content}
+                friendRecommendations={viewingItinerary.friend_recommendations || {}}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (generatedItinerary) {
     const routeStops = getRouteStops(lastGeneratedData?.destination || formData.destination || 'Paris');
     const duration = formData.endDate && formData.startDate 
@@ -391,10 +443,16 @@ const TripPlanning = () => {
             </Button>
             <Button 
               className="flex-1"
-              onClick={() => {
-                toast({
-                  title: "Itinerary Saved!",
-                  description: "Added to your saved itineraries.",
+              onClick={async () => {
+                const saved = await saveItinerary({
+                  title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                  destination: lastGeneratedData?.destination || formData.destination,
+                  start_date: formData.startDate,
+                  end_date: formData.endDate,
+                  budget: formData.budget,
+                  interests: formData.holidayTypes,
+                  itinerary_content: generatedItinerary,
+                  friend_recommendations: friendRecommendations
                 });
               }}
             >
@@ -814,7 +872,16 @@ const TripPlanning = () => {
                 className="w-full"
               >
                 Create Another
-              </Button>
+         </Button>
+
+        {/* Show Saved Trips Button */}
+        <Button 
+          variant="outline"
+          className="w-full" 
+          onClick={() => setCurrentView('savedTrips')}
+        >
+          Show Saved Trips
+        </Button>
             </div>
           </DialogContent>
         </Dialog>

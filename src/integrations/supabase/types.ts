@@ -397,6 +397,51 @@ export type Database = {
           },
         ]
       }
+      saved_itineraries: {
+        Row: {
+          budget: number | null
+          created_at: string
+          destination: string
+          end_date: string | null
+          friend_recommendations: Json | null
+          id: string
+          interests: string[] | null
+          itinerary_content: string
+          start_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          destination: string
+          end_date?: string | null
+          friend_recommendations?: Json | null
+          id?: string
+          interests?: string[] | null
+          itinerary_content: string
+          start_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          destination?: string
+          end_date?: string | null
+          friend_recommendations?: Json | null
+          id?: string
+          interests?: string[] | null
+          itinerary_content?: string
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           companions: string | null

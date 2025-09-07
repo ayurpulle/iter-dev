@@ -1,0 +1,154 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+import { useToast } from "./use-toast";
+
+interface SavedItinerary {
+  id: string;
+  title: string;
+  destination: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  budget?: number | null;
+  interests?: string[] | null;
+  itinerary_content: string;
+  friend_recommendations?: any; // Using any to match Json type from Supabase
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
+
+export const useSavedItineraries = () => {
+  const [savedItineraries, setSavedItineraries] = useState<SavedItinerary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const fetchSavedItineraries = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_itineraries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setSavedItineraries(data || []);
+    } catch (err: any) {
+      console.error('Error fetching saved itineraries:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveItinerary = async (itineraryData: {
+    title: string;
+    destination: string;
+    start_date?: Date | null;
+    end_date?: Date | null;
+    budget?: number;
+    interests?: string[];
+    itinerary_content: string;
+    friend_recommendations?: { [key: string]: any[] };
+  }) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save itineraries.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_itineraries')
+        .insert({
+          user_id: user.id,
+          title: itineraryData.title,
+          destination: itineraryData.destination,
+          start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+          end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+          budget: itineraryData.budget || null,
+          interests: itineraryData.interests || [],
+          itinerary_content: itineraryData.itinerary_content,
+          friend_recommendations: itineraryData.friend_recommendations || {}
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Itinerary Saved!",
+        description: "Your itinerary has been saved successfully.",
+      });
+
+      // Refresh the list
+      fetchSavedItineraries();
+      return data;
+    } catch (err: any) {
+      console.error('Error saving itinerary:', err);
+      toast({
+        title: "Save Failed",
+        description: err.message || "Failed to save itinerary. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const deleteItinerary = async (id: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('saved_itineraries')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Itinerary Deleted",
+        description: "Your itinerary has been deleted successfully.",
+      });
+
+      // Refresh the list
+      fetchSavedItineraries();
+      return true;
+    } catch (err: any) {
+      console.error('Error deleting itinerary:', err);
+      toast({
+        title: "Delete Failed",
+        description: err.message || "Failed to delete itinerary. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchSavedItineraries();
+    }
+  }, [user]);
+
+  return {
+    savedItineraries,
+    loading,
+    error,
+    saveItinerary,
+    deleteItinerary,
+    refetch: fetchSavedItineraries
+  };
+};

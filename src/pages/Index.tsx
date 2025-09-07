@@ -237,8 +237,8 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
 
   return (
     <>
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
+      <Card className="overflow-hidden flex flex-col h-screen">
+        <CardContent className="p-0 flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center gap-3 p-4 pb-2">
             <Avatar className="w-8 h-8">
@@ -284,9 +284,9 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
             </div>
           )}
 
-          {/* Image/Map Carousel */}
+          {/* Image/Map Carousel - Takes remaining space */}
           {shouldShowCarousel && (
-            <div className="w-full h-96">
+            <div className="flex-1 w-full">
               <Carousel className="w-full h-full">
                 <CarouselContent className="h-full ml-0">
                   {/* Trip Map - ALWAYS FIRST when trip exists */}
@@ -329,7 +329,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
             </div>
           )}
 
-          {/* Trip Details at bottom */}
+          {/* Trip Details at bottom - Fixed height */}
           <div className="px-4 py-3 space-y-3">
             {/* Caption/Description */}
             {post.content && (

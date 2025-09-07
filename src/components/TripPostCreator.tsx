@@ -515,10 +515,17 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     }
     
     // Navigate to trip details page with current data
+    // Convert selectedLocations to route format
+    const selectedLocationsRoute = selectedLocations.map(location => ({
+      lat: location.coordinates[1],
+      lng: location.coordinates[0], 
+      name: location.name
+    }));
+
     const tripData = {
       locations: selectedLocations,
       photos: selectedPhotos,
-      route: [...tripRoute, ...photoLocations]
+      route: [...selectedLocationsRoute, ...tripRoute, ...photoLocations]
     };
     
     console.log('=== DEBUG: TripPostCreator navigation data ===');

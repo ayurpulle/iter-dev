@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ImageIcon, Plus, X } from 'lucide-react';
+import { ImageIcon, Plus, X, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 interface PhotoSelectorProps {
   onPhotosSelected: (photos: string[]) => void;
@@ -12,29 +12,23 @@ interface PhotoSelectorProps {
 
 const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps) => {
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-  const [isSelecting, setIsSelecting] = useState(false);
+  const { selectFromGallery, takePhoto, loading } = useNativeCamera();
 
-  const selectPhotos = async () => {
-    try {
-      setIsSelecting(true);
-      
-      // Request permission and access photo gallery
-      const photo = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Photos,
-      });
+  const handleSelectFromGallery = async () => {
+    const photo = await selectFromGallery();
+    if (photo) {
+      const newPhotos = [...selectedPhotos, photo];
+      setSelectedPhotos(newPhotos);
+      onPhotosSelected(newPhotos);
+    }
+  };
 
-      if (photo.dataUrl) {
-        const newPhotos = [...selectedPhotos, photo.dataUrl];
-        setSelectedPhotos(newPhotos);
-        onPhotosSelected(newPhotos);
-      }
-    } catch (error) {
-      console.error('Error selecting photo:', error);
-    } finally {
-      setIsSelecting(false);
+  const handleTakePhoto = async () => {
+    const photo = await takePhoto();
+    if (photo) {
+      const newPhotos = [...selectedPhotos, photo];
+      setSelectedPhotos(newPhotos);
+      onPhotosSelected(newPhotos);
     }
   };
 
@@ -87,9 +81,9 @@ const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps)
             <Card 
               className={cn(
                 "aspect-square flex items-center justify-center cursor-pointer border-dashed border-2 hover:bg-muted/50 transition-colors",
-                isSelecting && "opacity-50"
+                loading && "opacity-50"
               )}
-              onClick={selectPhotos}
+              onClick={handleSelectFromGallery}
             >
               <div className="text-center space-y-2">
                 <Plus className="h-8 w-8 mx-auto text-muted-foreground" />
@@ -114,14 +108,23 @@ const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps)
           </div>
           <div className="space-y-2">
             <Button 
-              onClick={selectPhotos} 
-              disabled={isSelecting}
+              onClick={handleSelectFromGallery} 
+              disabled={loading}
               className="w-full"
             >
-              {isSelecting ? 'Accessing Gallery...' : 'Select from Gallery'}
+              {loading ? 'Accessing Gallery...' : 'Select from Gallery'}
             </Button>
             <Button 
+              onClick={handleTakePhoto} 
+              disabled={loading}
               variant="outline"
+              className="w-full"
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              Take Photo
+            </Button>
+            <Button 
+              variant="ghost"
               onClick={() => onPhotosSelected([])}
               className="w-full"
             >

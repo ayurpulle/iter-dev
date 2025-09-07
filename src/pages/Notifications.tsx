@@ -16,11 +16,44 @@ const Notifications = () => {
   const { acceptFriendRequest, rejectFriendRequest } = useFriends();
   const { toast } = useToast();
 
+  const handleAcceptFriendRequest = async (requestId: string) => {
+    try {
+      await acceptFriendRequest(requestId);
+      toast({
+        title: "Friend request accepted",
+        description: "You are now friends!"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept friend request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRejectFriendRequest = async (requestId: string) => {
+    try {
+      await rejectFriendRequest(requestId);
+      toast({
+        title: "Friend request rejected",
+        description: "Request has been declined"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to reject friend request",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'like': return <Heart size={16} className="text-red-500" />;
       case 'comment': return <MessageCircle size={16} className="text-blue-500" />;
       case 'reply': return <MessageCircle size={16} className="text-blue-500" />;
+      case 'friend_request': return <Users size={16} className="text-green-500" />;
       case 'friend_post': return <Users size={16} className="text-green-500" />;
       case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
       default: return <Clock size={16} className="text-muted-foreground" />;
@@ -32,6 +65,7 @@ const Notifications = () => {
       case 'like': return 'bg-red-50 border-red-100';
       case 'comment': return 'bg-blue-50 border-blue-100';
       case 'reply': return 'bg-blue-50 border-blue-100';
+      case 'friend_request': return 'bg-green-50 border-green-100';
       case 'friend_post': return 'bg-green-50 border-green-100';
       case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
       default: return 'bg-muted/50';
@@ -121,6 +155,32 @@ const Notifications = () => {
                             </Badge>
                           )}
                         </div>
+                        {/* Friend Request Actions */}
+                        {notification.type === 'friend_request' && notification.friend_request_id && (
+                          <div className="flex gap-2 mt-2">
+                            <Button 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptFriendRequest(notification.friend_request_id!);
+                              }}
+                              className="text-xs"
+                            >
+                              Accept
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRejectFriendRequest(notification.friend_request_id!);
+                              }}
+                              className="text-xs"
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

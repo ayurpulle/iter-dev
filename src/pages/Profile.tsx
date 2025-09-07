@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, MessageCircle, UserPlus, MapPin, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useFriends } from '@/hooks/useFriends';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -15,10 +16,12 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { sendFriendRequest, cancelFriendRequest, getFriendshipStatus } = useFriends();
   const [profileData, setProfileData] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'following'>('none');
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
 
   useEffect(() => {
     if (state?.userData) {
@@ -50,18 +53,13 @@ const Profile = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('friends')
-        .select('*')
-        .or(`and(user_id.eq.${user.id},friend_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},friend_id.eq.${user.id})`)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
+      const friendship = await getFriendshipStatus(otherUserId);
       
-      if (data) {
-        if (data.status === 'accepted') {
+      if (friendship) {
+        setFriendshipId(friendship.id);
+        if (friendship.status === 'accepted') {
           setFollowStatus('following');
-        } else if (data.status === 'pending') {
+        } else if (friendship.status === 'pending') {
           setFollowStatus('pending');
         }
       }
@@ -74,16 +72,8 @@ const Profile = () => {
     if (!user || !profileData) return;
 
     try {
-      const { error } = await supabase
-        .from('friends')
-        .insert({
-          user_id: user.id,
-          friend_id: profileData.user_id,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-
+      const friendship = await sendFriendRequest(profileData.user_id);
+      setFriendshipId(friendship.id);
       setFollowStatus('pending');
       toast({
         title: "Follow request sent",
@@ -93,6 +83,26 @@ const Profile = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to send follow request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUnrequest = async () => {
+    if (!friendshipId) return;
+
+    try {
+      await cancelFriendRequest(friendshipId);
+      setFriendshipId(null);
+      setFollowStatus('none');
+      toast({
+        title: "Request cancelled",
+        description: "Follow request has been cancelled"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel request",
         variant: "destructive"
       });
     }
@@ -150,12 +160,14 @@ const Profile = () => {
             <div className="flex gap-2 justify-center">
               <Button
                 size="sm"
-                onClick={handleFollow}
-                disabled={followStatus !== 'none'}
+                onClick={followStatus === 'pending' ? handleUnrequest : handleFollow}
+                disabled={followStatus === 'following'}
+                variant={followStatus === 'pending' ? 'outline' : 'default'}
                 className="flex-1 max-w-32"
               >
                 <UserPlus size={16} className="mr-2" />
-                {followStatus === 'following' ? 'Following' : followStatus === 'pending' ? 'Requested' : 'Follow'}
+                {followStatus === 'following' ? 'Following' : 
+                 followStatus === 'pending' ? 'Unrequest' : 'Follow'}
               </Button>
               <Button
                 variant="outline"

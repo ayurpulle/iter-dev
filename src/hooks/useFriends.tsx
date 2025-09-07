@@ -122,6 +122,16 @@ export const useFriends = () => {
     if (error) throw error;
   };
 
+  const cancelFriendRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from('friends')
+      .delete()
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (error) throw error;
+  };
+
   const removeFriend = async (friendshipId: string) => {
     const { error } = await supabase
       .from('friends')
@@ -156,6 +166,7 @@ export const useFriends = () => {
     sendFriendRequest,
     acceptFriendRequest,
     rejectFriendRequest,
+    cancelFriendRequest,
     removeFriend,
     getFriendshipStatus,
     refetch: fetchMutualFriends

@@ -330,7 +330,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
           )}
 
           {/* Trip Details at bottom - Fixed height */}
-          <div className="px-4 pb-3 space-y-3">
+          <div className="px-4 pb-3">
             {/* Caption/Description */}
             {post.content && (
               <p className="text-sm leading-relaxed">{post.content}</p>

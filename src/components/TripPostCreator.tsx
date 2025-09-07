@@ -91,7 +91,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     setIsSearching(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,region,place,locality&limit=10`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,place,locality&limit=8`
       );
       
       if (response.ok) {

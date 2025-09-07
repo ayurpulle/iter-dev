@@ -286,7 +286,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
 
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
-            <div className="w-full h-48">
+            <div className="w-full h-50">
               <Carousel className="w-full h-full">
                 <CarouselContent className="h-full ml-0">
                   {/* Trip Map - ALWAYS FIRST when trip exists */}

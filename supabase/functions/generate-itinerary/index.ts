@@ -59,28 +59,78 @@ serve(async (req) => {
       );
     }
 
-    // Search for relevant saved posts from the user's network
-    console.log('Searching for relevant posts...');
+    // Search for relevant saved posts from the user's network with venue extraction
+    console.log('Searching for relevant posts and friend recommendations...');
+    
+    // Get friends first
+    const { data: friends } = await supabaseClient
+      .from('friends')
+      .select('user_id, friend_id')
+      .eq('status', 'accepted')
+      .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+
+    const friendIds = friends?.map(f => 
+      f.user_id === user.id ? f.friend_id : f.user_id
+    ) || [];
+
+    // Search posts from friends about the destination
     const { data: posts, error: postsError } = await supabaseClient
       .from('posts')
       .select(`
         *,
         profiles:user_id(name, username, avatar)
       `)
+      .in('user_id', friendIds)
       .ilike('content', `%${destination}%`)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10);
 
     if (postsError) {
       console.error('Error fetching posts:', postsError);
     }
 
-    console.log(`Found ${posts?.length || 0} relevant posts`);
+    console.log(`Found ${posts?.length || 0} relevant posts from friends`);
 
-    // Prepare context from saved posts
+    // Prepare context from saved posts and extract venue recommendations
     const postsContext = posts?.map(post => 
-      `Post by ${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
+      `${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
     ).join('\n\n') || 'No relevant saved posts found.';
+
+    // Extract venues and friend recommendations for the response
+    const friendRecommendations: { [key: string]: any[] } = {};
+    
+    posts?.forEach(post => {
+      const profile = post.profiles;
+      const content = post.content || '';
+      
+      // Simple venue extraction - look for common venue indicators
+      const venuePatterns = [
+        /(?:stayed at|hotel|accommodation)[\s:]+([^.!?]+)/gi,
+        /(?:ate at|restaurant|dinner at|lunch at)[\s:]+([^.!?]+)/gi,
+        /(?:visited|museum|gallery)[\s:]+([^.!?]+)/gi,
+        /(?:bar|pub|drinks at)[\s:]+([^.!?]+)/gi,
+      ];
+      
+      venuePatterns.forEach(pattern => {
+        const matches = content.matchAll(pattern);
+        for (const match of matches) {
+          const venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
+          if (venueName && venueName.length > 3 && venueName.length < 50) {
+            const cleanVenueName = venueName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+            if (!friendRecommendations[cleanVenueName]) {
+              friendRecommendations[cleanVenueName] = [];
+            }
+            
+            friendRecommendations[cleanVenueName].push({
+              name: profile?.name || profile?.username || 'Anonymous',
+              avatar: profile?.avatar,
+              review: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+              visitDate: new Date(post.created_at).toLocaleDateString(),
+            });
+          }
+        }
+      });
+    });
 
     // Handle OpenAI API quota issues gracefully
     if (!openAIApiKey) {
@@ -94,26 +144,42 @@ serve(async (req) => {
       );
     }
 
-    // Create comprehensive prompt for a natural-sounding itinerary
-    const prompt = `Create a detailed travel itinerary for ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+    // Get user's profile for currency preferences
+    const { data: userProfile } = await supabaseClient
+      .from('profiles')
+      .select('default_currency, base_location')
+      .eq('user_id', user.id)
+      .single();
 
+    const defaultCurrency = userProfile?.default_currency || 'USD';
+    const baseLocation = userProfile?.base_location || 'United States';
+
+    // Create comprehensive prompt for a condensed, interactive itinerary
+    const prompt = `Create a CONDENSED travel itinerary for ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+
+User's base location: ${baseLocation}
+Default currency: ${defaultCurrency}
 Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}
 Interests: ${interests || 'General exploration'}
 ${travelStyle ? `Travel notes: ${travelStyle}` : ''}
 
-${postsContext !== 'No relevant saved posts found.' ? `\nInsider recommendations from travelers:\n${postsContext}\n` : ''}
+${postsContext !== 'No relevant saved posts found.' ? `\nFriend recommendations available for: ${postsContext}\n` : ''}
 
-Write this as a clean, professional itinerary guide with:
-- Clear daily schedules with realistic timings
-- Specific venue names and neighborhoods
-- Transportation details between locations
-- Price ranges for activities and meals
-- Local insider tips
-- Weather/seasonal considerations
+IMPORTANT FORMAT REQUIREMENTS:
+- Keep the itinerary VERY CONDENSED - maximum 2-3 sentences per activity
+- Show ALL prices in ${defaultCurrency} first, then local currency in brackets: ${defaultCurrency}120 (€110)
+- Use fixed exchange rates: USD→EUR=0.92, USD→GBP=0.79, USD→JPY=150, USD→CAD=1.35
+- When mentioning specific venues (restaurants, hotels, museums, bars), add [FRIEND_REC:venue_name] marker
+- Focus on 3-4 key activities per day maximum
+- Include brief transportation notes
+- Keep total length under 500 words
 
-Use a natural, informative tone like a travel guidebook. Avoid phrases like "I recommend" or "you should". Write directly about the activities.
+Example format:
+**Day 1: Arrival**
+Morning: Arrive at airport, take train to city center (${defaultCurrency}15/€14). Check into Hotel Central [FRIEND_REC:Hotel_Central].
+Evening: Dinner at Le Bistro [FRIEND_REC:Le_Bistro] - excellent steak (${defaultCurrency}45/€41).
 
-Format with clear sections for each day.`;
+Write in this condensed style throughout.`;
 
     console.log('Calling OpenAI API...');
     
@@ -191,7 +257,8 @@ Format with clear sections for each day.`;
           itinerary: generatedItinerary,
           tripId: newTrip?.id,
           postsUsed: posts?.length || 0,
-          destination: destination
+          destination: destination,
+          friendRecommendations: friendRecommendations
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

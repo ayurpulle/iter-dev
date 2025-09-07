@@ -16,6 +16,7 @@ import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
+import InteractiveItinerary from "./InteractiveItinerary";
 
 const TripPlanning = () => {
   const [formData, setFormData] = useState({
@@ -33,6 +34,7 @@ const TripPlanning = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
+  const [friendRecommendations, setFriendRecommendations] = useState<{ [key: string]: any[] }>({});
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
@@ -136,6 +138,7 @@ const TripPlanning = () => {
 
       // Store the generated data and show success dialog
       setLastGeneratedData(data);
+      setFriendRecommendations(data.friendRecommendations || {});
       setShowSuccessDialog(true);
 
     } catch (error) {
@@ -241,23 +244,10 @@ const TripPlanning = () => {
               <h3 className="text-lg font-semibold">Itinerary:</h3>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="prose prose-sm max-w-none text-foreground">
-                {generatedItinerary.split('\n').map((line, idx) => {
-                  if (line.startsWith('# ')) {
-                    return <h1 key={idx} className="text-xl font-bold mt-4 mb-2">{line.slice(2)}</h1>;
-                  } else if (line.startsWith('## ')) {
-                    return <h2 key={idx} className="text-lg font-semibold mt-3 mb-2">{line.slice(3)}</h2>;
-                  } else if (line.startsWith('### ')) {
-                    return <h3 key={idx} className="text-md font-medium mt-2 mb-1">{line.slice(4)}</h3>;
-                  } else if (line.startsWith('- ')) {
-                    return <p key={idx} className="ml-4 mb-1">• {line.slice(2)}</p>;
-                  } else if (line.trim() === '') {
-                    return <br key={idx} />;
-                  } else {
-                    return <p key={idx} className="mb-2">{line}</p>;
-                  }
-                })}
-              </div>
+              <InteractiveItinerary 
+                itinerary={generatedItinerary}
+                friendRecommendations={friendRecommendations}
+              />
             </CardContent>
           </Card>
 

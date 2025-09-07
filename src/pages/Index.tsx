@@ -286,48 +286,46 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
 
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
-             <div className="w-full">
-               <div className="h-80 overflow-hidden">
-                <Carousel className="w-full h-full">
-                  <CarouselContent className="h-full ml-0">
-                    {/* Trip Map - ALWAYS FIRST when trip exists */}
-                    {hasTrip && (
-                      <CarouselItem className="h-full pl-0">
-                        <div className="h-full w-full relative bg-white">
-                          <TripMapVisual 
-                            stops={post.trips?.stops || []} 
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                          {/* Trip overlay indicator */}
-                          <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs z-30">
-                            📍 Trip Route
-                          </div>
+            <div className="w-full h-64">
+              <Carousel className="w-full h-full">
+                <CarouselContent className="h-full ml-0">
+                  {/* Trip Map - ALWAYS FIRST when trip exists */}
+                  {hasTrip && (
+                    <CarouselItem className="h-full pl-0">
+                      <div className="h-full w-full relative bg-white">
+                        <TripMapVisual 
+                          stops={post.trips?.stops || []} 
+                          className="w-full h-full"
+                        />
+                        {/* Trip overlay indicator */}
+                        <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs z-30">
+                          📍 Trip Route
                         </div>
-                      </CarouselItem>
-                    )}
-                    
-                    {/* Images - Come after trip map */}
-                    {images.map((imageUrl, index) => (
-                      <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                        <div className="h-full">
-                           <img 
-                             src={imageUrl} 
-                             alt={`Post image ${index + 1}`} 
-                             className="w-full h-full object-cover object-center"
-                           />
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  {/* Show navigation if there's a trip map + images, or multiple images */}
-                  {((hasTrip && hasImages) || images.length > 1) && (
-                    <>
-                      <CarouselPrevious className="left-2" />
-                      <CarouselNext className="right-2" />
-                    </>
+                      </div>
+                    </CarouselItem>
                   )}
-                </Carousel>
-              </div>
+                  
+                  {/* Images - Come after trip map */}
+                  {images.map((imageUrl, index) => (
+                    <CarouselItem key={`image-${index}`} className="h-full pl-0">
+                      <div className="h-full">
+                         <img 
+                           src={imageUrl} 
+                           alt={`Post image ${index + 1}`} 
+                           className="w-full h-full object-cover object-center"
+                         />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {/* Show navigation if there's a trip map + images, or multiple images */}
+                {((hasTrip && hasImages) || images.length > 1) && (
+                  <>
+                    <CarouselPrevious className="left-2" />
+                    <CarouselNext className="right-2" />
+                  </>
+                )}
+              </Carousel>
             </div>
           )}
 

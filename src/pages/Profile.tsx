@@ -43,6 +43,33 @@ const Profile = () => {
       if (error) throw error;
       if (profile) {
         setProfileData(profile);
+
+        // Set up real-time subscription for profile changes
+        const channel = supabase
+          .channel('profile-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `user_id=eq.${userId}`
+            },
+            (payload) => {
+              if (payload.new) {
+                setProfileData(prev => ({
+                  ...prev,
+                  followers_count: payload.new.followers_count || 0,
+                  following_count: payload.new.following_count || 0,
+                }));
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       }
     } catch (error) {
       console.error('Error loading profile with counts:', error);

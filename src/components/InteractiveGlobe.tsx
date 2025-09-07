@@ -289,7 +289,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
           return '#ec4899'; // Pink for Oceania
         }
         // Default fallback
-        return '#6b7280'; // Gray for unknown
+        return '#fb923c'; // Orange for unknown
       };
 
       // Function to add pins after map is ready

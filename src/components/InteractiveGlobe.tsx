@@ -30,6 +30,8 @@ const FallbackGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick }) =>
     return () => clearInterval(interval);
   }, []);
 
+  console.log('FallbackGlobe rendering with pins:', pins);
+
   return (
     <div className="relative w-full h-96 bg-gradient-to-b from-slate-900 to-slate-700 rounded-2xl overflow-hidden flex items-center justify-center">
       <div 
@@ -51,28 +53,46 @@ const FallbackGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick }) =>
         {/* Pins */}
         {pins.map((pin, idx) => {
           // Convert lat/lng to approximate percentage positions on the sphere
-          const x = ((pin.lng + 180) / 360) * 100;
-          const y = ((90 - pin.lat) / 180) * 100;
+          // San Francisco: lat: 37.779238, lng: -122.419359
+          // New York: lat: 40.712749, lng: -74.005994
+          
+          // Simple mapping for fallback globe
+          let x, y;
+          if (pin.location === "San Francisco") {
+            x = 25; // West coast
+            y = 45; // Mid latitude
+          } else if (pin.location === "New York") {
+            x = 75; // East coast  
+            y = 40; // Similar latitude
+          } else {
+            // Generic conversion for other locations
+            x = ((pin.lng + 180) / 360) * 100;
+            y = ((90 - pin.lat) / 180) * 100;
+          }
+          
+          console.log(`Pin ${idx} (${pin.location}): positioned at ${x}%, ${y}%`);
           
           return (
             <button
               key={idx}
               onClick={() => onPinClick(pin)}
-              className="absolute w-4 h-4 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform border-2 border-white z-10"
+              className="absolute w-6 h-6 bg-red-500 rounded-full shadow-lg animate-pulse cursor-pointer hover:scale-150 transition-transform border-2 border-white z-20"
               style={{
-                left: `${Math.max(10, Math.min(90, x))}%`,
-                top: `${Math.max(10, Math.min(90, y))}%`,
+                left: `${x}%`,
+                top: `${y}%`,
                 transform: 'translate(-50%, -50%)',
               }}
               title={`${pin.location} - ${pin.friends.length} friends visited`}
-            />
+            >
+              <div className="w-full h-full bg-red-500 rounded-full animate-ping"></div>
+            </button>
           );
         })}
       </div>
       
       <div className="absolute top-4 left-4 bg-card border backdrop-blur text-foreground px-3 py-2 rounded-lg text-sm flex items-center gap-2">
         <Globe size={16} />
-        Fallback Globe • Click pins to explore
+        Fallback Globe • {pins.length} pins • Click pins to explore
       </div>
     </div>
   );

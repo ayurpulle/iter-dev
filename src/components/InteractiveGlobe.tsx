@@ -262,111 +262,139 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         }
       });
 
-      // Function to add pins after map is ready
+      // Debug map container and state
+      console.log('🔍 Map container:', mapContainer.current);
+      console.log('🔍 Map instance:', map.current);
+      console.log('🔍 Map loaded state:', map.current.loaded());
+      console.log('🔍 Map style loaded:', map.current.isStyleLoaded());
+      console.log('🔍 Map center:', map.current.getCenter());
+      console.log('🔍 Map zoom:', map.current.getZoom());
+
+      // Test with a simple marker first
+      const testMarker = () => {
+        console.log('🧪 Creating test marker at NYC coordinates');
+        const testElement = document.createElement('div');
+        testElement.style.cssText = `
+          width: 40px;
+          height: 40px;
+          background-color: #00ff00;
+          border: 3px solid yellow;
+          border-radius: 50%;
+          position: absolute;
+        `;
+        
+        const testMarkerInstance = new mapboxgl.Marker(testElement)
+          .setLngLat([-74.005994, 40.712749]) // NYC coordinates
+          .addTo(map.current!);
+          
+        console.log('🧪 Test marker created:', testMarkerInstance);
+        
+        // Get marker's DOM element position
+        setTimeout(() => {
+          const markerEl = testElement;
+          const rect = markerEl.getBoundingClientRect();
+          console.log('🧪 Test marker DOM position:', rect);
+          console.log('🧪 Test marker computed style:', window.getComputedStyle(markerEl));
+        }, 1000);
+      };
+
+      // Function to add actual pins
       const addPinsToMap = () => {
-        console.log('🗺️ Map is ready, adding pins. Pins array:', pins);
-        console.log('Pins length:', pins.length);
+        console.log('📍 Starting to add pins. Map state check:');
+        console.log('- Map loaded:', map.current.loaded());
+        console.log('- Style loaded:', map.current.isStyleLoaded());
+        console.log('- Container dimensions:', mapContainer.current?.getBoundingClientRect());
         
         pins.forEach((pin, index) => {
-          console.log(`📍 Creating marker ${index + 1} for ${pin.location} at lng: ${pin.lng}, lat: ${pin.lat}`);
+          console.log(`\n📍 Processing pin ${index + 1}/${pins.length}: ${pin.location}`);
+          console.log(`   Coordinates: lng=${pin.lng}, lat=${pin.lat}`);
           
-          // Ensure coordinates are valid numbers
           const lng = Number(pin.lng);
           const lat = Number(pin.lat);
           
           if (isNaN(lng) || isNaN(lat)) {
-            console.error(`❌ Invalid coordinates for ${pin.location}: lng=${pin.lng}, lat=${pin.lat}`);
+            console.error(`❌ Invalid coordinates for ${pin.location}`);
             return;
           }
           
+          // Create marker with distinct colors for debugging
+          const colors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
+          const color = colors[index % colors.length];
+          
           const markerElement = document.createElement('div');
           markerElement.style.cssText = `
-            width: 30px;
-            height: 30px;
-            background-color: #ef4444;
-            border: 4px solid white;
+            width: 25px;
+            height: 25px;
+            background-color: ${color};
+            border: 3px solid white;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            animation: marker-pulse 2s infinite;
+            position: absolute;
+            z-index: 1000;
           `;
+          
+          markerElement.innerHTML = `<div style="
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: black;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+          ">${pin.location}</div>`;
 
           try {
-            // Wait a small moment to ensure map is fully rendered
+            console.log(`   Creating Mapbox marker...`);
+            const marker = new mapboxgl.Marker(markerElement)
+              .setLngLat([lng, lat])
+              .addTo(map.current!);
+
+            console.log(`   ✅ Marker created for ${pin.location}`);
+            
+            // Check marker position after creation
             setTimeout(() => {
-              console.log(`🎯 Adding marker for ${pin.location} at coordinates [${lng}, ${lat}]`);
-              const marker = new mapboxgl.Marker(markerElement)
-                .setLngLat([lng, lat])
-                .addTo(map.current!);
-
-              console.log(`✅ Marker successfully added for ${pin.location}`);
-
-              // Add click handler
-              markerElement.addEventListener('click', (e) => {
-                e.stopPropagation();
-                console.log('📍 Pin clicked:', pin);
-                onPinClick(pin);
+              const rect = markerElement.getBoundingClientRect();
+              console.log(`   📐 ${pin.location} marker position:`, {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height
               });
+            }, 500);
 
-              // Add popup on hover
-              const popup = new mapboxgl.Popup({
-                offset: 35,
-                closeButton: false,
-                closeOnClick: false
-              }).setHTML(`
-                <div style="font-family: system-ui; padding: 8px; color: #333; font-size: 12px;">
-                  <strong>${pin.location}</strong><br>
-                  ${pin.friends.length} friends visited<br>
-                  ${pin.trips} trips
-                </div>
-              `);
+            markerElement.addEventListener('click', (e) => {
+              e.stopPropagation();
+              console.log('🖱️ Pin clicked:', pin);
+              onPinClick(pin);
+            });
 
-              markerElement.addEventListener('mouseenter', () => {
-                popup.setLngLat([lng, lat]).addTo(map.current!);
-              });
-
-              markerElement.addEventListener('mouseleave', () => {
-                popup.remove();
-              });
-            }, 100 * index); // Stagger marker creation slightly
           } catch (error) {
             console.error(`❌ Error creating marker for ${pin.location}:`, error);
           }
         });
-        
-        console.log(`🎉 Finished processing ${pins.length} pins`);
       };
 
-      // Add marker pulse animation CSS
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes marker-pulse {
-          0% { 
-            transform: scale(1); 
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); 
-          }
-          70% { 
-            transform: scale(1.1); 
-            box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); 
-          }
-          100% { 
-            transform: scale(1); 
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); 
-          }
-        }
-      `;
-      document.head.appendChild(style);
+      // Wait for map to be fully ready
+      const initMarkers = () => {
+        console.log('🚀 Initializing markers...');
+        testMarker();
+        setTimeout(() => {
+          addPinsToMap();
+        }, 1500);
+      };
 
-      // Wait for map to be fully loaded before adding pins
-      map.current.on('load', () => {
-        console.log('🗺️ Map load event fired');
-        addPinsToMap();
-      });
-
-      // Fallback - add pins after style loads if load event already fired
       if (map.current.loaded()) {
-        console.log('🗺️ Map already loaded, adding pins immediately');
-        setTimeout(addPinsToMap, 500);
+        console.log('✅ Map already loaded');
+        initMarkers();
+      } else {
+        console.log('⏳ Waiting for map to load...');
+        map.current.on('load', () => {
+          console.log('✅ Map load event fired');
+          initMarkers();
+        });
       }
 
       setTimeout(spinGlobe, 2000);

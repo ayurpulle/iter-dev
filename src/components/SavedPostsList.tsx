@@ -64,8 +64,12 @@ const SavedPostsList = ({
       <div ref={scrollRef} className="flex-1 overflow-y-auto pb-20">
         <div className="p-4 space-y-4">
           {filteredPosts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No saved posts yet</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="mb-4">
+                <Bookmark size={48} className="mx-auto text-muted-foreground/50" />
+              </div>
+              <p className="text-lg font-medium mb-2">Save posts to fill up your world!</p>
+              <p className="text-sm">Discover amazing places through your friends' adventures</p>
             </div>
           ) : (
             filteredPosts.map((savedPost) => {

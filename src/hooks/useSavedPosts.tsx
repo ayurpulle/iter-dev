@@ -8,6 +8,7 @@ export interface SavedPost {
   item_id: string;
   item_type: string;
   created_at: string;
+  folder_id?: string;
   posts?: {
     id: string;
     content?: string;

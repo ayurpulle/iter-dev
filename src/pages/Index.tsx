@@ -289,7 +289,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
               <div className="h-64 bg-muted overflow-hidden">
                 <Carousel className="w-full h-full">
                   <CarouselContent className="h-full">
-                    {/* Trip Map - Always First if available */}
+                    {/* Trip Map - Always First if available and has priority over images */}
                      {hasTrip && (
                        <CarouselItem className="h-full">
                          <div className="h-full">
@@ -302,9 +302,9 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                        </CarouselItem>
                      )}
                     
-                    {/* Images */}
+                    {/* Images - Only show if no trip map or show additional images */}
                     {images.map((imageUrl, index) => (
-                      <CarouselItem key={index} className="h-full">
+                      <CarouselItem key={`image-${index}`} className="h-full">
                         <div className="h-full">
                            <img 
                              src={imageUrl} 

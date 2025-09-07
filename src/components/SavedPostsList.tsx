@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Bookmark, ChevronDown, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { SavedPost } from "@/hooks/useSavedPosts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SavedPostsListProps {
   yourSavedPosts: SavedPost[];
@@ -17,18 +19,36 @@ const SavedPostsList = ({
   yourSavedPosts = [], 
   onHide 
 }: SavedPostsListProps) => {
+  const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("all");
-  
-  // Group posts by folders (this would come from actual folder data in the future)
-  const folders = ["all", "favorites", "travel", "food"];
+  const [folders, setFolders] = useState<{id: string, name: string}[]>([]);
+
+  // Fetch user's folders
+  useEffect(() => {
+    const fetchFolders = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('item_folders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setFolders(data || []);
+      } catch (error) {
+        console.error('Error fetching folders:', error);
+      }
+    };
+
+    fetchFolders();
+  }, [user]);
   
   const filteredPosts = selectedFolder === "all" 
     ? yourSavedPosts 
-    : yourSavedPosts.filter(post => {
-        // This would filter by actual folder data when implemented
-        return selectedFolder === "all";
-      });
+    : yourSavedPosts.filter(post => post.folder_id === selectedFolder);
 
   return (
     <div className="h-full flex flex-col">
@@ -39,17 +59,20 @@ const SavedPostsList = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-2">
-                {selectedFolder === "all" ? "All" : selectedFolder}
+                {selectedFolder === "all" ? "All" : folders.find(f => f.id === selectedFolder)?.name || "Select folder"}
                 <ChevronDown size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setSelectedFolder("all")}>
+                All
+              </DropdownMenuItem>
               {folders.map((folder) => (
                 <DropdownMenuItem 
-                  key={folder}
-                  onClick={() => setSelectedFolder(folder)}
+                  key={folder.id}
+                  onClick={() => setSelectedFolder(folder.id)}
                 >
-                  {folder === "all" ? "All" : folder.charAt(0).toUpperCase() + folder.slice(1)}
+                  {folder.name}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

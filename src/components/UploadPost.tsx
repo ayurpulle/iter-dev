@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, MapPin, Users, Hash } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, MapPin, Users, Hash, Lock, Globe } from 'lucide-react';
 import PhotoSelector from './PhotoSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +23,7 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
   const [tags, setTags] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
 
   const handlePhotosSelected = (photos: string[]) => {
@@ -49,6 +51,7 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
           user_id: user.id,
           content: caption,
           image_url: mainImage,
+          is_private: isPrivate,
         });
 
       if (error) throw error;
@@ -63,6 +66,7 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
       setCaption('');
       setLocation('');
       setTags('');
+      setIsPrivate(false);
       onBack?.();
 
     } catch (error: any) {
@@ -177,6 +181,33 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
               <p className="text-xs text-muted-foreground">
                 Example: travel, beach, sunset, vacation
               </p>
+            </div>
+
+            {/* Privacy Setting */}
+            <div className="space-y-2">
+              <Label>Privacy</Label>
+              <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                {isPrivate ? (
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {isPrivate ? 'Private' : 'Public'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPrivate 
+                      ? 'Only you can see this post' 
+                      : 'Everyone can see this post'
+                    }
+                  </p>
+                </div>
+                <Switch
+                  checked={isPrivate}
+                  onCheckedChange={setIsPrivate}
+                />
+              </div>
             </div>
 
             {/* Post Preview */}

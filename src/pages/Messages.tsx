@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomTabBar from '@/components/BottomTabBar';
+import { ConversationActions } from '@/components/ConversationActions';
 
 interface Conversation {
   id: string;
@@ -248,12 +249,19 @@ const Messages = () => {
               {currentConv?.other_user?.name?.charAt(0) || '?'}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <h2 className="font-medium">{currentConv?.other_user?.name || 'Unknown User'}</h2>
             <p className="text-xs text-muted-foreground">
               @{currentConv?.other_user?.username || 'username'}
             </p>
           </div>
+          <ConversationActions 
+            conversationId={selectedConversation}
+            onConversationDeleted={() => {
+              setSelectedConversation(null);
+              fetchConversations();
+            }}
+          />
         </div>
 
         {/* Messages */}

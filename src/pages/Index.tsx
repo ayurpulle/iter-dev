@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PostActions } from "@/components/PostActions";
 
 interface Post {
   id: string;
@@ -34,6 +35,7 @@ interface Post {
   created_at: string;
   likes_count: number;
   comments_count: number;
+  is_private?: boolean;
 }
 
 interface Profile {
@@ -269,28 +271,22 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleShare}>
-                  <Share size={14} className="mr-2" />
-                  Share
-                </DropdownMenuItem>
-                {isOwnPost && (
-                  <DropdownMenuItem 
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 size={14} className="mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PostActions
+              postId={post.id}
+              postUserId={post.user_id}
+              content={post.content}
+              isPrivate={post.is_private || false}
+              onPostDeleted={() => onDelete(post.id)}
+              onPostUpdated={(updates) => {
+                // Handle post updates in the parent component
+                if (updates.content !== undefined) {
+                  post.content = updates.content;
+                }
+                if (updates.is_private !== undefined) {
+                  post.is_private = updates.is_private;
+                }
+              }}
+            />
           </div>
 
           {/* Trip title at top if available */}
@@ -523,6 +519,7 @@ const Index = () => {
             images
           )
         `)
+        .or(`is_private.is.null,is_private.eq.false,user_id.eq.${user?.id || 'null'}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

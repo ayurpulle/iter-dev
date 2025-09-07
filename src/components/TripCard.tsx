@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import CountryMap from "./CountryMap";
+import { ItineraryShareDialog } from "./ItineraryShareDialog";
 
 interface Stop {
   name: string;
@@ -187,7 +188,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleShare}>
                 <Share size={14} className="mr-2" />
-                Share
+                Share Link
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -256,6 +257,10 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
               </Button>
             </div>
             <div className="flex items-center gap-2">
+              <ItineraryShareDialog 
+                itineraryId={trip.id}
+                itineraryTitle={trip.title}
+              />
               <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
                 <Button 
                   variant="ghost" 

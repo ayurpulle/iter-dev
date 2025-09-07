@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import CountryMap from "./CountryMap";
 
 const TripPlanning = () => {
   const [formData, setFormData] = useState({
@@ -32,6 +33,7 @@ const TripPlanning = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
+  const [mapboxToken, setMapboxToken] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
@@ -40,6 +42,21 @@ const TripPlanning = () => {
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
+
+  // Fetch Mapbox token on component mount
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (error) {
+        console.log('Mapbox token not available');
+      }
+    };
+    fetchMapboxToken();
+  }, []);
 
   const holidayTypes = [
     "Adventure & Outdoor",
@@ -140,7 +157,47 @@ const TripPlanning = () => {
     }
   };
 
+  // Extract route stops from destination (simplified version for demo)
+  const getRouteStops = (destination: string) => {
+    // This would ideally be parsed from the itinerary content
+    // For now, create sample stops based on destination
+    const destinationCoords: { [key: string]: { lat: number; lng: number } } = {
+      'paris': { lat: 48.8566, lng: 2.3522 },
+      'london': { lat: 51.5074, lng: -0.1278 },
+      'tokyo': { lat: 35.6762, lng: 139.6503 },
+      'new york': { lat: 40.7128, lng: -74.0060 },
+      'rome': { lat: 41.9028, lng: 12.4964 },
+      'barcelona': { lat: 41.3851, lng: 2.1734 },
+      'amsterdam': { lat: 52.3676, lng: 4.9041 },
+      'berlin': { lat: 52.5200, lng: 13.4050 },
+    };
+    
+    const dest = destination.toLowerCase();
+    const coords = Object.keys(destinationCoords).find(key => dest.includes(key));
+    
+    if (coords && destinationCoords[coords]) {
+      const baseCoord = destinationCoords[coords];
+      return [
+        { name: `${destination} - Start`, lat: baseCoord.lat - 0.02, lng: baseCoord.lng - 0.02 },
+        { name: `${destination} - Center`, lat: baseCoord.lat, lng: baseCoord.lng },
+        { name: `${destination} - End`, lat: baseCoord.lat + 0.02, lng: baseCoord.lng + 0.02 },
+      ];
+    }
+    
+    // Default to a sample route around Paris
+    return [
+      { name: 'Start Point', lat: 48.8566, lng: 2.3522 },
+      { name: 'Mid Point', lat: 48.8606, lng: 2.3376 },
+      { name: 'End Point', lat: 48.8629, lng: 2.3445 },
+    ];
+  };
+
   if (generatedItinerary) {
+    const routeStops = getRouteStops(lastGeneratedData?.destination || formData.destination || 'Paris');
+    const duration = formData.endDate && formData.startDate 
+      ? Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))
+      : 3;
+    
     return (
       <div className="px-4 py-6 pb-24 max-w-md mx-auto">
         <div className="space-y-4">
@@ -159,8 +216,31 @@ const TripPlanning = () => {
             </div>
           </div>
 
+          {/* Map Section */}
           <Card>
             <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="h-48 w-full rounded-lg overflow-hidden border">
+                  <CountryMap 
+                    stops={routeStops}
+                    className="h-full w-full"
+                    mapboxToken={mapboxToken}
+                  />
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Time: {duration} days</span>
+                  <span>Distance: ~200km</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Itinerary Text */}
+          <Card>
+            <CardHeader className="pb-3">
+              <h3 className="text-lg font-semibold">Itinerary:</h3>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="prose prose-sm max-w-none text-foreground">
                 {generatedItinerary.split('\n').map((line, idx) => {
                   if (line.startsWith('# ')) {

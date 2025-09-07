@@ -292,15 +292,13 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                   {/* Trip Map - ALWAYS FIRST when trip exists */}
                   {hasTrip && (
                     <CarouselItem className="h-full pl-0">
-                      <div className="h-full w-full relative bg-white">
-                        <TripMapVisual 
-                          stops={post.trips?.stops || []} 
-                          className="w-full h-full"
-                        />
-                        {/* Trip overlay indicator */}
-                        <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs z-30">
-                          📍 Trip Route
-                        </div>
+                      <TripMapVisual 
+                        stops={post.trips?.stops || []} 
+                        className="w-full h-full"
+                      />
+                      {/* Trip overlay indicator */}
+                      <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs z-30">
+                        📍 Trip Route
                       </div>
                     </CarouselItem>
                   )}
@@ -308,13 +306,11 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                   {/* Images - Come after trip map */}
                   {images.map((imageUrl, index) => (
                     <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                      <div className="h-full">
-                         <img 
-                           src={imageUrl} 
-                           alt={`Post image ${index + 1}`} 
-                           className="w-full h-full object-cover object-center"
-                         />
-                      </div>
+                      <img 
+                        src={imageUrl} 
+                        alt={`Post image ${index + 1}`} 
+                        className="w-full h-full object-cover object-center"
+                      />
                     </CarouselItem>
                   ))}
                 </CarouselContent>

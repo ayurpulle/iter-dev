@@ -73,29 +73,40 @@ export const useFriends = () => {
   const sendFriendRequest = async (friendId: string) => {
     if (!user) throw new Error('User not authenticated');
 
+    // Check if the target user has a public profile
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('is_public')
+      .eq('user_id', friendId)
+      .single();
+
+    const isPublic = targetProfile?.is_public || false;
+
     const { data, error } = await supabase
       .from('friends')
       .insert({
         user_id: user.id,
         friend_id: friendId,
-        status: 'pending'
+        status: isPublic ? 'accepted' : 'pending'
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    // Create notification for friend request
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: friendId,
-        type: 'friend_request',
-        title: 'New Friend Request',
-        message: `${user.email} sent you a friend request`,
-        related_user_id: user.id,
-        friend_request_id: data.id
-      });
+    // Only create notification for private accounts (pending requests)
+    if (!isPublic) {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: friendId,
+          type: 'friend_request',
+          title: 'New Friend Request',
+          message: `${user.email} sent you a friend request`,
+          related_user_id: user.id,
+          friend_request_id: data.id
+        });
+    }
 
     return data;
   };

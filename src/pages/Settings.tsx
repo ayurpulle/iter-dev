@@ -15,7 +15,7 @@ const Settings = () => {
   const { toast } = useToast();
   
   // Settings state
-  const [isPublicAccount, setIsPublicAccount] = useState(true);
+  const [isPublicAccount, setIsPublicAccount] = useState(false);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [allowTagging, setAllowTagging] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -24,6 +24,7 @@ const Settings = () => {
   const [commentsNotifications, setCommentsNotifications] = useState(true);
   const [followersNotifications, setFollowersNotifications] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Load user settings from profile
   useEffect(() => {
@@ -36,14 +37,12 @@ const Settings = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('is_public')
         .eq('user_id', user?.id)
         .single();
 
       if (profile) {
-        // Set settings from profile data
-        // Note: These would need to be added to the profiles table schema
-        // For now, using default values
+        setIsPublicAccount(profile.is_public || false);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -54,14 +53,13 @@ const Settings = () => {
     if (!user) return;
 
     try {
+      setLoading(true);
+      
       // Update profile with privacy settings
       const { error } = await supabase
         .from('profiles')
         .update({
-          // These fields would need to be added to the profiles table
-          // is_public: isPublicAccount,
-          // show_online_status: showOnlineStatus,
-          // allow_tagging: allowTagging,
+          is_public: isPublicAccount,
         })
         .eq('user_id', user.id);
 
@@ -77,10 +75,14 @@ const Settings = () => {
 
       toast({
         title: "Settings saved",
-        description: "Your preferences have been updated",
+        description: isPublicAccount 
+          ? "Your account is now public - friend requests will be auto-accepted"
+          : "Your account is now private - you'll need to approve friend requests",
       });
     } catch (error) {
       console.error('Error saving settings:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,8 +123,9 @@ const Settings = () => {
             variant="default"
             size="sm"
             onClick={handleSaveSettings}
+            disabled={loading}
           >
-            Save
+            {loading ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
@@ -141,7 +144,7 @@ const Settings = () => {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Public Account</p>
                 <p className="text-xs text-muted-foreground">
-                  Anyone can see your posts and profile
+                  Auto-accept friend requests and make posts public
                 </p>
               </div>
               <Switch

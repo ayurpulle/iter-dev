@@ -336,6 +336,7 @@ export type Database = {
           bio: string | null
           default_currency: string | null
           id: string
+          is_public: boolean
           name: string | null
           user_id: string
           username: string | null
@@ -346,6 +347,7 @@ export type Database = {
           bio?: string | null
           default_currency?: string | null
           id?: string
+          is_public?: boolean
           name?: string | null
           user_id: string
           username?: string | null
@@ -356,6 +358,7 @@ export type Database = {
           bio?: string | null
           default_currency?: string | null
           id?: string
+          is_public?: boolean
           name?: string | null
           user_id?: string
           username?: string | null

@@ -74,11 +74,21 @@ const Profile = () => {
     try {
       const friendship = await sendFriendRequest(profileData.user_id);
       setFriendshipId(friendship.id);
-      setFollowStatus('pending');
-      toast({
-        title: "Follow request sent",
-        description: `Follow request sent to ${profileData.name || profileData.username}`
-      });
+      
+      // Check if it was auto-accepted (public profile)
+      if (friendship.status === 'accepted') {
+        setFollowStatus('following');
+        toast({
+          title: "Now following",
+          description: `You are now following ${profileData.name || profileData.username}`
+        });
+      } else {
+        setFollowStatus('pending');
+        toast({
+          title: "Follow request sent",
+          description: `Follow request sent to ${profileData.name || profileData.username}`
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",

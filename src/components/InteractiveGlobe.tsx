@@ -131,13 +131,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         pitch: 0,
       });
 
-      // Add navigation controls
-      map.current.addControl(
-        new mapboxgl.NavigationControl({
-          visualizePitch: true,
-        }),
-        'top-right'
-      );
+      // Add navigation controls positioned to avoid bottom bar
+      const nav = new mapboxgl.NavigationControl({
+        visualizePitch: true,
+      });
+      map.current.addControl(nav, 'top-right');
 
       // Smooth rotation animation
       const secondsPerRevolution = 300;
@@ -333,6 +331,31 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     <div className="relative w-full h-full bg-transparent">
       <div ref={mapContainer} className="absolute inset-0 rounded-2xl" style={{
         background: 'radial-gradient(circle at center, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)'
+      }} />
+      
+      {/* Custom CSS to position Mapbox controls properly */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .mapboxgl-ctrl-top-right {
+            top: 10px !important;
+            right: 10px !important;
+            margin: 0 !important;
+          }
+          .mapboxgl-ctrl-bottom-left {
+            bottom: 90px !important;
+            left: 10px !important;
+            margin: 0 !important;
+          }
+          .mapboxgl-ctrl-bottom-right {
+            bottom: 90px !important;
+            right: 10px !important;
+            margin: 0 !important;
+          }
+          .mapboxgl-control-container {
+            position: absolute !important;
+            z-index: 10 !important;
+          }
+        `
       }} />
     </div>
   );

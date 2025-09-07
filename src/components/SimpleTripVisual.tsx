@@ -31,6 +31,8 @@ const SimpleTripVisual = ({ stops, className }: SimpleTripVisualProps) => {
     );
   }
 
+  console.log('=== DEBUG: Rendering map with stops ===', stops.length);
+  
   return (
     <div className={`bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg overflow-hidden ${className}`}>
       <div className="p-4 text-white">

@@ -47,6 +47,11 @@ const TripDetails = () => {
     }
 
     try {
+      console.log('=== DEBUG: Creating trip with data ===');
+      console.log('tripData from location.state:', tripData);
+      console.log('tripData.route:', tripData?.route);
+      console.log('tripData.route length:', tripData?.route?.length);
+
       const newTrip = await createTrip({
         title: tripTitle,
         description: tripDescription,
@@ -59,6 +64,8 @@ const TripDetails = () => {
         photos: tripData?.photos || [],
         is_public: isPublic
       });
+
+      console.log('Trip created successfully:', newTrip);
 
       toast({
         title: "Trip Created!",

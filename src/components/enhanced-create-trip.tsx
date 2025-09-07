@@ -123,6 +123,10 @@ export default function EnhancedCreateTrip() {
       distance
     };
     
+    console.log('=== DEBUG: enhanced-create-trip data ===');
+    console.log('cities:', cities);
+    console.log('converted route:', route);
+    console.log('full tripData:', tripData);
     console.log('Navigating to trip details with data:', tripData);
     navigate('/trip-details', { state: tripData });
   };

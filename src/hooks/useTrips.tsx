@@ -61,6 +61,7 @@ export const useTrips = () => {
       if (!user) throw new Error('User not authenticated');
 
       console.log('Creating trip with data:', tripData);
+      console.log('tripData.route (will be saved as stops):', tripData.route);
       console.log('User ID:', user.id);
 
       // Create trip record
@@ -73,7 +74,7 @@ export const useTrips = () => {
           cost: tripData.cost,
           companions: tripData.companions,
           duration: tripData.duration,
-          distance: tripData.distance,
+          distance: tripData.distance || '', // Make sure this doesn't cause issues if undefined
           stops: tripData.route,
           photo_count: tripData.photos.length,
           is_public: tripData.is_public || false,

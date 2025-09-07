@@ -263,11 +263,11 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   }
 
   return (
-    <div className={`relative w-full h-full ${className}`}>
+    <div className={`relative rounded-lg overflow-hidden w-full h-full ${className}`}>
       <div 
         ref={mapContainer} 
         className="w-full h-full" 
-        style={{ height: '100%' }} 
+        style={{ height: '100%', minHeight: '200px' }} 
       />
       
       {/* Map overlay with trip info */}

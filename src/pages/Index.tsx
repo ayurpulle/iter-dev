@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import SimpleTripVisual from "@/components/SimpleTripVisual";
+import TripMapVisual from "@/components/TripMapVisual";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import {
   AlertDialog,
@@ -294,10 +294,10 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                      {hasTrip && (
                        <CarouselItem className="h-full">
                          <div className="h-full relative">
-                           <SimpleTripVisual 
-                             stops={post.trips?.stops || []} 
-                             className="h-full w-full" 
-                           />
+                            <TripMapVisual 
+                              stops={post.trips?.stops || []} 
+                              className="h-full w-full" 
+                            />
                            {/* Trip overlay indicator */}
                            <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
                              📍 Trip Route

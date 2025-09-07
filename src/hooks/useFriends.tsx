@@ -120,17 +120,33 @@ export const useFriends = () => {
       .single();
 
     if (error) throw error;
+    
+    // Remove the notification for this friend request
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('friend_request_id', requestId)
+      .eq('type', 'friend_request');
+    
     await fetchMutualFriends();
     return data;
   };
 
   const rejectFriendRequest = async (requestId: string) => {
+    // Delete the friend request entirely
     const { error } = await supabase
       .from('friends')
       .delete()
       .eq('id', requestId);
 
     if (error) throw error;
+    
+    // Remove the notification for this friend request
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('friend_request_id', requestId)
+      .eq('type', 'friend_request');
   };
 
   const cancelFriendRequest = async (requestId: string) => {

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
 const Notifications = () => {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useNotifications();
   const { acceptFriendRequest, rejectFriendRequest } = useFriends();
   const { toast } = useToast();
 
@@ -23,6 +23,8 @@ const Notifications = () => {
         title: "Friend request accepted",
         description: "You are now friends!"
       });
+      // Refresh notifications to remove the processed request
+      await refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -39,6 +41,8 @@ const Notifications = () => {
         title: "Friend request rejected",
         description: "Request has been declined"
       });
+      // Refresh notifications to remove the processed request
+      await refetch();
     } catch (error: any) {
       toast({
         title: "Error", 

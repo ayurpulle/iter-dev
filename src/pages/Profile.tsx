@@ -28,8 +28,26 @@ const Profile = () => {
       setProfileData(state.userData);
       loadUserPosts(state.userData.user_id);
       checkFollowStatus(state.userData.user_id);
+      loadProfileWithCounts(state.userData.user_id);
     }
   }, [state]);
+
+  const loadProfileWithCounts = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*, followers_count, following_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+      if (profile) {
+        setProfileData(profile);
+      }
+    } catch (error) {
+      console.error('Error loading profile with counts:', error);
+    }
+  };
 
   const loadUserPosts = async (userId: string) => {
     try {
@@ -158,6 +176,22 @@ const Profile = () => {
             {profileData.bio && (
               <p className="text-sm mt-2">{profileData.bio}</p>
             )}
+            
+            {/* Follower/Following Stats */}
+            <div className="flex justify-center gap-6 mt-3">
+              <div className="text-center">
+                <p className="text-lg font-semibold">{profileData.followers_count || 0}</p>
+                <p className="text-xs text-muted-foreground">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-semibold">{profileData.following_count || 0}</p>
+                <p className="text-xs text-muted-foreground">Following</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-semibold">{userPosts.length}</p>
+                <p className="text-xs text-muted-foreground">Posts</p>
+              </div>
+            </div>
             
             <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mt-2">
               <Calendar size={12} />

@@ -335,6 +335,8 @@ export type Database = {
           base_location: string | null
           bio: string | null
           default_currency: string | null
+          followers_count: number
+          following_count: number
           id: string
           is_public: boolean
           name: string | null
@@ -346,6 +348,8 @@ export type Database = {
           base_location?: string | null
           bio?: string | null
           default_currency?: string | null
+          followers_count?: number
+          following_count?: number
           id?: string
           is_public?: boolean
           name?: string | null
@@ -357,6 +361,8 @@ export type Database = {
           base_location?: string | null
           bio?: string | null
           default_currency?: string | null
+          followers_count?: number
+          following_count?: number
           id?: string
           is_public?: boolean
           name?: string | null

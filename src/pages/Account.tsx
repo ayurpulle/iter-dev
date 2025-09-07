@@ -106,7 +106,7 @@ const Account = () => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, followers_count, following_count')
         .eq('user_id', user.id)
         .single();
 
@@ -122,8 +122,8 @@ const Account = () => {
           avatar: profile.avatar,
           stats: {
             posts: 0, // Will be updated when posts are loaded
-            followers: 0,
-            following: 0,
+            followers: profile.followers_count || 0,
+            following: profile.following_count || 0,
           },
           bio: profile.bio || '',
           joinDate: new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),

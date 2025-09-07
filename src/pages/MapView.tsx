@@ -56,10 +56,12 @@ const MapView = () => {
     }));
     
     console.log('Generated pins:', pins);
+    console.log('Number of pins generated:', pins.length);
     return pins;
   };
 
   const pins = createPinsFromPosts();
+  console.log('Pins being passed to InteractiveGlobe:', pins);
 
   // Remove the global drag listeners since we now use a specific drag area
   // No useEffect needed for drag handling

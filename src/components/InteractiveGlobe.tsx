@@ -236,6 +236,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       });
 
       // Add pins to map
+      console.log('InteractiveGlobe received pins:', pins);
       pins.forEach((pin, index) => {
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';

@@ -8,12 +8,14 @@ import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useFriends } from "@/hooks/useFriends";
+import { useItineraryCollaboration } from "@/hooks/useItineraryCollaboration";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
 const Notifications = () => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useNotifications();
   const { acceptFriendRequest, rejectFriendRequest } = useFriends();
+  const { respondToInvite } = useItineraryCollaboration();
   const { toast } = useToast();
 
   const handleAcceptFriendRequest = async (requestId: string) => {
@@ -52,6 +54,23 @@ const Notifications = () => {
     }
   };
 
+  const handleItineraryInviteResponse = async (collaborationId: string, status: 'accepted' | 'declined') => {
+    try {
+      await respondToInvite(collaborationId, status);
+      toast({
+        title: `Invite ${status}`,
+        description: `Itinerary collaboration invite ${status} successfully!`
+      });
+      await refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to respond to invite",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'like': return <Heart size={16} className="text-red-500" />;
@@ -60,6 +79,7 @@ const Notifications = () => {
       case 'friend_request': return <Users size={16} className="text-green-500" />;
       case 'friend_post': return <Users size={16} className="text-green-500" />;
       case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
+      case 'itinerary_invite': return <MapPin size={16} className="text-blue-500" />;
       default: return <Clock size={16} className="text-muted-foreground" />;
     }
   };
@@ -72,6 +92,7 @@ const Notifications = () => {
       case 'friend_request': return 'bg-green-50 border-green-100';
       case 'friend_post': return 'bg-green-50 border-green-100';
       case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
+      case 'itinerary_invite': return 'bg-blue-50 border-blue-100';
       default: return 'bg-muted/50';
     }
   };
@@ -178,6 +199,33 @@ const Notifications = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRejectFriendRequest(notification.friend_request_id!);
+                              }}
+                              className="text-xs"
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* Itinerary Invite Actions */}
+                        {notification.type === 'itinerary_invite' && notification.data?.collaboration_id && (
+                          <div className="flex gap-2 mt-2">
+                            <Button 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleItineraryInviteResponse(notification.data.collaboration_id, 'accepted');
+                              }}
+                              className="text-xs"
+                            >
+                              Accept
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleItineraryInviteResponse(notification.data.collaboration_id, 'declined');
                               }}
                               className="text-xs"
                             >

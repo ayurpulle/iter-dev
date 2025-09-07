@@ -127,6 +127,47 @@ export type Database = {
         }
         Relationships: []
       }
+      itinerary_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string
+          itinerary_id: string
+          permission: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by: string
+          itinerary_id: string
+          permission?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string
+          itinerary_id?: string
+          permission?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itinerary_collaborators_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "saved_itineraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -285,6 +326,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          is_private: boolean
           likes_count: number
           trip_id: string | null
           updated_at: string
@@ -296,6 +338,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_private?: boolean
           likes_count?: number
           trip_id?: string | null
           updated_at?: string
@@ -307,6 +350,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_private?: boolean
           likes_count?: number
           trip_id?: string | null
           updated_at?: string

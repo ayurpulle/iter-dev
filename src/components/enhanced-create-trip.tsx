@@ -94,10 +94,23 @@ export default function EnhancedCreateTrip() {
   };
 
   const handleSubmit = () => {
+    if (!country || !title || cities.length === 0) {
+      alert('Please fill in all required fields and add at least one city');
+      return;
+    }
+
+    // Convert cities to route with basic location data
+    const route = cities.map((city, index) => ({
+      name: city,
+      lat: 40.7128 + (index * 0.1), // Placeholder coordinates - would need geocoding API
+      lng: -74.0060 + (index * 0.1),
+      order: index + 1
+    }));
+
     const tripData = {
       country,
       title,
-      cities,
+      route, // Pass the converted route data
       photos,
       companions,
       highlights,
@@ -109,9 +122,9 @@ export default function EnhancedCreateTrip() {
       duration,
       distance
     };
-    console.log('Trip created:', tripData);
-    alert('Trip posted successfully! 🎉');
-    navigate('/');
+    
+    console.log('Navigating to trip details with data:', tripData);
+    navigate('/trip-details', { state: tripData });
   };
 
   return (

@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import CountryMap from "@/components/CountryMap";
+import SimpleMapWithPins from "@/components/SimpleMapWithPins";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import {
   AlertDialog,
@@ -294,8 +294,8 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                      {hasTrip && (
                        <CarouselItem className="h-full">
                          <div className="h-full relative">
-                           <CountryMap 
-                             stops={post.trips?.stops || []} 
+                           <SimpleMapWithPins 
+                             locations={post.trips?.stops || []} 
                              className="h-full w-full" 
                              mapboxToken={mapboxToken}
                            />

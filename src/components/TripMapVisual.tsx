@@ -138,14 +138,14 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/outdoors-v12', // More detailed style with terrain and boundaries
+        style: 'mapbox://styles/mapbox/outdoors-v12',
         center: [stops[0].lng, stops[0].lat],
-        zoom: 6, // Start more zoomed out to show more geographical context
+        zoom: 6,
         interactive: true,
         preserveDrawingBuffer: true,
         attributionControl: false,
         logoPosition: 'bottom-right',
-        projection: 'globe' // Use globe projection for better geographical context
+        projection: 'globe'
       });
 
       console.log('=== DEBUG: Map created ===', map.current);
@@ -159,174 +159,170 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
           return;
         }
         
-        // Add state/country boundaries for better geographical context
-        map.current.addSource('admin-boundaries', {
-          type: 'vector',
-          url: 'mapbox://mapbox.boundaries-adm1-v3'
-        });
+        try {
+          // Add state/country boundaries for better geographical context
+          map.current.addSource('admin-boundaries', {
+            type: 'vector',
+            url: 'mapbox://mapbox.boundaries-adm1-v3'
+          });
 
-        // Add state boundaries layer
-        map.current.addLayer({
-          id: 'admin-1-boundary',
-          type: 'line',
-          source: 'admin-boundaries',
-          'source-layer': 'boundaries_admin_1',
-          paint: {
-            'line-color': '#627BC1',
-            'line-width': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              0, 0.5,
-              4, 1,
-              8, 2
-            ],
-            'line-opacity': 0.5
-          },
-          filter: ['==', ['get', 'admin_level'], 1]
-        });
+          // Add state boundaries layer
+          map.current.addLayer({
+            id: 'admin-1-boundary',
+            type: 'line',
+            source: 'admin-boundaries',
+            'source-layer': 'boundaries_admin_1',
+            paint: {
+              'line-color': '#627BC1',
+              'line-width': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 0.5,
+                4, 1,
+                8, 2
+              ],
+              'line-opacity': 0.5
+            },
+            filter: ['==', ['get', 'admin_level'], 1]
+          });
 
-        // Add country boundaries layer
-        map.current.addSource('country-boundaries', {
-          type: 'vector',
-          url: 'mapbox://mapbox.boundaries-adm0-v3'
-        });
+          // Add country boundaries layer
+          map.current.addSource('country-boundaries', {
+            type: 'vector',
+            url: 'mapbox://mapbox.boundaries-adm0-v3'
+          });
 
-        map.current.addLayer({
-          id: 'admin-0-boundary',
-          type: 'line',
-          source: 'country-boundaries',
-          'source-layer': 'boundaries_admin_0',
-          paint: {
-            'line-color': '#627BC1',
-            'line-width': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              0, 1,
-              4, 2,
-              8, 3
-            ],
-            'line-opacity': 0.7
-          }
-        });
-        
-        // Add markers for all stops
-        stops.forEach((stop, index) => {
-          if (!map.current) return;
+          map.current.addLayer({
+            id: 'admin-0-boundary',
+            type: 'line',
+            source: 'country-boundaries',
+            'source-layer': 'boundaries_admin_0',
+            paint: {
+              'line-color': '#627BC1',
+              'line-width': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0, 1,
+                4, 2,
+                8, 3
+              ],
+              'line-opacity': 0.7
+            }
+          });
           
-          // Create custom marker element with better styling
-          const markerElement = document.createElement('div');
-          markerElement.className = 'custom-marker';
-          markerElement.style.cssText = `
-            background: #3B82F6;
-            border: 3px solid white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          `;
-          markerElement.textContent = (index + 1).toString();
+          // Add markers for all stops
+          stops.forEach((stop, index) => {
+            if (!map.current) return;
+            
+            // Create custom marker element with better styling
+            const markerElement = document.createElement('div');
+            markerElement.className = 'custom-marker';
+            markerElement.style.cssText = `
+              background: #3B82F6;
+              border: 3px solid white;
+              border-radius: 50%;
+              width: 24px;
+              height: 24px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 12px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            `;
+            markerElement.textContent = (index + 1).toString();
 
-          const marker = new mapboxgl.Marker({ element: markerElement })
-            .setLngLat([stop.lng, stop.lat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div style="font-weight: bold; padding: 8px;">${index + 1}. ${stop.name}</div>`
-            ))
-            .addTo(map.current);
-          console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
-        });
+            const marker = new mapboxgl.Marker({ element: markerElement })
+              .setLngLat([stop.lng, stop.lat])
+              .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
+                `<div style="font-weight: bold; padding: 8px;">${index + 1}. ${stop.name}</div>`
+              ))
+              .addTo(map.current);
+            console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
+          });
 
-        // Add enhanced route line if multiple stops
-        if (stops.length > 1 && map.current) {
-          console.log('=== DEBUG: Adding route line for multiple stops ===');
-          const coordinates = stops.map(stop => [stop.lng, stop.lat]);
-          
-          map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: coordinates
+          // Add enhanced route line if multiple stops
+          if (stops.length > 1 && map.current) {
+            console.log('=== DEBUG: Adding route line for multiple stops ===');
+            const coordinates = stops.map(stop => [stop.lng, stop.lat]);
+            
+            map.current.addSource('route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: coordinates
+                }
               }
-            }
-          });
+            });
 
-          // Add route shadow for better visibility
-          map.current.addLayer({
-            id: 'route-shadow',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#000000',
-              'line-width': 6,
-              'line-opacity': 0.3,
-              'line-blur': 2
-            }
-          });
+            // Add route shadow for better visibility
+            map.current.addLayer({
+              id: 'route-shadow',
+              type: 'line',
+              source: 'route',
+              layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+              },
+              paint: {
+                'line-color': '#000000',
+                'line-width': 6,
+                'line-opacity': 0.3,
+                'line-blur': 2
+              }
+            });
 
-          // Add main route line
-          map.current.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#3B82F6',
-              'line-width': 4,
-              'line-opacity': 0.9
-            }
-          });
+            // Add main route line
+            map.current.addLayer({
+              id: 'route',
+              type: 'line',
+              source: 'route',
+              layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+              },
+              paint: {
+                'line-color': '#3B82F6',
+                'line-width': 4,
+                'line-opacity': 0.9
+              }
+            });
 
-          // Fit map to show all stops with appropriate zoom level
-          const bounds = new mapboxgl.LngLatBounds();
-          stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
-          
-          // Calculate the appropriate padding based on the distance
-          const ne = bounds.getNorthEast();
-          const sw = bounds.getSouthWest();
-          const distance = Math.sqrt(
-            Math.pow(ne.lat - sw.lat, 2) + Math.pow(ne.lng - sw.lng, 2)
-          );
-          
-          // Use more padding for longer distances to show more geographical context
-          const basePadding = distance > 10 ? 80 : 50;
-          
-          map.current.fitBounds(bounds, { 
-            padding: { 
-              top: basePadding, 
-              bottom: basePadding, 
-              left: basePadding, 
-              right: basePadding 
-            },
-            maxZoom: 10 // Prevent zooming in too much to maintain geographical context
-          });
-          console.log('=== DEBUG: Map fitted to bounds with geographical context ===');
+            // Fit map to show all stops with appropriate zoom level
+            const bounds = new mapboxgl.LngLatBounds();
+            stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
+            
+            // Calculate the appropriate padding based on the distance
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+            const distance = Math.sqrt(
+              Math.pow(ne.lat - sw.lat, 2) + Math.pow(ne.lng - sw.lng, 2)
+            );
+            
+            // Use more padding for longer distances to show more geographical context
+            const basePadding = distance > 10 ? 80 : 50;
+            
+            map.current.fitBounds(bounds, { 
+              padding: { 
+                top: basePadding, 
+                bottom: basePadding, 
+                left: basePadding, 
+                right: basePadding 
+              },
+              maxZoom: 10 // Prevent zooming in too much to maintain geographical context
+            });
+            console.log('=== DEBUG: Map fitted to bounds with geographical context ===');
+          }
+        } catch (layerError) {
+          console.error('=== DEBUG: Error adding layers ===', layerError);
+          // Continue without boundaries if they fail to load
         }
-      });
-
-      // Log any style load events
-      map.current.on('styledata', () => {
-        console.log('=== DEBUG: Map style loaded ===');
-      });
-
-      map.current.on('sourcedata', (e) => {
-        console.log('=== DEBUG: Map source data ===', e.sourceDataType);
       });
 
       map.current.on('error', (e) => {
@@ -339,45 +335,23 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       setError(`Map init failed: ${error}`);
     }
 
-    // Cleanup only on component unmount
+    // Only cleanup on component unmount
     return () => {
-      console.log('=== DEBUG: Component unmount - cleaning up map ===');
+      console.log('=== DEBUG: Component unmounting - cleaning up map ===');
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
     };
-  }, [mapboxToken]); // Only depend on mapboxToken, not stops
+  }, []); // Empty dependency array - only run once
 
-  // Separate effect for updating stops when they change
+  // Watch for token and stops changes
   useEffect(() => {
-    if (!map.current || !stops || stops.length === 0) return;
-    
-    console.log('=== DEBUG: Updating map with new stops ===', stops);
-    
-    // Wait for map to be loaded before updating
-    if (map.current.isStyleLoaded()) {
-      updateMapStops();
-    } else {
-      map.current.once('load', updateMapStops);
+    if (mapboxToken && stops && stops.length > 0 && !map.current) {
+      // Trigger map initialization
+      console.log('=== DEBUG: Dependencies ready, will initialize map ===');
     }
-    
-    function updateMapStops() {
-      if (!map.current) return;
-      
-      // Clear existing sources and layers
-      try {
-        if (map.current.getLayer('route')) map.current.removeLayer('route');
-        if (map.current.getLayer('route-shadow')) map.current.removeLayer('route-shadow');
-        if (map.current.getSource('route')) map.current.removeSource('route');
-      } catch (e) {
-        console.log('=== DEBUG: Layer cleanup - some layers may not exist ===');
-      }
-      
-      // Re-add stops and routes with current data
-      // (This logic could be extracted into a separate function if needed)
-    }
-  }, [stops]);
+  }, [mapboxToken, stops]);
 
   // Show error state
   if (error) {

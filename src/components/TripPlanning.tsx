@@ -30,20 +30,117 @@ const TripPlanning = () => {
     notes: ""
   });
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [dateSelectionStep, setDateSelectionStep] = useState<'start' | 'end' | null>(null);
+
   const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [friendRecommendations, setFriendRecommendations] = useState<{ [key: string]: any[] }>({});
   const [mapboxToken, setMapboxToken] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
-  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
+
+  // Helper function to get flag emoji from country code
+  const getFlagEmoji = (countryCode: string): string => {
+    if (!countryCode || countryCode.length !== 2) return '🌍';
+    return String.fromCodePoint(
+      ...[...countryCode.toUpperCase()].map(x => 0x1f1e6 + x.charCodeAt(0) - 65)
+    );
+  };
+
+  // Search locations using Mapbox API
+  const searchLocations = async (query: string) => {
+    if (!query.trim() || !mapboxToken) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&types=country,place,locality&limit=8`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const locations = data.features.map((feature: any) => {
+          const placeType = feature.place_type[0];
+          let type: 'country' | 'city' | 'place' = 'place';
+          
+          if (placeType === 'country') type = 'country';
+          else if (placeType === 'place' || placeType === 'locality') type = 'city';
+          else if (placeType === 'region') type = 'place';
+
+          // Extract country code from context
+          let countryCode = '';
+          if (type === 'country') {
+            countryCode = feature.properties?.short_code || feature.properties?.iso_3166_1_alpha_2 || '';
+          } else {
+            const countryContext = feature.context?.find((ctx: any) => 
+              ctx.id.startsWith('country.')
+            );
+            countryCode = countryContext?.short_code || '';
+          }
+
+          const flag = getFlagEmoji(countryCode);
+
+          return {
+            id: feature.id,
+            name: feature.text,
+            fullName: feature.place_name,
+            type,
+            coordinates: feature.center as [number, number],
+            countryCode,
+            flag,
+          };
+        });
+        
+        setSearchResults(locations);
+      }
+    } catch (error) {
+      console.error('Error searching locations:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchLocations(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, mapboxToken]);
+
+  // Handle date selection with single calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+
+    if (!formData.startDate || (formData.startDate && formData.endDate)) {
+      // First selection or resetting
+      setFormData(prev => ({ ...prev, startDate: date, endDate: null }));
+      setDateSelectionStep('end');
+    } else if (formData.startDate && !formData.endDate) {
+      // Second selection
+      if (date < formData.startDate) {
+        // If selected date is before start date, make it the new start date
+        setFormData(prev => ({ ...prev, startDate: date, endDate: prev.startDate }));
+      } else {
+        // Normal case - set as end date
+        setFormData(prev => ({ ...prev, endDate: date }));
+      }
+      setDateSelectionStep(null);
+    }
+  };
 
   // Fetch Mapbox token on component mount
   useEffect(() => {
@@ -72,9 +169,6 @@ const TripPlanning = () => {
     "Backpacking",
     "Luxury & Spa"
   ];
-
-  const mockSuggestions = ["Colombia", "Guatemala", "Japan", "Italy", "Thailand", "Mexico"];
-  const recentSearches = ["Tokyo, Japan", "Paris, France", "New York, USA"];
 
   const toggleHolidayType = (type: string) => {
     setFormData(prev => ({
@@ -313,51 +407,71 @@ const TripPlanning = () => {
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-3 text-muted-foreground" />
                 <Input
-                  placeholder="Search destinations"
+                  placeholder="Search countries, cities..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
+                {isSearching && (
+                  <Loader2 size={16} className="absolute right-3 top-3 text-muted-foreground animate-spin" />
+                )}
               </div>
               
-              {searchQuery === "" && (
-                <>
-                  <div>
-                    <p className="text-sm font-medium mb-2">Recent searches</p>
-                    <div className="space-y-1">
-                      {recentSearches.map((location) => (
-                        <div
-                          key={location}
-                          className="p-2 hover:bg-muted rounded cursor-pointer"
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, destination: location }));
-                            setWhereDialogOpen(false);
-                          }}
-                        >
-                          <p className="text-sm">{location}</p>
+              {searchQuery && searchResults.length > 0 && (
+                <div className="max-h-60 overflow-y-auto">
+                  <div className="space-y-1">
+                    {searchResults.map((location) => (
+                      <div
+                        key={location.id}
+                        className="p-3 hover:bg-muted rounded cursor-pointer transition-colors"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, destination: location.fullName }));
+                          setWhereDialogOpen(false);
+                          setSearchQuery("");
+                          setSearchResults([]);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{location.flag}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{location.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{location.fullName}</p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {location.type}
+                          </Badge>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium mb-2">Popular destinations</p>
-                    <div className="space-y-1">
-                      {mockSuggestions.map((location) => (
-                        <div
-                          key={location}
-                          className="p-2 hover:bg-muted rounded cursor-pointer"
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, destination: location }));
-                            setWhereDialogOpen(false);
-                          }}
-                        >
-                          <p className="text-sm">{location}</p>
-                        </div>
-                      ))}
-                    </div>
+                </div>
+              )}
+              
+              {searchQuery && !isSearching && searchResults.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MapPin size={24} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No locations found</p>
+                </div>
+              )}
+              
+              {!searchQuery && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Popular destinations</p>
+                  <div className="space-y-1">
+                    {["Tokyo, Japan", "Paris, France", "New York, USA", "London, UK", "Rome, Italy"].map((location) => (
+                      <div
+                        key={location}
+                        className="p-2 hover:bg-muted rounded cursor-pointer"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, destination: location }));
+                          setWhereDialogOpen(false);
+                        }}
+                      >
+                        <p className="text-sm">{location}</p>
+                      </div>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
             </div>
           </DialogContent>
@@ -376,7 +490,9 @@ const TripPlanning = () => {
                       <p className="text-muted-foreground text-sm">
                         {formData.startDate && formData.endDate 
                           ? `${format(formData.startDate, "MMM d")} - ${format(formData.endDate, "MMM d")}`
-                          : "Add dates"
+                          : formData.startDate 
+                          ? `${format(formData.startDate, "MMM d")} - Select end date`
+                          : "Select dates"
                         }
                       </p>
                     </div>
@@ -389,64 +505,91 @@ const TripPlanning = () => {
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle>When's your trip?</DialogTitle>
-              <DialogDescription>Select your travel dates</DialogDescription>
+              <DialogDescription>
+                {!formData.startDate 
+                  ? "Select your start date" 
+                  : !formData.endDate 
+                  ? "Now select your end date"
+                  : "Your trip dates"
+                }
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal mt-1",
-                        !formData.startDate && "text-muted-foreground"
-                      )}
-                    >
-                      {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={formData.startDate}
-                      onSelect={(date) => setFormData(prev => ({ ...prev, startDate: date }))}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <CalendarComponent
+                mode="single"
+                selected={formData.endDate || formData.startDate}
+                onSelect={handleDateSelect}
+                disabled={(date) => date < new Date()}
+                initialFocus
+                className="pointer-events-auto rounded-md border w-full"
+              />
               
-              <div>
-                <Label className="text-sm font-medium">End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal mt-1",
-                        !formData.endDate && "text-muted-foreground"
-                      )}
-                    >
-                      {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={formData.endDate}
-                      onSelect={(date) => setFormData(prev => ({ ...prev, endDate: date }))}
-                      initialFocus
-                      disabled={(date) => formData.startDate ? date < formData.startDate : false}
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              {formData.startDate && formData.endDate && (
+                <div className="text-center">
+                  <p className="text-sm font-medium">
+                    {format(formData.startDate, "MMM d")} - {format(formData.endDate, "MMM d")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24))} days
+                  </p>
+                  <Button 
+                    size="sm" 
+                    className="mt-2" 
+                    onClick={() => setWhenDialogOpen(false)}
+                  >
+                    Confirm Dates
+                  </Button>
+                </div>
+              )}
+              
+              {formData.startDate && !formData.endDate && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Start: {format(formData.startDate, "MMM d, yyyy")}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2" 
+                    onClick={() => setFormData(prev => ({ ...prev, startDate: null, endDate: null }))}
+                  >
+                    Reset Dates
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Budget - Inline selector */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Heart size={20} className="text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Budget</p>
+                  <p className="text-muted-foreground text-sm">
+                    {getBudgetDescription(formData.budget) || "Select budget level"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <Button
+                    key={level}
+                    variant={formData.budget >= level ? "default" : "outline"}
+                    size="sm"
+                    className="w-8 h-8 p-0 text-xs"
+                    onClick={() => setFormData(prev => ({ ...prev, budget: level }))}
+                  >
+                    $
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Type of Holiday */}
         <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
@@ -495,60 +638,6 @@ const TripPlanning = () => {
                     Selected: {formData.holidayTypes.join(", ")}
                   </p>
                 </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Budget */}
-        <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
-          <DialogTrigger asChild>
-            <Card className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-primary text-xl">$</div>
-                    <div>
-                      <p className="font-medium text-sm">Budget</p>
-                      <p className="text-muted-foreground text-sm">
-                        {getBudgetDisplay(formData.budget)}
-                        {formData.budget > 0 && (
-                          <span className="ml-2 text-xs">({getBudgetDescription(formData.budget)})</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronDown size={16} className="text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent className="max-w-sm rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>What's your budget?</DialogTitle>
-              <DialogDescription>Select your budget level</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <button
-                    key={level}
-                    className={cn(
-                      "text-3xl transition-colors hover:scale-110 transform transition-transform",
-                      level <= formData.budget ? "text-primary" : "text-muted-foreground"
-                    )}
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, budget: level }));
-                    }}
-                  >
-                    $
-                  </button>
-                ))}
-              </div>
-              {formData.budget > 0 && (
-                <p className="text-center text-sm text-muted-foreground">
-                  {getBudgetDescription(formData.budget)}
-                </p>
               )}
             </div>
           </DialogContent>

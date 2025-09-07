@@ -34,7 +34,12 @@ const TopBar = () => {
         <div className="flex items-center gap-3">
         </div>
         
-        <h1 className="text-lg font-semibold text-foreground">ITER</h1>
+        <h1 
+          className="text-lg font-semibold text-foreground cursor-pointer hover:opacity-80 transition-opacity" 
+          onClick={() => navigate('/')}
+        >
+          ITER
+        </h1>
         
         <div className="flex items-center gap-3">
           <NotificationBadge>

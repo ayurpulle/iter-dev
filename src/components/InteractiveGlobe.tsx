@@ -153,8 +153,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/dark-v11',
         projection: { name: 'globe' },
-        zoom: 0.8,
-        center: [30, 15],
+        zoom: 1.2,
+        center: [-98, 39], // Center on North America to show both SF and NYC
         pitch: 0,
       });
 
@@ -302,8 +302,18 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
 
           try {
             console.log(`Creating marker at lng: ${pin.lng}, lat: ${pin.lat}`);
+            // Ensure coordinates are valid numbers
+            const lng = Number(pin.lng);
+            const lat = Number(pin.lat);
+            
+            if (isNaN(lng) || isNaN(lat)) {
+              console.error(`Invalid coordinates for ${pin.location}: lng=${pin.lng}, lat=${pin.lat}`);
+              return;
+            }
+            
+            console.log(`✅ Valid coordinates - lng: ${lng}, lat: ${lat}`);
             const marker = new mapboxgl.Marker(markerElement)
-              .setLngLat([pin.lng, pin.lat])
+              .setLngLat([lng, lat])
               .addTo(map.current!);
 
             console.log(`✅ Marker successfully added for ${pin.location} at [${pin.lng}, ${pin.lat}]`);

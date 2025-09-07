@@ -7,11 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Trash2, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Share, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Bookmark, Clock, MapPin, Users, DollarSign } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import CountryMap from "@/components/CountryMap";
+import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +68,8 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [isLiking, setIsLiking] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const isOwnPost = user?.id === post.user_id;
 
@@ -164,7 +168,16 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
       setIsLiking(false);
     }
   };
-
+  
+  const handleSavePost = async (folderId?: string) => {
+    try {
+      setIsSaved(true);
+      // The actual saving is handled by ItemFolderSelector component
+    } catch (error) {
+      setIsSaved(false);
+      console.error('Error saving post:', error);
+    }
+  };
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast({
@@ -277,17 +290,17 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 <Carousel className="w-full h-full">
                   <CarouselContent className="h-full">
                     {/* Trip Map - Always First if available */}
-                    {hasTrip && (
-                      <CarouselItem className="h-full">
-                        <div className="h-full">
-                          <CountryMap 
-                            stops={post.trips!.stops || []} 
-                            className="h-full w-full" 
-                            mapboxToken={mapboxToken}
-                          />
-                        </div>
-                      </CarouselItem>
-                    )}
+                     {hasTrip && (
+                       <CarouselItem className="h-full">
+                         <div className="h-full">
+                           <CountryMap 
+                             stops={post.trips!.stops || []} 
+                             className="h-full w-full" 
+                             mapboxToken={mapboxToken}
+                           />
+                         </div>
+                       </CarouselItem>
+                     )}
                     
                     {/* Images */}
                     {images.map((imageUrl, index) => (
@@ -314,41 +327,108 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
           )}
 
           {/* Trip Details at bottom */}
-          <div className="px-4 py-3 space-y-2">
-            {/* Trip Stats */}
-            {hasTrip && (
-              <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                {post.trips?.duration && <span>{post.trips.duration}</span>}
-                {post.trips?.distance && <span>{post.trips.distance}</span>}
-                {post.trips?.stops && <span>{post.trips.stops.length} stops</span>}
-                {post.trips?.cost && <span>{post.trips.cost}</span>}
-                {post.trips?.companions && <span>With {post.trips.companions}</span>}
-              </div>
-            )}
-            
+          <div className="px-4 py-3 space-y-3">
             {/* Caption/Description */}
             {post.content && (
               <p className="text-sm leading-relaxed">{post.content}</p>
+            )}
+            
+            {/* Collapsible Trip Details */}
+            {hasTrip && (
+              <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+                <CollapsibleTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-between h-8 px-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <span className="text-xs">Tap to see trip details</span>
+                    {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {post.trips?.duration && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                        <Clock size={12} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">Duration</p>
+                          <p className="text-muted-foreground">{post.trips.duration}</p>
+                        </div>
+                      </div>
+                    )}
+                    {post.trips?.distance && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                        <MapPin size={12} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">Distance</p>
+                          <p className="text-muted-foreground">{post.trips.distance}</p>
+                        </div>
+                      </div>
+                    )}
+                    {post.trips?.cost && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                        <DollarSign size={12} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">Budget</p>
+                          <p className="text-muted-foreground">{post.trips.cost}</p>
+                        </div>
+                      </div>
+                    )}
+                    {post.trips?.companions && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                        <Users size={12} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">With</p>
+                          <p className="text-muted-foreground">{post.trips.companions}</p>
+                        </div>
+                      </div>
+                    )}
+                    {post.trips?.stops && (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 col-span-2">
+                        <MapPin size={12} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">Route</p>
+                          <p className="text-muted-foreground">{post.trips.stops.length} stops total</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
           </div>
 
           {/* Actions */}
           <div className="px-4 pb-4">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
-                onClick={handleLike}
-                disabled={isLiking}
-              >
-                <Heart size={18} className={isLiked ? 'fill-current' : ''} />
-                <span className="text-sm">{likesCount}</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
-                <MessageCircle size={18} />
-                <span className="text-sm">{post.comments_count}</span>
-              </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
+                  onClick={handleLike}
+                  disabled={isLiking}
+                >
+                  <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                  <span className="text-sm">{likesCount}</span>
+                </Button>
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
+                  <MessageCircle size={18} />
+                  <span className="text-sm">{post.comments_count}</span>
+                </Button>
+              </div>
+              
+              {/* Save Button */}
+              <ItemFolderSelector itemId={post.id} itemType="post" onSave={handleSavePost}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''}`}
+                >
+                  <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
+                </Button>
+              </ItemFolderSelector>
             </div>
           </div>
         </CardContent>

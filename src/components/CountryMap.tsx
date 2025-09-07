@@ -19,14 +19,27 @@ const CountryMap = ({ stops, className = "h-full w-full", mapboxToken }: Country
   const map = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
-    if (!mapContainer.current || !stops.length || !mapboxToken) return;
+    console.log('CountryMap received:', { stops, mapboxToken: !!mapboxToken });
+    if (!mapContainer.current || !stops.length || !mapboxToken) {
+      console.log('CountryMap early return:', { 
+        hasContainer: !!mapContainer.current, 
+        stopsLength: stops.length, 
+        hasToken: !!mapboxToken 
+      });
+      return;
+    }
 
     // Initialize map
+    console.log('Initializing Mapbox with token:', mapboxToken.substring(0, 10) + '...');
     mapboxgl.accessToken = mapboxToken;
     
     // Calculate bounds from stops
+    console.log('Processing stops:', stops);
     const bounds = new mapboxgl.LngLatBounds();
-    stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
+    stops.forEach(stop => {
+      console.log('Adding stop to bounds:', stop);
+      bounds.extend([stop.lng, stop.lat]);
+    });
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,

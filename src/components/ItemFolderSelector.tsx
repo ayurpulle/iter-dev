@@ -87,25 +87,54 @@ export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemF
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // Check if item is already saved
+      const { data: existingItem } = await supabase
         .from('saved_items')
-        .insert({
-          user_id: user.id,
-          item_id: itemId,
-          item_type: itemType,
-          folder_id: selectedFolderId === "no-folder" ? null : selectedFolderId || null
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('item_id', itemId)
+        .eq('item_type', itemType)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingItem) {
+        // Item already saved, just update the folder
+        const { error: updateError } = await supabase
+          .from('saved_items')
+          .update({ folder_id: selectedFolderId === "no-folder" ? null : selectedFolderId || null })
+          .eq('id', existingItem.id);
+
+        if (updateError) throw updateError;
+        
+        toast({
+          title: "Updated!",
+          description: selectedFolderId && selectedFolderId !== "no-folder" 
+            ? `Moved to ${folders.find(f => f.id === selectedFolderId)?.name || 'folder'}`
+            : "Moved to main collection",
+        });
+      } else {
+        // Create new saved item
+        const { error } = await supabase
+          .from('saved_items')
+          .insert({
+            user_id: user.id,
+            item_id: itemId,
+            item_type: itemType,
+            folder_id: selectedFolderId === "no-folder" ? null : selectedFolderId || null
+          });
+
+        if (error) throw error;
+        
+        toast({
+          title: "Saved!",
+          description: selectedFolderId && selectedFolderId !== "no-folder" 
+            ? `Added to ${folders.find(f => f.id === selectedFolderId)?.name || 'folder'}`
+            : "Added to your collection",
+        });
+      }
 
       onSave(selectedFolderId === "no-folder" ? undefined : selectedFolderId || undefined);
       setIsOpen(false);
       setSelectedFolderId("");
-      
-      toast({
-        title: "Success",
-        description: selectedFolderId && selectedFolderId !== "no-folder" ? `${itemType} saved to folder` : `${itemType} saved to your collection`,
-      });
     } catch (error) {
       console.error('Error saving item:', error);
       toast({

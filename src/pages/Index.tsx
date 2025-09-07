@@ -232,7 +232,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
 
   const images = getImageUrls();
   const hasImages = images.length > 0;
-  const hasTrip = post.trips && post.trips.stops && post.trips.stops.length > 0;
+  const hasTrip = post.trips && post.trips.stops && Array.isArray(post.trips.stops) && post.trips.stops.length > 0;
 
   return (
     <>

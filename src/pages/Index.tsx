@@ -70,6 +70,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const [isLiking, setIsLiking] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showFullCaption, setShowFullCaption] = useState(false);
 
   const isOwnPost = user?.id === post.user_id;
 
@@ -235,9 +236,24 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const hasTrip = !!post.trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
 
+  // Caption logic
+  const maxCaptionLength = 150;
+  const isCaptionLong = post.content && post.content.length > maxCaptionLength;
+  const captionToShow = isCaptionLong && !showFullCaption 
+    ? post.content.slice(0, maxCaptionLength) + "..."
+    : post.content;
+
+  // Dynamic height calculation
+  const getCardHeight = () => {
+    if (!post.content) return "h-auto max-h-60";
+    if (post.content.length <= 50) return "h-auto";
+    if (post.content.length <= 100) return "h-auto max-h-48";
+    return "h-auto max-h-60";
+  };
+
   return (
     <>
-      <Card className="overflow-hidden">
+      <Card className={`overflow-hidden ${getCardHeight()}`}>
         <CardContent className="p-0">
           {/* Header */}
           <div className="flex items-center gap-3 p-4 pb-2">
@@ -329,7 +345,28 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
           <div className="px-4 pb-3">
             {/* Caption/Description */}
             {post.content && (
-              <p className="text-sm leading-relaxed">{post.content}</p>
+              <div>
+                <p className="text-sm leading-relaxed">{captionToShow}</p>
+                {isCaptionLong && (
+                  <Collapsible open={showFullCaption} onOpenChange={setShowFullCaption}>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="mt-1 h-6 px-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <span className="text-xs">
+                          {showFullCaption ? "Show less" : "Show more"}
+                        </span>
+                        {showFullCaption ? <ChevronUp size={12} className="ml-1" /> : <ChevronDown size={12} className="ml-1" />}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <p className="text-sm leading-relaxed mt-1">{post.content}</p>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </div>
             )}
             
             {/* Collapsible Trip Details */}

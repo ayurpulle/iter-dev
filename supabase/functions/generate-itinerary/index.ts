@@ -46,8 +46,8 @@ serve(async (req) => {
       );
     }
 
-    const { destination, startDate, endDate, budget, interests, travelStyle } = await req.json();
-    console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle });
+    const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations } = await req.json();
+    console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext });
 
     if (!destination) {
       return new Response(
@@ -91,46 +91,48 @@ serve(async (req) => {
 
     console.log(`Found ${posts?.length || 0} relevant posts from friends`);
 
-    // Prepare context from saved posts and extract venue recommendations
+    // Prepare context from saved posts (use legacy approach if no RAG context provided)
     const postsContext = posts?.map(post => 
       `${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
     ).join('\n\n') || 'No relevant saved posts found.';
 
-    // Extract venues and friend recommendations for the response
-    const friendRecommendations: { [key: string]: any[] } = {};
+    // Use provided friend recommendations from RAG, or extract them here as fallback
+    const finalFriendRecommendations = friendRecommendations || {};
     
-    posts?.forEach(post => {
-      const profile = post.profiles;
-      const content = post.content || '';
-      
-      // Simple venue extraction - look for common venue indicators
-      const venuePatterns = [
-        /(?:stayed at|hotel|accommodation)[\s:]+([^.!?]+)/gi,
-        /(?:ate at|restaurant|dinner at|lunch at)[\s:]+([^.!?]+)/gi,
-        /(?:visited|museum|gallery)[\s:]+([^.!?]+)/gi,
-        /(?:bar|pub|drinks at)[\s:]+([^.!?]+)/gi,
-      ];
-      
-      venuePatterns.forEach(pattern => {
-        const matches = content.matchAll(pattern);
-        for (const match of matches) {
-          const venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
-          if (venueName && venueName.length > 3 && venueName.length < 50) {
-            const cleanVenueName = venueName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-            if (!friendRecommendations[cleanVenueName]) {
-              friendRecommendations[cleanVenueName] = [];
+    if (!friendRecommendations && posts?.length) {
+      posts.forEach(post => {
+        const profile = post.profiles;
+        const content = post.content || '';
+        
+        // Simple venue extraction - look for common venue indicators
+        const venuePatterns = [
+          /(?:stayed at|hotel|accommodation)[\s:]+([^.!?]+)/gi,
+          /(?:ate at|restaurant|dinner at|lunch at)[\s:]+([^.!?]+)/gi,
+          /(?:visited|museum|gallery)[\s:]+([^.!?]+)/gi,
+          /(?:bar|pub|drinks at)[\s:]+([^.!?]+)/gi,
+        ];
+        
+        venuePatterns.forEach(pattern => {
+          const matches = content.matchAll(pattern);
+          for (const match of matches) {
+            const venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
+            if (venueName && venueName.length > 3 && venueName.length < 50) {
+              const cleanVenueName = venueName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+              if (!finalFriendRecommendations[cleanVenueName]) {
+                finalFriendRecommendations[cleanVenueName] = [];
+              }
+              
+              finalFriendRecommendations[cleanVenueName].push({
+                name: profile?.name || profile?.username || 'Anonymous',
+                avatar: profile?.avatar,
+                review: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+                visitDate: new Date(post.created_at).toLocaleDateString(),
+              });
             }
-            
-            friendRecommendations[cleanVenueName].push({
-              name: profile?.name || profile?.username || 'Anonymous',
-              avatar: profile?.avatar,
-              review: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-              visitDate: new Date(post.created_at).toLocaleDateString(),
-            });
           }
-        }
+        });
       });
-    });
+    }
 
     // Handle OpenAI API quota issues gracefully
     if (!openAIApiKey) {
@@ -154,16 +156,22 @@ serve(async (req) => {
     const defaultCurrency = userProfile?.default_currency || 'USD';
     const baseLocation = userProfile?.base_location || 'United States';
 
-    // Create a natural, user-friendly prompt for travel recommendations
-    const prompt = `I'm planning a trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+    // Create a natural, user-friendly prompt for travel recommendations with RAG context
+    const basePrompt = `I'm planning a trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
 
 My details:
 - Base location: ${baseLocation}
 - Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}  
 - Interests: ${interests || 'General exploration'}
-${travelStyle ? `- Travel style: ${travelStyle}` : ''}
+${travelStyle ? `- Travel style: ${travelStyle}` : ''}`;
 
-${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been there say:\n${postsContext}\n` : ''}
+    const ragPrompt = ragContext ? `${basePrompt}
+
+${ragContext}` : `${basePrompt}
+
+${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been there say:\n${postsContext}\n` : ''}`;
+
+    const prompt = `${ragPrompt}
 
 Please create a natural, conversational itinerary that feels like it was written by a knowledgeable local friend, not an AI. 
 
@@ -179,11 +187,11 @@ FORMAT REQUIREMENTS:
 - Group by days but keep it flowing
 - Show prices in ${defaultCurrency} first, then local currency: ${defaultCurrency}25 (€23)
 - Use exchange rates: USD→EUR=0.92, USD→GBP=0.79, USD→JPY=150, USD→CAD=1.35
-- When mentioning specific places friends visited, add [FRIEND_REC:place_name]
+- When mentioning specific places friends visited, add [FRIEND_REC:place_name] immediately after the venue name
 - Focus on 2-3 key things per day maximum
 
 Example style:
-"Day 1: Land and grab coffee at Blue Bottle (${defaultCurrency}5/€5) - you'll need it! Check into your hotel then wander through Union Square. For dinner, hit up Swan Oyster Depot [FRIEND_REC:Swan_Oyster_Depot] - the seafood is incredible and locals love it (${defaultCurrency}40/€37).
+"Day 1: Land and grab coffee at Blue Bottle (${defaultCurrency}5/€5) - you'll need it! Check into your hotel then wander through Union Square. For dinner, hit up Swan Oyster Depot [FRIEND_REC:Swan Oyster Depot] - the seafood is incredible and locals love it (${defaultCurrency}40/€37).
 
 Day 2: Golden Gate Bridge in the morning when it's clear, then Alcatraz tour (${defaultCurrency}45/€41). End at Fisherman's Wharf for clam chowder..."
 
@@ -266,7 +274,7 @@ Keep this natural, friendly tone throughout. No bullet points or formal sections
           tripId: newTrip?.id,
           postsUsed: posts?.length || 0,
           destination: destination,
-          friendRecommendations: friendRecommendations
+          friendRecommendations: finalFriendRecommendations
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

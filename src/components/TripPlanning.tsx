@@ -19,6 +19,7 @@ import CountryMap from "./CountryMap";
 import InteractiveItinerary from "./InteractiveItinerary";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
+import { useRAGItinerary } from "@/hooks/useRAGItinerary";
 
 const TripPlanning = () => {
   console.log('TripPlanning component loaded');
@@ -55,6 +56,7 @@ const TripPlanning = () => {
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
   const { saveItinerary } = useSavedItineraries();
+  const { generateRAGPrompt } = useRAGItinerary();
   
   console.log('TripPlanning state:', { currentView, generatedItinerary, isLoading });
 
@@ -219,6 +221,15 @@ const TripPlanning = () => {
     setIsLoading(true);
     
     try {
+      // Generate RAG context from friend experiences
+      const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
+        formData.destination,
+        formData.holidayTypes,
+        formData.startDate || undefined,
+        formData.endDate || undefined,
+        formData.budget > 0 ? formData.budget : undefined
+      );
+
       const { data, error } = await supabase.functions.invoke('generate-itinerary', {
         body: {
           destination: formData.destination,
@@ -226,7 +237,9 @@ const TripPlanning = () => {
           endDate: formData.endDate?.toISOString(),
           budget: formData.budget > 0 ? formData.budget : null,
           interests: formData.holidayTypes.join(', '),
-          travelStyle: formData.notes
+          travelStyle: formData.notes,
+          ragContext: ragContext,
+          friendRecommendations: ragFriendRecs
         }
       });
 

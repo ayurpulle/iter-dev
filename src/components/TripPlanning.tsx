@@ -20,6 +20,7 @@ import InteractiveIter from "./InteractiveItinerary";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
+import { ItineraryShareDialog } from "./ItineraryShareDialog";
 
 const TripPlanning = () => {
   console.log('TripPlanning component loaded');
@@ -751,6 +752,9 @@ const TripPlanning = () => {
                       friend_recommendations: friendRecommendations
                     });
                     console.log('Update result:', result);
+                    if (result) {
+                      setLastGeneratedData(prev => ({ ...prev, id: result.id }));
+                    }
                   } else {
                     // Save new iter
                     console.log('Saving new iter');
@@ -765,6 +769,9 @@ const TripPlanning = () => {
                       friend_recommendations: friendRecommendations
                     });
                     console.log('Save result:', result);
+                    if (result) {
+                      setLastGeneratedData(prev => ({ ...prev, id: result.id }));
+                    }
                   }
                 } catch (error) {
                   console.error('Error in save/update operation:', error);
@@ -774,6 +781,16 @@ const TripPlanning = () => {
               Save Iter
             </Button>
           </div>
+          
+          {/* Show sharing option if iter is saved */}
+          {lastGeneratedData?.id && (
+            <div className="mt-4">
+              <ItineraryShareDialog 
+                itineraryId={lastGeneratedData.id}
+                itineraryTitle={`${lastGeneratedData?.destination || formData.destination} Trip`}
+              />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1189,12 +1206,41 @@ const TripPlanning = () => {
                 View Iter
               </Button>
               <Button 
-                variant="outline" 
+                variant="outline"
+                onClick={async () => {
+                  if (!lastGeneratedData) return;
+                  
+                  // First save the itinerary
+                  const savedIter = await saveItinerary({
+                    title: `${lastGeneratedData.destination || formData.destination} Trip`,
+                    destination: lastGeneratedData.destination || formData.destination,
+                    start_date: formData.startDate,
+                    end_date: formData.endDate,
+                    budget: formData.budget,
+                    interests: formData.holidayTypes,
+                    itinerary_content: lastGeneratedData.itinerary,
+                    friend_recommendations: lastGeneratedData.friendRecommendations || {}
+                  });
+                  
+                  if (savedIter) {
+                    // Update the lastGeneratedData with the saved ID for future sharing
+                    setLastGeneratedData(prev => ({ ...prev, id: savedIter.id }));
+                    setShowSuccessDialog(false);
+                    // Show the sharing functionality by viewing the iter
+                    handleViewIter();
+                  }
+                }}
+                className="w-full"
+              >
+                Save & Share
+              </Button>
+              <Button 
+                variant="ghost" 
                 onClick={() => setShowSuccessDialog(false)}
                 className="w-full"
               >
                 Create Another
-         </Button>
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

@@ -578,6 +578,13 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: number
       }
+      get_user_itinerary_permissions: {
+        Args: { itinerary_uuid: string; user_uuid: string }
+        Returns: {
+          can_edit: boolean
+          can_view: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

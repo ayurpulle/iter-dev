@@ -30,82 +30,8 @@ const MapView = () => {
 
   const pins = createPinsFromPosts();
 
-  // Handle swipe up gesture and mouse drag
-  useEffect(() => {
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
-    
-    // Touch events (mobile)
-    const handleTouchStart = (e: TouchEvent) => {
-      startY = e.touches[0].clientY;
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      currentY = e.touches[0].clientY;
-    };
-    
-    const handleTouchEnd = () => {
-      const deltaY = startY - currentY;
-      
-      // If swiped up by at least 50px, show posts list
-      if (deltaY > 50 && !showPostsList) {
-        setShowPostsList(true);
-      }
-      // If swiped down by at least 50px, hide posts list
-      else if (deltaY < -50 && showPostsList) {
-        setShowPostsList(false);
-      }
-    };
-
-    // Mouse events (laptop/desktop)
-    const handleMouseDown = (e: MouseEvent) => {
-      startY = e.clientY;
-      isDragging = true;
-      e.preventDefault();
-    };
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      currentY = e.clientY;
-      e.preventDefault();
-    };
-    
-    const handleMouseUp = (e: MouseEvent) => {
-      if (!isDragging) return;
-      isDragging = false;
-      
-      const deltaY = startY - currentY;
-      
-      // If dragged up by at least 50px, show posts list
-      if (deltaY > 50 && !showPostsList) {
-        setShowPostsList(true);
-      }
-      // If dragged down by at least 50px, hide posts list
-      else if (deltaY < -50 && showPostsList) {
-        setShowPostsList(false);
-      }
-      
-      e.preventDefault();
-    };
-    
-    // Add event listeners
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchmove', handleTouchMove);
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [showPostsList]);
+  // Remove the global drag listeners since we now use a specific drag area
+  // No useEffect needed for drag handling
 
   const handlePinClick = (pin: any) => {
     // Could implement pin detail functionality here
@@ -124,25 +50,66 @@ const MapView = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
+    <div className="fixed inset-0 bg-slate-900">
       <TopBar />
       
       {/* Globe Container - Full height between bars */}
       <div className="absolute top-16 bottom-20 left-0 right-0 overflow-hidden">
         
-        {/* Swipe up indicator - Positioned above bottom bar */}
+        {/* Interactive Globe - Full container size */}
+        <div className="w-full h-full">
+          <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
+        </div>
+      </div>
+
+      {/* Drag Area - Only bottom portion for swipe gesture */}
+      <div 
+        className="absolute bottom-20 left-0 right-0 h-32 z-30 pointer-events-auto"
+        onTouchStart={(e) => {
+          const startY = e.touches[0].clientY;
+          const handleTouchMove = (moveE: TouchEvent) => {
+            const currentY = moveE.touches[0].clientY;
+            const deltaY = startY - currentY;
+            if (deltaY > 50 && !showPostsList) {
+              setShowPostsList(true);
+              document.removeEventListener('touchmove', handleTouchMove);
+              document.removeEventListener('touchend', handleTouchEnd);
+            }
+          };
+          const handleTouchEnd = () => {
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+          };
+          document.addEventListener('touchmove', handleTouchMove);
+          document.addEventListener('touchend', handleTouchEnd);
+        }}
+        onMouseDown={(e) => {
+          const startY = e.clientY;
+          const handleMouseMove = (moveE: MouseEvent) => {
+            const currentY = moveE.clientY;
+            const deltaY = startY - currentY;
+            if (deltaY > 50 && !showPostsList) {
+              setShowPostsList(true);
+              document.removeEventListener('mousemove', handleMouseMove);
+              document.removeEventListener('mouseup', handleMouseUp);
+            }
+          };
+          const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+          };
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        }}
+      >
+        {/* Swipe up indicator - Only visible when posts are hidden */}
         {!showPostsList && (
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20 shadow-lg">
               <p className="text-white/70 font-medium text-sm">Drag up to see saved posts</p>
             </div>
           </div>
         )}
-
-        {/* Interactive Globe - Full container size */}
-        <div className="w-full h-full">
-          <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
-        </div>
       </div>
 
       {/* Saved Posts List - Slides up from bottom, above bottom bar */}

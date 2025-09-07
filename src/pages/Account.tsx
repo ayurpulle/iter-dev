@@ -458,7 +458,7 @@ const Account = () => {
             className="flex-1"
             onClick={() => setActiveSection("posts")}
           >
-            My Posts
+            My Posts ({userProfile.stats.posts})
           </Button>
           <Button
             variant={activeSection === "saved" ? "default" : "outline"}
@@ -517,11 +517,11 @@ const Account = () => {
                       
                       {post.image_url && (
                         <div className="mb-4">
-                          <img
-                            src={post.image_url}
-                            alt="Post image"
-                            className="w-full rounded-lg max-h-64 object-cover"
-                          />
+                           <img
+                             src={post.image_url}
+                             alt="Post image"
+                             className="w-full rounded-lg max-h-64 object-cover object-center"
+                           />
                         </div>
                       )}
                       

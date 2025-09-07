@@ -204,11 +204,11 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                     {images.map((imageUrl, index) => (
                       <CarouselItem key={index} className="h-full">
                         <div className="h-full">
-                          <img 
-                            src={imageUrl} 
-                            alt={`Post image ${index + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
+                           <img 
+                             src={imageUrl} 
+                             alt={`Post image ${index + 1}`} 
+                             className="w-full h-full object-cover object-center"
+                           />
                         </div>
                       </CarouselItem>
                     ))}

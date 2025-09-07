@@ -6,15 +6,15 @@ import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit } from "lucide-react
 import { format } from "date-fns";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import InteractiveItinerary from "./InteractiveItinerary";
+import InteractiveIter from "./InteractiveItinerary";
 
 interface SavedTripsViewProps {
   onBack: () => void;
-  onViewItinerary: (itinerary: any) => void;
-  onEditItinerary: (itinerary: any) => void;
+  onViewIter: (iter: any) => void;
+  onEditIter: (iter: any) => void;
 }
 
-const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTripsViewProps) => {
+const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps) => {
   const { savedItineraries, loading, deleteItinerary } = useSavedItineraries();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTrips
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Saved Trips</h1>
-          <p className="text-muted-foreground text-sm">{savedItineraries.length} saved itineraries</p>
+          <p className="text-muted-foreground text-sm">{savedItineraries.length} saved iters</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTrips
             <div className="text-muted-foreground">
               <Calendar size={48} className="mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No saved trips yet</h3>
-              <p className="text-sm">Start planning your first trip to save itineraries here!</p>
+              <p className="text-sm">Start planning your first trip to save iters here!</p>
             </div>
           </CardContent>
         </Card>
@@ -103,7 +103,7 @@ const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTrips
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEditItinerary(itinerary)}
+                      onClick={() => onEditIter(itinerary)}
                       className="p-2"
                       title="Continue editing"
                     >
@@ -112,7 +112,7 @@ const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTrips
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onViewItinerary(itinerary)}
+                      onClick={() => onViewIter(itinerary)}
                       className="p-2"
                       title="View only"
                     >
@@ -131,7 +131,7 @@ const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTrips
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Itinerary</AlertDialogTitle>
+                          <AlertDialogTitle>Delete Iter</AlertDialogTitle>
                           <AlertDialogDescription>
                             Are you sure you want to delete "{itinerary.title}"? This action cannot be undone.
                           </AlertDialogDescription>

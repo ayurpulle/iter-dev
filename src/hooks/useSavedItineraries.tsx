@@ -42,7 +42,7 @@ export const useSavedItineraries = () => {
 
       setSavedItineraries(data || []);
     } catch (err: any) {
-      console.error('Error fetching saved itineraries:', err);
+      console.error('Error fetching saved iters:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ export const useSavedItineraries = () => {
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to save itineraries.",
+        description: "Please log in to save iters.",
         variant: "destructive"
       });
       return null;
@@ -88,18 +88,18 @@ export const useSavedItineraries = () => {
       if (error) throw error;
 
       toast({
-        title: "Itinerary Saved!",
-        description: "Your itinerary has been saved successfully.",
+        title: "Iter Saved!",
+        description: "Your iter has been saved successfully.",
       });
 
       // Refresh the list
       fetchSavedItineraries();
       return data;
     } catch (err: any) {
-      console.error('Error saving itinerary:', err);
+      console.error('Error saving iter:', err);
       toast({
         title: "Save Failed",
-        description: err.message || "Failed to save itinerary. Please try again.",
+        description: err.message || "Failed to save iter. Please try again.",
         variant: "destructive"
       });
       return null;
@@ -119,21 +119,79 @@ export const useSavedItineraries = () => {
       if (error) throw error;
 
       toast({
-        title: "Itinerary Deleted",
-        description: "Your itinerary has been deleted successfully.",
+        title: "Iter Deleted",
+        description: "Your iter has been deleted successfully.",
       });
 
       // Refresh the list
       fetchSavedItineraries();
       return true;
     } catch (err: any) {
-      console.error('Error deleting itinerary:', err);
+      console.error('Error deleting iter:', err);
       toast({
         title: "Delete Failed",
-        description: err.message || "Failed to delete itinerary. Please try again.",
+        description: err.message || "Failed to delete iter. Please try again.",
         variant: "destructive"
       });
       return false;
+    }
+  };
+
+  const updateItinerary = async (id: string, itineraryData: {
+    title: string;
+    destination: string;
+    start_date?: Date | null;
+    end_date?: Date | null;
+    budget?: number;
+    interests?: string[];
+    itinerary_content: string;
+    friend_recommendations?: { [key: string]: any[] };
+  }) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to update iters.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_itineraries')
+        .update({
+          title: itineraryData.title,
+          destination: itineraryData.destination,
+          start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+          end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+          budget: itineraryData.budget || null,
+          interests: itineraryData.interests || [],
+          itinerary_content: itineraryData.itinerary_content,
+          friend_recommendations: itineraryData.friend_recommendations || {}
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Iter Updated!",
+        description: "Your iter has been updated successfully.",
+      });
+
+      // Refresh the list
+      fetchSavedItineraries();
+      return data;
+    } catch (err: any) {
+      console.error('Error updating iter:', err);
+      toast({
+        title: "Update Failed",
+        description: err.message || "Failed to update iter. Please try again.",
+        variant: "destructive"
+      });
+      return null;
     }
   };
 
@@ -147,6 +205,7 @@ export const useSavedItineraries = () => {
     savedItineraries,
     loading,
     error,
+    updateItinerary,
     saveItinerary,
     deleteItinerary,
     refetch: fetchSavedItineraries

@@ -12,12 +12,12 @@ interface FriendRecommendation {
   visitDate?: string;
 }
 
-interface InteractiveItineraryProps {
+interface InteractiveIterProps {
   itinerary: string;
   friendRecommendations: { [key: string]: FriendRecommendation[] };
 }
 
-const InteractiveItinerary = ({ itinerary, friendRecommendations }: InteractiveItineraryProps) => {
+const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterProps) => {
   const [expandedVenues, setExpandedVenues] = useState<{ [key: string]: boolean }>({});
 
   const toggleVenue = (venueName: string) => {
@@ -27,7 +27,7 @@ const InteractiveItinerary = ({ itinerary, friendRecommendations }: InteractiveI
     }));
   };
 
-  const renderItineraryWithRecommendations = (text: string) => {
+  const renderIterWithRecommendations = (text: string) => {
     // Split text by lines and process each line
     return text.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;
@@ -142,9 +142,9 @@ const InteractiveItinerary = ({ itinerary, friendRecommendations }: InteractiveI
 
   return (
     <div className="prose prose-sm max-w-none text-foreground">
-      {renderItineraryWithRecommendations(itinerary)}
+      {renderIterWithRecommendations(itinerary)}
     </div>
   );
 };
 
-export default InteractiveItinerary;
+export default InteractiveIter;

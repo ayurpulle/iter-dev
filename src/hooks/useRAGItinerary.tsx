@@ -10,7 +10,7 @@ export interface FriendRecommendation {
   postId: string;
 }
 
-export const useRAGItinerary = () => {
+export const useRAGIter = () => {
   const { savedPosts } = useSavedPosts();
   const { friends } = useFriends();
 
@@ -123,7 +123,7 @@ ${venuesWithFriends.map(venue => {
     ${recs.map(rec => `  • ${rec.name}: "${rec.review.substring(0, 100)}..."`).join('\n    ')}`;
 }).join('\n')}
 
-IMPORTANT: When mentioning any of these venues in your itinerary, add the marker [FRIEND_REC:VenueName] immediately after the venue name. For example: "Visit the Louvre Museum [FRIEND_REC:Louvre Museum] to see..."
+IMPORTANT: When mentioning any of these venues in your iter, add the marker [FRIEND_REC:VenueName] immediately after the venue name. For example: "Visit the Louvre Museum [FRIEND_REC:Louvre Museum] to see..."
 
 Only add the [FRIEND_REC:VenueName] marker for venues that appear in the friend recommendations list above.`;
     }

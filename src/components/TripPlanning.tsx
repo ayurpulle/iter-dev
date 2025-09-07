@@ -16,10 +16,10 @@ import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
-import InteractiveItinerary from "./InteractiveItinerary";
+import InteractiveIter from "./InteractiveItinerary";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
-import { useRAGItinerary } from "@/hooks/useRAGItinerary";
+import { useRAGIter } from "@/hooks/useRAGItinerary";
 
 const TripPlanning = () => {
   console.log('TripPlanning component loaded');
@@ -39,7 +39,7 @@ const TripPlanning = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [dateSelectionStep, setDateSelectionStep] = useState<'start' | 'end' | null>(null);
 
-  const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
+  const [generatedIter, setGeneratedIter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
@@ -50,15 +50,15 @@ const TripPlanning = () => {
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
 
   // View state management
-  const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewItinerary'>('planning');
-  const [viewingItinerary, setViewingItinerary] = useState<any>(null);
+  const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewIter'>('planning');
+  const [viewingIter, setViewingIter] = useState<any>(null);
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
-  const { saveItinerary } = useSavedItineraries();
-  const { generateRAGPrompt } = useRAGItinerary();
+  const { saveItinerary, updateItinerary } = useSavedItineraries();
+  const { generateRAGPrompt } = useRAGIter();
   
-  console.log('TripPlanning state:', { currentView, generatedItinerary, isLoading });
+  console.log('TripPlanning state:', { currentView, generatedIter, isLoading });
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {
@@ -208,11 +208,11 @@ const TripPlanning = () => {
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
-  const generateItinerary = async () => {
+  const generateIter = async () => {
     if (!formData.destination) {
       toast({
         title: "Missing Information",
-        description: "Please enter a destination to generate an itinerary.",
+        description: "Please enter a destination to generate an iter.",
         variant: "destructive"
       });
       return;
@@ -244,10 +244,10 @@ const TripPlanning = () => {
       });
 
       if (error) {
-        console.error('Error generating itinerary:', error);
+        console.error('Error generating iter:', error);
         toast({
           title: "Generation Failed",
-          description: error.message || "Failed to generate itinerary. Please try again.",
+          description: error.message || "Failed to generate iter. Please try again.",
           variant: "destructive"
         });
         return;
@@ -270,9 +270,9 @@ const TripPlanning = () => {
     }
   };
 
-  const handleViewItinerary = () => {
+  const handleViewIter = () => {
     if (lastGeneratedData) {
-      setGeneratedItinerary(lastGeneratedData.itinerary);
+      setGeneratedIter(lastGeneratedData.itinerary);
       setShowSuccessDialog(false);
     }
   };
@@ -353,32 +353,32 @@ const TripPlanning = () => {
     return (
       <SavedTripsView 
         onBack={() => setCurrentView('planning')}
-        onViewItinerary={(itinerary) => {
-          setViewingItinerary(itinerary);
-          setCurrentView('viewItinerary');
+        onViewIter={(iter) => {
+          setViewingIter(iter);
+          setCurrentView('viewIter');
         }}
-        onEditItinerary={(itinerary) => {
+        onEditIter={(iter) => {
           // Restore the form data and generated content for editing
           setFormData({
-            destination: itinerary.destination,
-            startDate: itinerary.start_date ? new Date(itinerary.start_date) : null,
-            endDate: itinerary.end_date ? new Date(itinerary.end_date) : null,
-            budget: itinerary.budget || 0,
-            holidayTypes: itinerary.interests || [],
+            destination: iter.destination,
+            startDate: iter.start_date ? new Date(iter.start_date) : null,
+            endDate: iter.end_date ? new Date(iter.end_date) : null,
+            budget: iter.budget || 0,
+            holidayTypes: iter.interests || [],
             inspirationSource: "none",
             inspirationFolder: "",
             notes: ""
           });
-          setGeneratedItinerary(itinerary.itinerary_content);
-          setFriendRecommendations(itinerary.friend_recommendations || {});
+          setGeneratedIter(iter.itinerary_content);
+          setFriendRecommendations(iter.friend_recommendations || {});
           setLastGeneratedData({
-            destination: itinerary.destination,
-            startDate: itinerary.start_date ? new Date(itinerary.start_date) : null,
-            endDate: itinerary.end_date ? new Date(itinerary.end_date) : null,
-            budget: itinerary.budget || 0,
-            interests: itinerary.interests || [],
-            itinerary: itinerary.itinerary_content,
-            friendRecommendations: itinerary.friend_recommendations || {}
+            destination: iter.destination,
+            startDate: iter.start_date ? new Date(iter.start_date) : null,
+            endDate: iter.end_date ? new Date(iter.end_date) : null,
+            budget: iter.budget || 0,
+            interests: iter.interests || [],
+            itinerary: iter.itinerary_content,
+            friendRecommendations: iter.friend_recommendations || {},
           });
           setCurrentView('planning');
         }}
@@ -386,7 +386,7 @@ const TripPlanning = () => {
     );
   }
 
-  if (currentView === 'viewItinerary' && viewingItinerary) {
+  if (currentView === 'viewIter' && viewingIter) {
     return (
       <div className="px-4 py-6 pb-24 max-w-md mx-auto">
         <div className="space-y-4">
@@ -400,16 +400,16 @@ const TripPlanning = () => {
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{viewingItinerary.title}</h1>
-              <p className="text-muted-foreground">{viewingItinerary.destination}</p>
+              <h1 className="text-2xl font-bold text-foreground">{viewingIter.title}</h1>
+              <p className="text-muted-foreground">{viewingIter.destination}</p>
             </div>
           </div>
 
           <Card>
             <CardContent className="pt-6">
-              <InteractiveItinerary 
-                itinerary={viewingItinerary.itinerary_content}
-                friendRecommendations={viewingItinerary.friend_recommendations || {}}
+              <InteractiveIter 
+                itinerary={viewingIter.itinerary_content}
+                friendRecommendations={viewingIter.friend_recommendations || {}}
               />
             </CardContent>
           </Card>
@@ -418,7 +418,7 @@ const TripPlanning = () => {
     );
   }
 
-  if (generatedItinerary) {
+  if (generatedIter) {
     const routeStops = getRouteStops(lastGeneratedData?.destination || formData.destination || 'Paris');
     const duration = formData.endDate && formData.startDate 
       ? Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))
@@ -431,13 +431,13 @@ const TripPlanning = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => setGeneratedItinerary(null)}
+              onClick={() => setGeneratedIter(null)}
               className="p-1"
             >
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Your Itinerary</h1>
+              <h1 className="text-2xl font-bold text-foreground">Your Iter</h1>
               <p className="text-muted-foreground">{lastGeneratedData?.destination || formData.destination}</p>
             </div>
           </div>
@@ -461,14 +461,14 @@ const TripPlanning = () => {
             </CardContent>
           </Card>
 
-          {/* Itinerary Text */}
+          {/* Iter Text */}
           <Card>
             <CardHeader className="pb-3">
-              <h3 className="text-lg font-semibold">Itinerary:</h3>
+              <h3 className="text-lg font-semibold">Iter:</h3>
             </CardHeader>
             <CardContent className="pt-0">
-              <InteractiveItinerary 
-                itinerary={generatedItinerary}
+              <InteractiveIter
+                itinerary={generatedIter}
                 friendRecommendations={friendRecommendations}
               />
             </CardContent>
@@ -478,26 +478,41 @@ const TripPlanning = () => {
             <Button 
               variant="outline"
               className="flex-1" 
-              onClick={() => setGeneratedItinerary(null)}
+              onClick={() => setGeneratedIter(null)}
             >
               Create Another
             </Button>
             <Button 
               className="flex-1"
               onClick={async () => {
-                const saved = await saveItinerary({
-                  title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-                  destination: lastGeneratedData?.destination || formData.destination,
-                  start_date: formData.startDate,
-                  end_date: formData.endDate,
-                  budget: formData.budget,
-                  interests: formData.holidayTypes,
-                  itinerary_content: generatedItinerary,
-                  friend_recommendations: friendRecommendations
-                });
+                if (lastGeneratedData?.id) {
+                  // Update existing iter
+                  await updateItinerary(lastGeneratedData.id, {
+                    title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                    destination: lastGeneratedData?.destination || formData.destination,
+                    start_date: formData.startDate,
+                    end_date: formData.endDate,
+                    budget: formData.budget,
+                    interests: formData.holidayTypes,
+                    itinerary_content: generatedIter,
+                    friend_recommendations: friendRecommendations
+                  });
+                } else {
+                  // Save new iter
+                  await saveItinerary({
+                    title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                    destination: lastGeneratedData?.destination || formData.destination,
+                    start_date: formData.startDate,
+                    end_date: formData.endDate,
+                    budget: formData.budget,
+                    interests: formData.holidayTypes,
+                    itinerary_content: generatedIter,
+                    friend_recommendations: friendRecommendations
+                  });
+                }
               }}
             >
-              Save Itinerary
+              Save Iter
             </Button>
           </div>
         </div>
@@ -868,10 +883,10 @@ const TripPlanning = () => {
           </CardContent>
         </Card>
 
-        {/* Generate Itinerary Button */}
+        {/* Generate Iter Button */}
         <Button 
           className="w-full h-12 text-lg" 
-          onClick={generateItinerary}
+          onClick={generateIter}
           disabled={isLoading}
         >
           {isLoading ? (
@@ -880,7 +895,7 @@ const TripPlanning = () => {
               Generating...
             </>
           ) : (
-            'Generate Itinerary'
+            'Generate Iter'
           )}
          </Button>
 
@@ -897,9 +912,9 @@ const TripPlanning = () => {
         <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-center">🎉 Itinerary Created!</DialogTitle>
+              <DialogTitle className="text-center">🎉 Iter Created!</DialogTitle>
               <DialogDescription className="text-center">
-                Your custom itinerary for {lastGeneratedData?.destination} is ready
+                Your custom iter for {lastGeneratedData?.destination} is ready
                 {lastGeneratedData?.postsUsed > 0 && (
                   <span className="block mt-1 text-xs">
                     Generated using {lastGeneratedData.postsUsed} saved travel posts
@@ -909,10 +924,10 @@ const TripPlanning = () => {
             </DialogHeader>
             <div className="flex flex-col gap-3 mt-4">
               <Button 
-                onClick={handleViewItinerary}
+                onClick={handleViewIter}
                 className="w-full"
               >
-                View Itinerary
+                View Iter
               </Button>
               <Button 
                 variant="outline" 

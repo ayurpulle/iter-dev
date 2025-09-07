@@ -22,8 +22,15 @@ export const useSavedItineraries = () => {
   const [savedItineraries, setSavedItineraries] = useState<SavedItinerary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
+  
+  console.log('useSavedItineraries hook - user state:', { 
+    hasUser: !!user, 
+    userId: user?.id, 
+    hasSession: !!session,
+    sessionValid: !!session?.access_token
+  });
 
   const fetchSavedItineraries = async () => {
     if (!user) return;
@@ -59,32 +66,51 @@ export const useSavedItineraries = () => {
     itinerary_content: string;
     friend_recommendations?: { [key: string]: any[] };
   }) => {
-    if (!user) {
+    console.log('saveItinerary called with:', { 
+      hasUser: !!user, 
+      userId: user?.id, 
+      hasSession: !!session,
+      itineraryDataKeys: Object.keys(itineraryData)
+    });
+    
+    if (!user || !session) {
+      console.log('No user or session found, showing auth error');
       toast({
-        title: "Authentication Required",
-        description: "Please log in to save iters.",
+        title: "Authentication Required", 
+        description: "Please log in to save itineraries. Redirecting to login...",
         variant: "destructive"
       });
+      // Redirect to auth page
+      window.location.href = '/auth';
       return null;
     }
 
+    console.log('User authenticated, attempting to save:', user.id);
+
     try {
+      console.log('Attempting to insert into saved_itineraries with user_id:', user.id);
+      
+      const insertData = {
+        user_id: user.id,
+        title: itineraryData.title,
+        destination: itineraryData.destination,
+        start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+        end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+        budget: itineraryData.budget || null,
+        interests: itineraryData.interests || [],
+        itinerary_content: itineraryData.itinerary_content,
+        friend_recommendations: itineraryData.friend_recommendations || {}
+      };
+      
+      console.log('Insert data:', insertData);
+      
       const { data, error } = await supabase
         .from('saved_itineraries')
-        .insert({
-          user_id: user.id,
-          title: itineraryData.title,
-          destination: itineraryData.destination,
-          start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
-          end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
-          budget: itineraryData.budget || null,
-          interests: itineraryData.interests || [],
-          itinerary_content: itineraryData.itinerary_content,
-          friend_recommendations: itineraryData.friend_recommendations || {}
-        })
+        .insert(insertData)
         .select()
         .single();
 
+      console.log('Insert result:', { data, error });
       if (error) throw error;
 
       toast({

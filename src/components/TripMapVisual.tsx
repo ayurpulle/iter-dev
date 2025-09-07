@@ -132,7 +132,7 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11', // Try a different style
+        style: 'mapbox://styles/mapbox/light-v11',
         center: [stops[0].lng, stops[0].lat],
         zoom: 8,
         interactive: true,

@@ -7,6 +7,8 @@ export interface TripData {
   country_code: string;
   cost?: string;
   companions?: string;
+  duration?: string;
+  distance?: string;
   route: Array<{lat: number, lng: number, name: string}>;
   photos: string[];
   is_public?: boolean;
@@ -70,6 +72,8 @@ export const useTrips = () => {
           country_code: tripData.country_code,
           cost: tripData.cost,
           companions: tripData.companions,
+          duration: tripData.duration,
+          distance: tripData.distance,
           stops: tripData.route,
           photo_count: tripData.photos.length,
           is_public: tripData.is_public || false,
@@ -113,7 +117,7 @@ export const useTrips = () => {
             user_id: user.id,
             trip_id: trip.id,
             content: tripData.description,
-            image_url: imageUrls[0] || null // Use first image as post image
+            image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null // Save all images as JSON
           });
 
         if (postError) {

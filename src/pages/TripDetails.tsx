@@ -28,6 +28,8 @@ const TripDetails = () => {
   const [tripDescription, setTripDescription] = useState('');
   const [cost, setCost] = useState('');
   const [companions, setCompanions] = useState('');
+  const [duration, setDuration] = useState('');
+  const [distance, setDistance] = useState('');
   const [isPublic, setIsPublic] = useState(false);
 
   const handleBack = () => {
@@ -51,6 +53,8 @@ const TripDetails = () => {
         country_code: tripData?.country || '',
         cost,
         companions,
+        duration,
+        distance,
         route: tripData?.route || [],
         photos: tripData?.photos || [],
         is_public: isPublic
@@ -200,6 +204,29 @@ const TripDetails = () => {
             Optional: Let others know your travel style
           </p>
         </Card>
+
+        {/* Duration and Distance */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="p-4 space-y-3">
+            <Label htmlFor="duration" className="font-medium">Trip Duration</Label>
+            <Input
+              id="duration"
+              placeholder="e.g., 7 days, 2 weeks"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
+          </Card>
+          
+          <Card className="p-4 space-y-3">
+            <Label htmlFor="distance" className="font-medium">Distance Traveled</Label>
+            <Input
+              id="distance"
+              placeholder="e.g., 500km, 1200 miles"
+              value={distance}
+              onChange={(e) => setDistance(e.target.value)}
+            />
+          </Card>
+        </div>
 
         {/* Privacy Setting */}
         <Card className="p-4 space-y-3">

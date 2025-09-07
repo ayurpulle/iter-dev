@@ -47,7 +47,10 @@ interface Trip {
   title?: string;
   duration?: string;
   distance?: string;
+  cost?: string;
+  companions?: string;
   stops?: any;
+  images?: string[];
 }
 
 interface PostWithProfile extends Post {
@@ -174,10 +177,10 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
             </DropdownMenu>
           </div>
 
-          {/* Content */}
-          {post.content && (
+          {/* Trip title at top if available */}
+          {hasTrip && post.trips?.title && (
             <div className="px-4 pb-3">
-              <p className="text-sm">{post.content}</p>
+              <h3 className="font-semibold text-base">{post.trips.title}</h3>
             </div>
           )}
 
@@ -224,20 +227,27 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
             </div>
           )}
 
-          {/* Trip Info */}
-          {hasTrip && (
-            <div className="px-4 py-2 bg-muted/30">
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {post.trips?.title && <span className="font-medium">{post.trips.title}</span>}
+          {/* Trip Details at bottom */}
+          <div className="px-4 py-3 space-y-2">
+            {/* Trip Stats */}
+            {hasTrip && (
+              <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                 {post.trips?.duration && <span>{post.trips.duration}</span>}
                 {post.trips?.distance && <span>{post.trips.distance}</span>}
                 {post.trips?.stops && <span>{post.trips.stops.length} stops</span>}
+                {post.trips?.cost && <span>{post.trips.cost}</span>}
+                {post.trips?.companions && <span>With {post.trips.companions}</span>}
               </div>
-            </div>
-          )}
+            )}
+            
+            {/* Caption/Description */}
+            {post.content && (
+              <p className="text-sm leading-relaxed">{post.content}</p>
+            )}
+          </div>
 
           {/* Actions */}
-          <div className="p-4">
+          <div className="px-4 pb-4">
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
@@ -292,7 +302,7 @@ const Index = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from('posts')
         .select(`
           *,
@@ -302,6 +312,16 @@ const Index = () => {
             name,
             username,
             avatar
+          ),
+          trips (
+            id,
+            title,
+            duration,
+            distance,
+            cost,
+            companions,
+            stops,
+            images
           )
         `)
         .order('created_at', { ascending: false });

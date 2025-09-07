@@ -154,32 +154,40 @@ serve(async (req) => {
     const defaultCurrency = userProfile?.default_currency || 'USD';
     const baseLocation = userProfile?.base_location || 'United States';
 
-    // Create comprehensive prompt for a condensed, interactive itinerary
-    const prompt = `Create a CONDENSED travel itinerary for ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+    // Create a natural, user-friendly prompt for travel recommendations
+    const prompt = `I'm planning a trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
 
-User's base location: ${baseLocation}
-Default currency: ${defaultCurrency}
-Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}
-Interests: ${interests || 'General exploration'}
-${travelStyle ? `Travel notes: ${travelStyle}` : ''}
+My details:
+- Base location: ${baseLocation}
+- Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}  
+- Interests: ${interests || 'General exploration'}
+${travelStyle ? `- Travel style: ${travelStyle}` : ''}
 
-${postsContext !== 'No relevant saved posts found.' ? `\nFriend recommendations available for: ${postsContext}\n` : ''}
+${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been there say:\n${postsContext}\n` : ''}
 
-IMPORTANT FORMAT REQUIREMENTS:
-- Keep the itinerary VERY CONDENSED - maximum 2-3 sentences per activity
-- Show ALL prices in ${defaultCurrency} first, then local currency in brackets: ${defaultCurrency}120 (€110)
-- Use fixed exchange rates: USD→EUR=0.92, USD→GBP=0.79, USD→JPY=150, USD→CAD=1.35
-- When mentioning specific venues (restaurants, hotels, museums, bars), add [FRIEND_REC:venue_name] marker
-- Focus on 3-4 key activities per day maximum
-- Include brief transportation notes
-- Keep total length under 500 words
+Please create a natural, conversational itinerary that feels like it was written by a knowledgeable local friend, not an AI. 
 
-Example format:
-**Day 1: Arrival**
-Morning: Arrive at airport, take train to city center (${defaultCurrency}15/€14). Check into Hotel Central [FRIEND_REC:Hotel_Central].
-Evening: Dinner at Le Bistro [FRIEND_REC:Le_Bistro] - excellent steak (${defaultCurrency}45/€41).
+TONE & STYLE:
+- Write like you're texting a friend travel tips
+- Use natural, casual language 
+- Skip formal headings and robotic structure
+- Make it feel personal and authentic
+- Use "you'll love" instead of "visitors can enjoy"
 
-Write in this condensed style throughout.`;
+FORMAT REQUIREMENTS:
+- Maximum 300 words total
+- Group by days but keep it flowing
+- Show prices in ${defaultCurrency} first, then local currency: ${defaultCurrency}25 (€23)
+- Use exchange rates: USD→EUR=0.92, USD→GBP=0.79, USD→JPY=150, USD→CAD=1.35
+- When mentioning specific places friends visited, add [FRIEND_REC:place_name]
+- Focus on 2-3 key things per day maximum
+
+Example style:
+"Day 1: Land and grab coffee at Blue Bottle (${defaultCurrency}5/€5) - you'll need it! Check into your hotel then wander through Union Square. For dinner, hit up Swan Oyster Depot [FRIEND_REC:Swan_Oyster_Depot] - the seafood is incredible and locals love it (${defaultCurrency}40/€37).
+
+Day 2: Golden Gate Bridge in the morning when it's clear, then Alcatraz tour (${defaultCurrency}45/€41). End at Fisherman's Wharf for clam chowder..."
+
+Keep this natural, friendly tone throughout. No bullet points or formal sections - just flowing, helpful advice.`;
 
     console.log('Calling OpenAI API...');
     
@@ -195,7 +203,7 @@ Write in this condensed style throughout.`;
           messages: [
             { 
               role: 'system', 
-              content: 'You are a professional travel writer creating guidebook-style itineraries. Write in a direct, informative style without personal pronouns. Focus on practical details and authentic experiences.' 
+              content: 'You are a well-traveled friend sharing personal travel advice. Write naturally and conversationally, like you\'re texting recommendations to a close friend. Avoid formal language, bullet points, or obvious AI formatting. Share tips like a local would, with genuine enthusiasm for the places you\'re recommending.' 
             },
             { role: 'user', content: prompt }
           ],

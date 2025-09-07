@@ -254,38 +254,74 @@ const TripPlanning = () => {
     }
   };
 
-  // Extract route stops from destination (simplified version for demo)
+  // Extract route stops from destination using better coordinate lookup
   const getRouteStops = (destination: string) => {
-    // This would ideally be parsed from the itinerary content
-    // For now, create sample stops based on destination
+    // Expanded destination coordinates database
     const destinationCoords: { [key: string]: { lat: number; lng: number } } = {
+      // US Cities
+      'san francisco': { lat: 37.7749, lng: -122.4194 },
+      'new york': { lat: 40.7128, lng: -74.0060 },
+      'los angeles': { lat: 34.0522, lng: -118.2437 },
+      'chicago': { lat: 41.8781, lng: -87.6298 },
+      'miami': { lat: 25.7617, lng: -80.1918 },
+      'seattle': { lat: 47.6062, lng: -122.3321 },
+      'boston': { lat: 42.3601, lng: -71.0589 },
+      'las vegas': { lat: 36.1699, lng: -115.1398 },
+      
+      // European Cities
       'paris': { lat: 48.8566, lng: 2.3522 },
       'london': { lat: 51.5074, lng: -0.1278 },
-      'tokyo': { lat: 35.6762, lng: 139.6503 },
-      'new york': { lat: 40.7128, lng: -74.0060 },
       'rome': { lat: 41.9028, lng: 12.4964 },
       'barcelona': { lat: 41.3851, lng: 2.1734 },
       'amsterdam': { lat: 52.3676, lng: 4.9041 },
       'berlin': { lat: 52.5200, lng: 13.4050 },
+      'madrid': { lat: 40.4168, lng: -3.7038 },
+      'vienna': { lat: 48.2082, lng: 16.3738 },
+      
+      // Asian Cities  
+      'tokyo': { lat: 35.6762, lng: 139.6503 },
+      'kyoto': { lat: 35.0116, lng: 135.7681 },
+      'seoul': { lat: 37.5665, lng: 126.9780 },
+      'bangkok': { lat: 13.7563, lng: 100.5018 },
+      'singapore': { lat: 1.3521, lng: 103.8198 },
+      
+      // Other Popular Destinations
+      'sydney': { lat: -33.8688, lng: 151.2093 },
+      'dubai': { lat: 25.2048, lng: 55.2708 },
+      'istanbul': { lat: 41.0082, lng: 28.9784 },
     };
     
     const dest = destination.toLowerCase();
-    const coords = Object.keys(destinationCoords).find(key => dest.includes(key));
     
-    if (coords && destinationCoords[coords]) {
-      const baseCoord = destinationCoords[coords];
+    // Try exact match first
+    if (destinationCoords[dest]) {
+      const baseCoord = destinationCoords[dest];
       return [
-        { name: `${destination} - Start`, lat: baseCoord.lat - 0.02, lng: baseCoord.lng - 0.02 },
-        { name: `${destination} - Center`, lat: baseCoord.lat, lng: baseCoord.lng },
-        { name: `${destination} - End`, lat: baseCoord.lat + 0.02, lng: baseCoord.lng + 0.02 },
+        { name: `${destination} - Arrival`, lat: baseCoord.lat - 0.01, lng: baseCoord.lng - 0.01 },
+        { name: `${destination} - Downtown`, lat: baseCoord.lat, lng: baseCoord.lng },
+        { name: `${destination} - Departure`, lat: baseCoord.lat + 0.01, lng: baseCoord.lng + 0.01 },
       ];
     }
     
-    // Default to a sample route around Paris
+    // Try partial match
+    const partialMatch = Object.keys(destinationCoords).find(key => 
+      dest.includes(key) || key.includes(dest.split(',')[0].trim())
+    );
+    
+    if (partialMatch && destinationCoords[partialMatch]) {
+      const baseCoord = destinationCoords[partialMatch];
+      return [
+        { name: `${destination} - Start`, lat: baseCoord.lat - 0.01, lng: baseCoord.lng - 0.01 },
+        { name: `${destination} - Center`, lat: baseCoord.lat, lng: baseCoord.lng },
+        { name: `${destination} - End`, lat: baseCoord.lat + 0.01, lng: baseCoord.lng + 0.01 },
+      ];
+    }
+    
+    // Default to San Francisco if no match found (better than Paris)
     return [
-      { name: 'Start Point', lat: 48.8566, lng: 2.3522 },
-      { name: 'Mid Point', lat: 48.8606, lng: 2.3376 },
-      { name: 'End Point', lat: 48.8629, lng: 2.3445 },
+      { name: 'Default Location - Start', lat: 37.7749, lng: -122.4194 },
+      { name: 'Default Location - Center', lat: 37.7849, lng: -122.4094 },
+      { name: 'Default Location - End', lat: 37.7949, lng: -122.3994 },
     ];
   };
 

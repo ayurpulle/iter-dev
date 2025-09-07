@@ -232,7 +232,8 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
 
   const images = getImageUrls();
   const hasImages = images.length > 0;
-  const hasTrip = post.trips && post.trips.stops && Array.isArray(post.trips.stops) && post.trips.stops.length > 0;
+  const hasTrip = !!post.trips && !!post.trip_id; // Simply check if trip exists
+  const shouldShowCarousel = hasTrip || hasImages;
 
   return (
     <>
@@ -284,25 +285,29 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
           )}
 
           {/* Image/Map Carousel */}
-          {(hasTrip || hasImages) && (
+          {shouldShowCarousel && (
             <div className="w-full">
               <div className="h-64 bg-muted overflow-hidden">
                 <Carousel className="w-full h-full">
                   <CarouselContent className="h-full">
-                    {/* Trip Map - Always First if available and has priority over images */}
+                    {/* Trip Map - ALWAYS FIRST when trip exists */}
                      {hasTrip && (
                        <CarouselItem className="h-full">
-                         <div className="h-full">
+                         <div className="h-full relative">
                            <CountryMap 
-                             stops={post.trips!.stops || []} 
+                             stops={post.trips?.stops || []} 
                              className="h-full w-full" 
                              mapboxToken={mapboxToken}
                            />
+                           {/* Trip overlay indicator */}
+                           <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                             📍 Trip Map
+                           </div>
                          </div>
                        </CarouselItem>
                      )}
                     
-                    {/* Images - Only show if no trip map or show additional images */}
+                    {/* Images - Come after trip map */}
                     {images.map((imageUrl, index) => (
                       <CarouselItem key={`image-${index}`} className="h-full">
                         <div className="h-full">
@@ -315,7 +320,8 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  {(hasTrip || images.length > 1) && (
+                  {/* Show navigation if there's a trip map + images, or multiple images */}
+                  {((hasTrip && hasImages) || images.length > 1) && (
                     <>
                       <CarouselPrevious className="left-2" />
                       <CarouselNext className="right-2" />

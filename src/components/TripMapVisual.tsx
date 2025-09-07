@@ -132,33 +132,105 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11', // Try a different style
+        style: 'mapbox://styles/mapbox/outdoors-v12', // More detailed style with terrain and boundaries
         center: [stops[0].lng, stops[0].lat],
-        zoom: 8,
+        zoom: 6, // Start more zoomed out to show more geographical context
         interactive: true,
         preserveDrawingBuffer: true,
-        attributionControl: false, // Disable attribution control
-        logoPosition: 'bottom-right' // This will be hidden by CSS anyway
+        attributionControl: false,
+        logoPosition: 'bottom-right',
+        projection: 'globe' // Use globe projection for better geographical context
       });
 
       console.log('=== DEBUG: Map created ===', map.current);
 
-      // Add a simple marker after map loads
+      // Add enhanced geographical features after map loads
       map.current.on('load', () => {
         console.log('=== DEBUG: Map load event fired ===');
         
+        // Add state/country boundaries for better geographical context
+        map.current!.addSource('admin-boundaries', {
+          type: 'vector',
+          url: 'mapbox://mapbox.boundaries-adm1-v3'
+        });
+
+        // Add state boundaries layer
+        map.current!.addLayer({
+          id: 'admin-1-boundary',
+          type: 'line',
+          source: 'admin-boundaries',
+          'source-layer': 'boundaries_admin_1',
+          paint: {
+            'line-color': '#627BC1',
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0, 0.5,
+              4, 1,
+              8, 2
+            ],
+            'line-opacity': 0.5
+          },
+          filter: ['==', ['get', 'admin_level'], 1]
+        });
+
+        // Add country boundaries layer
+        map.current!.addSource('country-boundaries', {
+          type: 'vector',
+          url: 'mapbox://mapbox.boundaries-adm0-v3'
+        });
+
+        map.current!.addLayer({
+          id: 'admin-0-boundary',
+          type: 'line',
+          source: 'country-boundaries',
+          'source-layer': 'boundaries_admin_0',
+          paint: {
+            'line-color': '#627BC1',
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0, 1,
+              4, 2,
+              8, 3
+            ],
+            'line-opacity': 0.7
+          }
+        });
+        
         // Add markers for all stops
         stops.forEach((stop, index) => {
-          const marker = new mapboxgl.Marker({ color: '#3B82F6' })
+          // Create custom marker element with better styling
+          const markerElement = document.createElement('div');
+          markerElement.className = 'custom-marker';
+          markerElement.style.cssText = `
+            background: #3B82F6;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          `;
+          markerElement.textContent = (index + 1).toString();
+
+          const marker = new mapboxgl.Marker({ element: markerElement })
             .setLngLat([stop.lng, stop.lat])
             .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div style="font-weight: bold;">${index + 1}. ${stop.name}</div>`
+              `<div style="font-weight: bold; padding: 8px;">${index + 1}. ${stop.name}</div>`
             ))
             .addTo(map.current!);
           console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
         });
 
-        // Add route line if multiple stops
+        // Add enhanced route line if multiple stops
         if (stops.length > 1) {
           console.log('=== DEBUG: Adding route line for multiple stops ===');
           const coordinates = stops.map(stop => [stop.lng, stop.lat]);
@@ -175,6 +247,24 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
             }
           });
 
+          // Add route shadow for better visibility
+          map.current!.addLayer({
+            id: 'route-shadow',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#000000',
+              'line-width': 6,
+              'line-opacity': 0.3,
+              'line-blur': 2
+            }
+          });
+
+          // Add main route line
           map.current!.addLayer({
             id: 'route',
             type: 'line',
@@ -185,18 +275,35 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
             },
             paint: {
               'line-color': '#3B82F6',
-              'line-width': 3,
-              'line-opacity': 0.8
+              'line-width': 4,
+              'line-opacity': 0.9
             }
           });
 
-          // Fit map to show all stops
+          // Fit map to show all stops with appropriate zoom level
           const bounds = new mapboxgl.LngLatBounds();
           stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
+          
+          // Calculate the appropriate padding based on the distance
+          const ne = bounds.getNorthEast();
+          const sw = bounds.getSouthWest();
+          const distance = Math.sqrt(
+            Math.pow(ne.lat - sw.lat, 2) + Math.pow(ne.lng - sw.lng, 2)
+          );
+          
+          // Use more padding for longer distances to show more geographical context
+          const basePadding = distance > 10 ? 80 : 50;
+          
           map.current!.fitBounds(bounds, { 
-            padding: { top: 50, bottom: 50, left: 50, right: 50 }
+            padding: { 
+              top: basePadding, 
+              bottom: basePadding, 
+              left: basePadding, 
+              right: basePadding 
+            },
+            maxZoom: 10 // Prevent zooming in too much to maintain geographical context
           });
-          console.log('=== DEBUG: Map fitted to bounds ===');
+          console.log('=== DEBUG: Map fitted to bounds with geographical context ===');
         }
       });
 

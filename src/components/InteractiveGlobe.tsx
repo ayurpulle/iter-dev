@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Globe } from 'lucide-react';
+import { Globe, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Pin {
@@ -317,34 +317,38 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             return;
           }
           
-          // Create marker with distinct colors for debugging
+          // Create pin icon instead of simple dot
           const colors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b'];
           const color = colors[index % colors.length];
           
           const markerElement = document.createElement('div');
           markerElement.style.cssText = `
-            width: 25px;
-            height: 25px;
-            background-color: ${color};
-            border: 3px solid white;
-            border-radius: 50%;
             cursor: pointer;
-            position: absolute;
-            z-index: 1000;
+            transform: translate(-50%, -100%);
           `;
           
-          markerElement.innerHTML = `<div style="
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: black;
-            color: white;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-size: 10px;
-            white-space: nowrap;
-          ">${pin.location}</div>`;
+          // Create the pin icon using SVG
+          markerElement.innerHTML = `
+            <svg width="32" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${color}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3" fill="${color}" stroke="white" stroke-width="1"/>
+            </svg>
+            <div style="
+              position: absolute;
+              top: -35px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: rgba(0,0,0,0.8);
+              color: white;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 11px;
+              white-space: nowrap;
+              opacity: 0;
+              transition: opacity 0.2s;
+              pointer-events: none;
+            " class="pin-label">${pin.location}</div>
+          `;
 
           try {
             console.log(`   Creating Mapbox marker...`);
@@ -369,6 +373,17 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
               e.stopPropagation();
               console.log('🖱️ Pin clicked:', pin);
               onPinClick(pin);
+            });
+
+            // Add hover effects for the pin label
+            markerElement.addEventListener('mouseenter', () => {
+              const label = markerElement.querySelector('.pin-label') as HTMLElement;
+              if (label) label.style.opacity = '1';
+            });
+
+            markerElement.addEventListener('mouseleave', () => {
+              const label = markerElement.querySelector('.pin-label') as HTMLElement;
+              if (label) label.style.opacity = '0';
             });
 
           } catch (error) {

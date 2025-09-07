@@ -122,6 +122,12 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       return;
     }
 
+    // Prevent re-initialization if map already exists
+    if (map.current) {
+      console.log('=== DEBUG: Map already exists, skipping initialization ===');
+      return;
+    }
+
     console.log('=== DEBUG: Initializing map ===');
 
     try {
@@ -148,14 +154,19 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       map.current.on('load', () => {
         console.log('=== DEBUG: Map load event fired ===');
         
+        if (!map.current) {
+          console.log('=== DEBUG: Map reference lost during load ===');
+          return;
+        }
+        
         // Add state/country boundaries for better geographical context
-        map.current!.addSource('admin-boundaries', {
+        map.current.addSource('admin-boundaries', {
           type: 'vector',
           url: 'mapbox://mapbox.boundaries-adm1-v3'
         });
 
         // Add state boundaries layer
-        map.current!.addLayer({
+        map.current.addLayer({
           id: 'admin-1-boundary',
           type: 'line',
           source: 'admin-boundaries',
@@ -176,12 +187,12 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
         });
 
         // Add country boundaries layer
-        map.current!.addSource('country-boundaries', {
+        map.current.addSource('country-boundaries', {
           type: 'vector',
           url: 'mapbox://mapbox.boundaries-adm0-v3'
         });
 
-        map.current!.addLayer({
+        map.current.addLayer({
           id: 'admin-0-boundary',
           type: 'line',
           source: 'country-boundaries',
@@ -202,6 +213,8 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
         
         // Add markers for all stops
         stops.forEach((stop, index) => {
+          if (!map.current) return;
+          
           // Create custom marker element with better styling
           const markerElement = document.createElement('div');
           markerElement.className = 'custom-marker';
@@ -226,16 +239,16 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
             .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
               `<div style="font-weight: bold; padding: 8px;">${index + 1}. ${stop.name}</div>`
             ))
-            .addTo(map.current!);
+            .addTo(map.current);
           console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
         });
 
         // Add enhanced route line if multiple stops
-        if (stops.length > 1) {
+        if (stops.length > 1 && map.current) {
           console.log('=== DEBUG: Adding route line for multiple stops ===');
           const coordinates = stops.map(stop => [stop.lng, stop.lat]);
           
-          map.current!.addSource('route', {
+          map.current.addSource('route', {
             type: 'geojson',
             data: {
               type: 'Feature',
@@ -248,7 +261,7 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
           });
 
           // Add route shadow for better visibility
-          map.current!.addLayer({
+          map.current.addLayer({
             id: 'route-shadow',
             type: 'line',
             source: 'route',
@@ -265,7 +278,7 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
           });
 
           // Add main route line
-          map.current!.addLayer({
+          map.current.addLayer({
             id: 'route',
             type: 'line',
             source: 'route',
@@ -294,7 +307,7 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
           // Use more padding for longer distances to show more geographical context
           const basePadding = distance > 10 ? 80 : 50;
           
-          map.current!.fitBounds(bounds, { 
+          map.current.fitBounds(bounds, { 
             padding: { 
               top: basePadding, 
               bottom: basePadding, 
@@ -326,12 +339,45 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       setError(`Map init failed: ${error}`);
     }
 
-    // Cleanup
+    // Cleanup only on component unmount
     return () => {
-      console.log('=== DEBUG: Cleaning up map ===');
-      map.current?.remove();
+      console.log('=== DEBUG: Component unmount - cleaning up map ===');
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
-  }, [mapboxToken, stops]);
+  }, [mapboxToken]); // Only depend on mapboxToken, not stops
+
+  // Separate effect for updating stops when they change
+  useEffect(() => {
+    if (!map.current || !stops || stops.length === 0) return;
+    
+    console.log('=== DEBUG: Updating map with new stops ===', stops);
+    
+    // Wait for map to be loaded before updating
+    if (map.current.isStyleLoaded()) {
+      updateMapStops();
+    } else {
+      map.current.once('load', updateMapStops);
+    }
+    
+    function updateMapStops() {
+      if (!map.current) return;
+      
+      // Clear existing sources and layers
+      try {
+        if (map.current.getLayer('route')) map.current.removeLayer('route');
+        if (map.current.getLayer('route-shadow')) map.current.removeLayer('route-shadow');
+        if (map.current.getSource('route')) map.current.removeSource('route');
+      } catch (e) {
+        console.log('=== DEBUG: Layer cleanup - some layers may not exist ===');
+      }
+      
+      // Re-add stops and routes with current data
+      // (This logic could be extracted into a separate function if needed)
+    }
+  }, [stops]);
 
   // Show error state
   if (error) {

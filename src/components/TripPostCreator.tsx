@@ -393,6 +393,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
   const selectPhoto = async () => {
     try {
+      console.log('Starting photo selection...');
       setIsSelectingPhoto(true);
       
       const photo = await Camera.getPhoto({
@@ -402,31 +403,50 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         source: CameraSource.Photos,
       });
 
+      console.log('Photo received from camera:', !!photo.dataUrl);
+
       if (photo.dataUrl) {
         const newPhotoIndex = selectedPhotos.length;
+        console.log('Adding photo at index:', newPhotoIndex);
         setSelectedPhotos(prev => [...prev, photo.dataUrl]);
         
-        // Extract GPS coordinates from photo
-        const gpsCoords = await extractGPSFromPhoto(photo.dataUrl);
-        if (gpsCoords) {
-          const photoLocation = {
-            lat: gpsCoords.lat,
-            lng: gpsCoords.lng,
-            name: `Photo ${newPhotoIndex + 1}`,
-            photoIndex: newPhotoIndex
-          };
+        // Extract GPS coordinates from photo (don't let this block the photo addition)
+        try {
+          console.log('Attempting to extract GPS data...');
+          const gpsCoords = await extractGPSFromPhoto(photo.dataUrl);
+          console.log('GPS extraction result:', gpsCoords);
           
-          setPhotoLocations(prev => [...prev, photoLocation]);
-          
-          toast({
-            title: "Location detected",
-            description: `GPS coordinates found in photo and added to map`,
-          });
+          if (gpsCoords) {
+            const photoLocation = {
+              lat: gpsCoords.lat,
+              lng: gpsCoords.lng,
+              name: `Photo ${newPhotoIndex + 1}`,
+              photoIndex: newPhotoIndex
+            };
+            
+            setPhotoLocations(prev => [...prev, photoLocation]);
+            
+            toast({
+              title: "Location detected",
+              description: `GPS coordinates found in photo and added to map`,
+            });
+          } else {
+            console.log('No GPS coordinates found in photo');
+          }
+        } catch (gpsError) {
+          console.error('Error extracting GPS from photo:', gpsError);
+          // Don't show error to user, just continue without GPS data
         }
       }
     } catch (error) {
       console.error('Error selecting photo:', error);
+      toast({
+        title: "Error",
+        description: "Failed to select photo",
+        variant: "destructive",
+      });
     } finally {
+      console.log('Photo selection complete, setting isSelectingPhoto to false');
       setIsSelectingPhoto(false);
     }
   };

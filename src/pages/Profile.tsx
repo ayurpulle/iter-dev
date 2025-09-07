@@ -136,8 +136,48 @@ const Profile = () => {
     }
   };
 
-  const handleMessage = () => {
-    navigate('/messages', { state: { userId: profileData.user_id } });
+  const handleMessage = async () => {
+    if (!user || !profileData) return;
+
+    try {
+      // Check if conversation already exists
+      const { data: existingConv, error: convError } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participants', [user.id])
+        .contains('participants', [profileData.user_id])
+        .single();
+
+      if (convError && convError.code !== 'PGRST116') {
+        throw convError;
+      }
+
+      let conversationId = existingConv?.id;
+
+      // Create new conversation if none exists
+      if (!conversationId) {
+        const { data: newConv, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            participants: [user.id, profileData.user_id],
+            last_message_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        conversationId = newConv.id;
+      }
+
+      // Navigate to messages with the conversation
+      navigate('/messages', { state: { conversationId } });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start conversation",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!profileData) {

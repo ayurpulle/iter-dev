@@ -7,6 +7,7 @@ import { ArrowLeft, Send, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'react-router-dom';
 import TopBar from '@/components/TopBar';
 import BottomTabBar from '@/components/BottomTabBar';
 
@@ -36,6 +37,7 @@ interface Message {
 const Messages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,12 +48,72 @@ const Messages = () => {
   useEffect(() => {
     if (user) {
       fetchConversations();
+      
+      // Set up real-time subscription for conversations
+      const channel = supabase
+        .channel('conversations-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversations'
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages'
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
+
+  // Handle conversation from profile page
+  useEffect(() => {
+    const state = location.state as { conversationId?: string };
+    if (state?.conversationId) {
+      setSelectedConversation(state.conversationId);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation);
+      
+      // Set up real-time subscription for messages
+      const channel = supabase
+        .channel('messages-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${selectedConversation}`
+          },
+          () => {
+            fetchMessages(selectedConversation);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [selectedConversation]);
 
@@ -265,9 +327,15 @@ const Messages = () => {
           ) : filteredConversations.length === 0 ? (
             <Card className="p-8 text-center">
               <h3 className="font-medium mb-2">No conversations yet</h3>
-              <p className="text-muted-foreground text-sm">
-                Start a conversation by connecting with other travelers
+              <p className="text-muted-foreground text-sm mb-4">
+                Start a conversation by visiting someone's profile and clicking the message button
               </p>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/global-search'}
+              >
+                Find People to Message
+              </Button>
             </Card>
           ) : (
             filteredConversations.map((conversation) => (

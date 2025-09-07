@@ -90,9 +90,18 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
       }
     };
 
-    const token = localStorage.getItem('mapbox_token');
-    if (token) setMapboxToken(token);
+    const getMapboxToken = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        if (data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (error) {
+        console.log('Failed to get Mapbox token');
+      }
+    };
     
+    getMapboxToken();
     checkLikeStatus();
   }, [post.id, user?.id]);
 

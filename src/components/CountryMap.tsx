@@ -110,16 +110,37 @@ const CountryMap = ({ stops, className = "h-full w-full", mapboxToken }: Country
     };
   }, [stops, mapboxToken]);
 
-  if (!mapboxToken) {
+  // Show fallback if no mapbox token or no stops
+  if (!mapboxToken || !stops.length) {
     return (
-      <div className={`${className} bg-muted rounded-lg flex items-center justify-center`}>
-        <div className="text-center p-4">
-          <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span className="text-lg text-primary font-medium">{stops.length}</span>
+      <div className={`${className} bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg flex items-center justify-center relative overflow-hidden`}>
+        <div className="text-center p-4 z-10">
+          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+            <span className="text-2xl text-white font-bold">{stops.length}</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
             Route map with {stops.length} stop{stops.length !== 1 ? 's' : ''}
           </p>
+          {!mapboxToken && (
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Add Mapbox token to view interactive map
+            </p>
+          )}
+        </div>
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            <path d="M20,50 Q40,30 60,50 T100,50 T140,50 T180,50" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  fill="none" 
+                  className="text-blue-500" />
+            <circle cx="20" cy="50" r="4" fill="currentColor" className="text-green-500" />
+            <circle cx="60" cy="50" r="3" fill="currentColor" className="text-blue-500" />
+            <circle cx="100" cy="50" r="3" fill="currentColor" className="text-blue-500" />
+            <circle cx="140" cy="50" r="3" fill="currentColor" className="text-blue-500" />
+            <circle cx="180" cy="50" r="4" fill="currentColor" className="text-red-500" />
+          </svg>
         </div>
       </div>
     );

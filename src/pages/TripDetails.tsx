@@ -55,8 +55,8 @@ const TripDetails = () => {
       console.log('tripData.route length:', tripData?.route?.length);
       console.log('tripData.locations length:', tripData?.locations?.length);
 
-      // Use route from enhanced-create-trip OR locations from TripPostCreator
-      const routeData = tripData?.route || tripData?.locations || [];
+      // Use route data directly (no fallback to locations since format is different)
+      const routeData = tripData?.route || [];
       console.log('Final routeData that will be sent to createTrip:', routeData);
 
       const newTrip = await createTrip({

@@ -522,8 +522,11 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       name: location.name
     }));
 
+    // Get country from first selected location
+    const country = selectedLocations.length > 0 ? selectedLocations[0].countryCode : '';
+
     const tripData = {
-      locations: selectedLocations,
+      country,
       photos: selectedPhotos,
       route: [...selectedLocationsRoute, ...tripRoute, ...photoLocations]
     };

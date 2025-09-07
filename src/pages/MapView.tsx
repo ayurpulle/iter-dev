@@ -78,6 +78,11 @@ const MapView = () => {
       {/* Globe Container - Full height between bars */}
       <div className="absolute top-16 bottom-20 left-0 right-0">
         <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
+        {pins.length > 0 && (
+          <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs z-40">
+            {pins.length} pins loaded
+          </div>
+        )}
       </div>
 
       {/* Drag Area - Only bottom portion for swipe gesture */}

@@ -142,6 +142,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
   }, []);
 
   useEffect(() => {
+    console.log('InteractiveGlobe useEffect triggered with pins:', pins, 'mapboxToken:', mapboxToken, 'loading:', loading);
     if (!mapContainer.current || !mapboxToken || loading) return;
 
     // Initialize map
@@ -262,7 +263,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       });
 
       // Add pins to map
-      console.log('Adding pins to Mapbox map:', pins);
+      console.log('About to add pins to Mapbox map. Pins array:', pins);
+      console.log('Pins length:', pins.length);
       pins.forEach((pin, index) => {
         console.log(`Creating marker for pin ${index}:`, pin);
         

@@ -9,6 +9,7 @@ const mapboxCSS = `
     overflow: hidden;
     position: relative;
     -webkit-tap-highlight-color: rgba(0,0,0,0);
+    height: 100% !important;
   }
   .mapboxgl-canvas-container.mapboxgl-interactive,
   .mapboxgl-ctrl-group button.mapboxgl-ctrl-compass {
@@ -35,11 +36,23 @@ const mapboxCSS = `
     left: 0;
     right: 0;
     bottom: 0;
+    height: 100% !important;
   }
   .mapboxgl-canvas {
     position: absolute;
     left: 0;
     top: 0;
+    height: 100% !important;
+  }
+  /* Hide Mapbox logo and attribution */
+  .mapboxgl-ctrl-logo {
+    display: none !important;
+  }
+  .mapboxgl-ctrl-attrib {
+    display: none !important;
+  }
+  .mapboxgl-control-container {
+    display: none !important;
   }
 `;
 
@@ -123,7 +136,9 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
         center: [stops[0].lng, stops[0].lat],
         zoom: 8,
         interactive: true,
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: true,
+        attributionControl: false, // Disable attribution control
+        logoPosition: 'bottom-right' // This will be hidden by CSS anyway
       });
 
       console.log('=== DEBUG: Map created ===', map.current);
@@ -248,11 +263,11 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   }
 
   return (
-    <div className={`relative rounded-lg overflow-hidden ${className}`} style={{ height: '100%' }}>
+    <div className={`relative rounded-lg overflow-hidden w-full h-full ${className}`}>
       <div 
         ref={mapContainer} 
-        className="absolute inset-0 w-full h-full z-10" 
-        style={{ minHeight: '200px', height: '100%' }} 
+        className="w-full h-full" 
+        style={{ height: '100%', minHeight: '200px' }} 
       />
       
       {/* Map overlay with trip info */}

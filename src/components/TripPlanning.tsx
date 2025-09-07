@@ -729,30 +729,45 @@ const TripPlanning = () => {
             <Button 
               className="flex-1"
               onClick={async () => {
-                if (lastGeneratedData?.id) {
-                  // Update existing iter
-                  await updateItinerary(lastGeneratedData.id, {
-                    title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-                    destination: lastGeneratedData?.destination || formData.destination,
-                    start_date: formData.startDate,
-                    end_date: formData.endDate,
-                    budget: formData.budget,
-                    interests: formData.holidayTypes,
-                    itinerary_content: generatedIter,
-                    friend_recommendations: friendRecommendations
-                  });
-                } else {
-                  // Save new iter
-                  await saveItinerary({
-                    title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-                    destination: lastGeneratedData?.destination || formData.destination,
-                    start_date: formData.startDate,
-                    end_date: formData.endDate,
-                    budget: formData.budget,
-                    interests: formData.holidayTypes,
-                    itinerary_content: generatedIter,
-                    friend_recommendations: friendRecommendations
-                  });
+                console.log('Save iter button clicked', { 
+                  hasLastGeneratedData: !!lastGeneratedData?.id,
+                  formData, 
+                  generatedIter: !!generatedIter,
+                  friendRecommendations 
+                });
+                
+                try {
+                  if (lastGeneratedData?.id) {
+                    // Update existing iter
+                    console.log('Updating existing iter with ID:', lastGeneratedData.id);
+                    const result = await updateItinerary(lastGeneratedData.id, {
+                      title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                      destination: lastGeneratedData?.destination || formData.destination,
+                      start_date: formData.startDate,
+                      end_date: formData.endDate,
+                      budget: formData.budget,
+                      interests: formData.holidayTypes,
+                      itinerary_content: generatedIter,
+                      friend_recommendations: friendRecommendations
+                    });
+                    console.log('Update result:', result);
+                  } else {
+                    // Save new iter
+                    console.log('Saving new iter');
+                    const result = await saveItinerary({
+                      title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                      destination: lastGeneratedData?.destination || formData.destination,
+                      start_date: formData.startDate,
+                      end_date: formData.endDate,
+                      budget: formData.budget,
+                      interests: formData.holidayTypes,
+                      itinerary_content: generatedIter,
+                      friend_recommendations: friendRecommendations
+                    });
+                    console.log('Save result:', result);
+                  }
+                } catch (error) {
+                  console.error('Error in save/update operation:', error);
                 }
               }}
             >

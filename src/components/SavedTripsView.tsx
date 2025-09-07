@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import InteractiveIter from "./InteractiveItinerary";
+import { ItineraryShareDialog } from "./ItineraryShareDialog";
 
 interface SavedTripsViewProps {
   onBack: () => void;
@@ -100,6 +101,10 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     </p>
                   </div>
                   <div className="flex gap-2 ml-2">
+                    <ItineraryShareDialog 
+                      itineraryId={itinerary.id}
+                      itineraryTitle={itinerary.title}
+                    />
                     <Button
                       variant="ghost"
                       size="sm"

@@ -15,16 +15,20 @@ interface TripMapVisualProps {
 }
 
 const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
+  console.log('=== DEBUG: TripMapVisual received stops ===', stops);
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
 
   useEffect(() => {
     const fetchMapboxToken = async () => {
+      console.log('=== DEBUG: Fetching Mapbox token ===');
       try {
         const { data } = await supabase.functions.invoke('get-mapbox-token');
+        console.log('=== DEBUG: Token response ===', data);
         if (data?.token) {
           setMapboxToken(data.token);
+          console.log('=== DEBUG: Token set ===', data.token);
         }
       } catch (error) {
         console.error('Error fetching Mapbox token:', error);
@@ -35,7 +39,19 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   }, []);
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !stops || stops.length === 0) return;
+    console.log('=== DEBUG: Map effect triggered ===', { 
+      hasContainer: !!mapContainer.current, 
+      hasToken: !!mapboxToken, 
+      hasStops: !!(stops && stops.length > 0),
+      stopsLength: stops?.length 
+    });
+    
+    if (!mapContainer.current || !mapboxToken || !stops || stops.length === 0) {
+      console.log('=== DEBUG: Map initialization skipped ===');
+      return;
+    }
+
+    console.log('=== DEBUG: Initializing map ===');
 
     // Initialize map
     mapboxgl.accessToken = mapboxToken;

@@ -344,6 +344,28 @@ const TripPlanning = () => {
           setViewingItinerary(itinerary);
           setCurrentView('viewItinerary');
         }}
+        onEditItinerary={(itinerary) => {
+          // Restore the form data and generated content for editing
+          setFormData({
+            destination: itinerary.destination,
+            startDate: itinerary.start_date ? new Date(itinerary.start_date) : null,
+            endDate: itinerary.end_date ? new Date(itinerary.end_date) : null,
+            budget: itinerary.budget || 0,
+            holidayTypes: itinerary.interests || [],
+            inspirationSource: "none",
+            inspirationFolder: "",
+            notes: ""
+          });
+          setGeneratedItinerary(itinerary.itinerary_content);
+          setLastGeneratedData({
+            destination: itinerary.destination,
+            startDate: itinerary.start_date ? new Date(itinerary.start_date) : null,
+            endDate: itinerary.end_date ? new Date(itinerary.end_date) : null,
+            budget: itinerary.budget || 0,
+            interests: itinerary.interests || [],
+          });
+          setCurrentView('planning');
+        }}
       />
     );
   }

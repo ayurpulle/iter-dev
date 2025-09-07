@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, DollarSign, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -11,9 +11,10 @@ import InteractiveItinerary from "./InteractiveItinerary";
 interface SavedTripsViewProps {
   onBack: () => void;
   onViewItinerary: (itinerary: any) => void;
+  onEditItinerary: (itinerary: any) => void;
 }
 
-const SavedTripsView = ({ onBack, onViewItinerary }: SavedTripsViewProps) => {
+const SavedTripsView = ({ onBack, onViewItinerary, onEditItinerary }: SavedTripsViewProps) => {
   const { savedItineraries, loading, deleteItinerary } = useSavedItineraries();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -102,8 +103,18 @@ const SavedTripsView = ({ onBack, onViewItinerary }: SavedTripsViewProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => onEditItinerary(itinerary)}
+                      className="p-2"
+                      title="Continue editing"
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onViewItinerary(itinerary)}
                       className="p-2"
+                      title="View only"
                     >
                       <Eye size={16} />
                     </Button>

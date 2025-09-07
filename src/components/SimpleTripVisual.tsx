@@ -14,24 +14,8 @@ interface SimpleTripVisualProps {
 }
 
 const SimpleTripVisual = ({ stops, className }: SimpleTripVisualProps) => {
-  console.log('=== DEBUG: SimpleTripVisual received stops ===', stops);
-  console.log('=== DEBUG: stops.length ===', stops?.length);
-  console.log('=== DEBUG: condition check ===', !stops || stops.length === 0);
-  
-  if (!stops || stops.length === 0) {
-    return (
-      <div className={`bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center ${className}`}>
-        <div className="text-center p-4 text-white">
-          <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold">0</span>
-          </div>
-          <p className="text-sm opacity-90">No stops added</p>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('=== DEBUG: Rendering map with stops ===', stops.length);
+  // Force render the map view for debugging
+  console.log('=== DEBUG: FORCE RENDERING MAP ===', stops);
   
   return (
     <div className={`bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg overflow-hidden ${className}`}>
@@ -42,7 +26,7 @@ const SimpleTripVisual = ({ stops, className }: SimpleTripVisualProps) => {
             <span className="font-semibold">Trip Route</span>
           </div>
           <div className="bg-white/20 px-2 py-1 rounded-full text-sm">
-            {stops.length} stop{stops.length !== 1 ? 's' : ''}
+            {stops?.length || 0} stop{(stops?.length || 0) !== 1 ? 's' : ''}
           </div>
         </div>
         

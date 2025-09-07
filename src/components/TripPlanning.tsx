@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
 import InteractiveItinerary from "./InteractiveItinerary";
-// import SavedTripsView from "./SavedTripsView";
+import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 
 const TripPlanning = () => {
@@ -54,11 +54,7 @@ const TripPlanning = () => {
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
-  // const { saveItinerary } = useSavedItineraries();
-  const saveItinerary = async (data: any) => {
-    console.log('Save itinerary placeholder called with:', data);
-    return true;
-  };
+  const { saveItinerary } = useSavedItineraries();
   
   console.log('TripPlanning state:', { currentView, generatedItinerary, isLoading });
 
@@ -342,14 +338,13 @@ const TripPlanning = () => {
   // Handle different view states
   if (currentView === 'savedTrips') {
     return (
-      <div className="px-4 py-6 pb-24 max-w-md mx-auto">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Saved Trips Coming Soon</h1>
-          <Button onClick={() => setCurrentView('planning')} className="mt-4">
-            Back to Planning
-          </Button>
-        </div>
-      </div>
+      <SavedTripsView 
+        onBack={() => setCurrentView('planning')}
+        onViewItinerary={(itinerary) => {
+          setViewingItinerary(itinerary);
+          setCurrentView('viewItinerary');
+        }}
+      />
     );
   }
 

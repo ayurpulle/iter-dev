@@ -132,12 +132,56 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       map.current.on('load', () => {
         console.log('=== DEBUG: Map load event fired ===');
         
-        // Just add a simple marker for the first stop
-        if (stops[0]) {
-          const marker = new mapboxgl.Marker({ color: 'red' })
-            .setLngLat([stops[0].lng, stops[0].lat])
+        // Add markers for all stops
+        stops.forEach((stop, index) => {
+          const marker = new mapboxgl.Marker({ color: '#3B82F6' })
+            .setLngLat([stop.lng, stop.lat])
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<div style="font-weight: bold;">${index + 1}. ${stop.name}</div>`
+            ))
             .addTo(map.current!);
-          console.log('=== DEBUG: Simple marker added ===', marker);
+          console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
+        });
+
+        // Add route line if multiple stops
+        if (stops.length > 1) {
+          console.log('=== DEBUG: Adding route line for multiple stops ===');
+          const coordinates = stops.map(stop => [stop.lng, stop.lat]);
+          
+          map.current!.addSource('route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: coordinates
+              }
+            }
+          });
+
+          map.current!.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#3B82F6',
+              'line-width': 3,
+              'line-opacity': 0.8
+            }
+          });
+
+          // Fit map to show all stops
+          const bounds = new mapboxgl.LngLatBounds();
+          stops.forEach(stop => bounds.extend([stop.lng, stop.lat]));
+          map.current!.fitBounds(bounds, { 
+            padding: { top: 50, bottom: 50, left: 50, right: 50 }
+          });
+          console.log('=== DEBUG: Map fitted to bounds ===');
         }
       });
 
@@ -204,11 +248,12 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   }
 
   return (
-    <div className={`relative rounded-lg overflow-hidden bg-green-500 ${className}`}>
-      <div ref={mapContainer} className="absolute inset-0 w-full h-full z-10" style={{ minHeight: '200px' }} />
-      
-      {/* DEBUG: This should help us see if the container is sized correctly */}
-      <div className="absolute inset-0 bg-yellow-500 opacity-20 pointer-events-none z-5" />
+    <div className={`relative rounded-lg overflow-hidden ${className}`} style={{ height: '100%' }}>
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0 w-full h-full z-10" 
+        style={{ minHeight: '200px', height: '100%' }} 
+      />
       
       {/* Map overlay with trip info */}
       <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm z-20">

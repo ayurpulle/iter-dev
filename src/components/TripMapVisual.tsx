@@ -201,11 +201,14 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
   }
 
   return (
-    <div className={`relative rounded-lg overflow-hidden ${className}`}>
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className={`relative rounded-lg overflow-hidden bg-green-500 ${className}`}>
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full z-10" style={{ minHeight: '200px' }} />
+      
+      {/* DEBUG: This should help us see if the container is sized correctly */}
+      <div className="absolute inset-0 bg-yellow-500 opacity-20 pointer-events-none z-5" />
       
       {/* Map overlay with trip info */}
-      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm">
+      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm z-20">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
           <span className="font-medium">

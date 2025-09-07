@@ -15,14 +15,23 @@ const MapView = () => {
 
   // Create pins from user's saved posts only
   const createPinsFromPosts = () => {
+    console.log('Creating pins from saved posts:', yourSavedPosts);
+    
     // Group saved posts by location
     const locationGroups: { [key: string]: { location: string; lat: number; lng: number; posts: SavedPost[] } } = {};
     
     yourSavedPosts
-      .filter(savedPost => savedPost.posts?.trips?.stops)
+      .filter(savedPost => {
+        console.log('Checking savedPost:', savedPost);
+        const hasTripsWithStops = savedPost.posts?.trips?.stops;
+        console.log('Has trips with stops:', hasTripsWithStops);
+        return hasTripsWithStops;
+      })
       .forEach(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];
+        console.log('Processing stops for savedPost:', stops);
         stops.forEach((stop: any) => {
+          console.log('Processing stop:', stop);
           const locationKey = `${stop.lat}-${stop.lng}`;
           if (!locationGroups[locationKey]) {
             locationGroups[locationKey] = {
@@ -37,7 +46,7 @@ const MapView = () => {
       });
 
     // Convert to pins format
-    return Object.values(locationGroups).map(group => ({
+    const pins = Object.values(locationGroups).map(group => ({
       location: group.location,
       lat: group.lat,
       lng: group.lng,
@@ -45,6 +54,9 @@ const MapView = () => {
       trips: group.posts.length,
       posts: group.posts // Add posts data for click handling
     }));
+    
+    console.log('Generated pins:', pins);
+    return pins;
   };
 
   const pins = createPinsFromPosts();

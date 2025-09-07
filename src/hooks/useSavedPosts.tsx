@@ -79,6 +79,7 @@ export const useSavedPosts = () => {
       }
 
       setSavedPosts(savedPostsWithDetails);
+      console.log('Final saved posts with details:', savedPostsWithDetails);
     } catch (err) {
       console.error('Error fetching saved posts:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch saved posts');
@@ -89,7 +90,9 @@ export const useSavedPosts = () => {
 
   // Filter posts by type
   const getYourSavedPosts = () => {
-    return savedPosts;  // Return all saved posts, not just user's own posts
+    const result = savedPosts;  // Return all saved posts, not just user's own posts
+    console.log('getYourSavedPosts returning:', result);
+    return result;
   };
 
   const getFriendsSavedPosts = () => {

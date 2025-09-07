@@ -52,6 +52,8 @@ const TripPlanning = () => {
   // View state management
   const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewIter'>('planning');
   const [viewingIter, setViewingIter] = useState<any>(null);
+  const [editingIter, setEditingIter] = useState(false);
+  const [iterChangeRequest, setIterChangeRequest] = useState("");
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
@@ -399,20 +401,163 @@ const TripPlanning = () => {
             >
               <ArrowLeft size={20} />
             </Button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">{viewingIter.title}</h1>
               <p className="text-muted-foreground">{viewingIter.destination}</p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingIter(!editingIter)}
+            >
+              {editingIter ? "Cancel" : "Edit"}
+            </Button>
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <InteractiveIter 
-                itinerary={viewingIter.itinerary_content}
-                friendRecommendations={viewingIter.friend_recommendations || {}}
-              />
-            </CardContent>
-          </Card>
+          {editingIter ? (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Request Changes</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Describe what you'd like to change about this iter
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    placeholder="e.g., 'Make it more budget-friendly', 'Add more restaurants', 'Focus on outdoor activities', 'Reduce travel time between locations'..."
+                    value={iterChangeRequest}
+                    onChange={(e) => setIterChangeRequest(e.target.value)}
+                    rows={3}
+                    className="w-full"
+                  />
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      className="flex-1"
+                      onClick={async () => {
+                        if (!iterChangeRequest.trim()) return;
+                        
+                        setIsLoading(true);
+                        try {
+                          const { data, error } = await supabase.functions.invoke('generate-itinerary', {
+                            body: {
+                              destination: viewingIter.destination,
+                              startDate: viewingIter.start_date,
+                              endDate: viewingIter.end_date,
+                              budget: viewingIter.budget,
+                              interests: viewingIter.interests?.join(', ') || '',
+                              travelStyle: iterChangeRequest,
+                              existingItinerary: viewingIter.itinerary_content,
+                              changeRequest: iterChangeRequest
+                            }
+                          });
+
+                          if (error) throw error;
+
+                          // Update the iter with new content
+                          const updatedIter = await updateItinerary(viewingIter.id, {
+                            title: viewingIter.title,
+                            destination: viewingIter.destination,
+                            start_date: viewingIter.start_date ? new Date(viewingIter.start_date) : null,
+                            end_date: viewingIter.end_date ? new Date(viewingIter.end_date) : null,
+                            budget: viewingIter.budget,
+                            interests: viewingIter.interests || [],
+                            itinerary_content: data.itinerary,
+                            friend_recommendations: data.friendRecommendations || {}
+                          });
+
+                          if (updatedIter) {
+                            setViewingIter({ ...viewingIter, itinerary_content: data.itinerary });
+                            setEditingIter(false);
+                            setIterChangeRequest("");
+                          }
+                        } catch (error) {
+                          console.error('Error updating iter:', error);
+                          toast({
+                            title: "Update Failed",
+                            description: "Failed to update iter. Please try again.",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={!iterChangeRequest.trim() || isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Iter'
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingIter(false);
+                        setIterChangeRequest("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Direct Edit</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Or edit the iter content directly
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={viewingIter.itinerary_content}
+                    onChange={(e) => setViewingIter({ ...viewingIter, itinerary_content: e.target.value })}
+                    rows={15}
+                    className="w-full font-mono text-sm"
+                  />
+                  <Button
+                    className="w-full mt-4"
+                    onClick={async () => {
+                      const updated = await updateItinerary(viewingIter.id, {
+                        title: viewingIter.title,
+                        destination: viewingIter.destination,
+                        start_date: viewingIter.start_date ? new Date(viewingIter.start_date) : null,
+                        end_date: viewingIter.end_date ? new Date(viewingIter.end_date) : null,
+                        budget: viewingIter.budget,
+                        interests: viewingIter.interests || [],
+                        itinerary_content: viewingIter.itinerary_content,
+                        friend_recommendations: viewingIter.friend_recommendations || {}
+                      });
+                      
+                      if (updated) {
+                        setEditingIter(false);
+                        toast({
+                          title: "Iter Updated",
+                          description: "Your changes have been saved.",
+                        });
+                      }
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <InteractiveIter 
+                  itinerary={viewingIter.itinerary_content}
+                  friendRecommendations={viewingIter.friend_recommendations || {}}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
@@ -436,43 +581,142 @@ const TripPlanning = () => {
             >
               <ArrowLeft size={20} />
             </Button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">Your Iter</h1>
               <p className="text-muted-foreground">{lastGeneratedData?.destination || formData.destination}</p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingIter(!editingIter)}
+            >
+              {editingIter ? "Cancel" : "Edit"}
+            </Button>
           </div>
 
-          {/* Map Section */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="space-y-4">
-                <div className="h-48 w-full rounded-lg overflow-hidden border">
-                  <CountryMap 
-                    stops={routeStops}
-                    className="h-full w-full"
-                    mapboxToken={mapboxToken}
+          {editingIter ? (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Request Changes</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    What would you like to change about this iter?
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    placeholder="e.g., 'Make it more budget-friendly', 'Add more restaurants', 'Focus on outdoor activities'..."
+                    value={iterChangeRequest}
+                    onChange={(e) => setIterChangeRequest(e.target.value)}
+                    rows={3}
+                    className="w-full"
                   />
-                </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Time: {duration} days</span>
-                  <span>Distance: ~200km</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      className="flex-1"
+                      onClick={async () => {
+                        if (!iterChangeRequest.trim()) return;
+                        
+                        setIsLoading(true);
+                        try {
+                          const { data, error } = await supabase.functions.invoke('generate-itinerary', {
+                            body: {
+                              destination: formData.destination,
+                              startDate: formData.startDate?.toISOString(),
+                              endDate: formData.endDate?.toISOString(),
+                              budget: formData.budget,
+                              interests: formData.holidayTypes.join(', '),
+                              travelStyle: iterChangeRequest,
+                              existingItinerary: generatedIter,
+                              changeRequest: iterChangeRequest
+                            }
+                          });
 
-          {/* Iter Text */}
-          <Card>
-            <CardHeader className="pb-3">
-              <h3 className="text-lg font-semibold">Iter:</h3>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <InteractiveIter
-                itinerary={generatedIter}
-                friendRecommendations={friendRecommendations}
-              />
-            </CardContent>
-          </Card>
+                          if (error) throw error;
+
+                          setGeneratedIter(data.itinerary);
+                          setFriendRecommendations(data.friendRecommendations || {});
+                          setLastGeneratedData({ ...lastGeneratedData, itinerary: data.itinerary });
+                          setEditingIter(false);
+                          setIterChangeRequest("");
+                        } catch (error) {
+                          console.error('Error updating iter:', error);
+                          toast({
+                            title: "Update Failed",
+                            description: "Failed to update iter. Please try again.",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={!iterChangeRequest.trim() || isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Iter'
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Direct Edit</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Or edit the iter content directly
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={generatedIter}
+                    onChange={(e) => setGeneratedIter(e.target.value)}
+                    rows={15}
+                    className="w-full font-mono text-sm"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <>
+              {/* Map Section */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="h-48 w-full rounded-lg overflow-hidden border">
+                      <CountryMap 
+                        stops={routeStops}
+                        className="h-full w-full"
+                        mapboxToken={mapboxToken}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Time: {duration} days</span>
+                      <span>Distance: ~200km</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Iter Text */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <h3 className="text-lg font-semibold">Iter:</h3>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <InteractiveIter 
+                    itinerary={generatedIter}
+                    friendRecommendations={friendRecommendations}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           <div className="flex gap-3">
             <Button 

@@ -46,8 +46,8 @@ serve(async (req) => {
       );
     }
 
-    const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations } = await req.json();
-    console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext });
+    const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations, existingItinerary, changeRequest } = await req.json();
+    console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext, hasExistingItinerary: !!existingItinerary, changeRequest });
 
     if (!destination) {
       return new Response(
@@ -213,7 +213,7 @@ Keep this natural, friendly tone throughout. No bullet points or formal sections
               role: 'system', 
               content: 'You are a well-traveled friend sharing personal travel advice. Write naturally and conversationally, like you\'re texting recommendations to a close friend. Avoid formal language, bullet points, or obvious AI formatting. Share tips like a local would, with genuine enthusiasm for the places you\'re recommending.' 
             },
-            { role: 'user', content: prompt }
+            { role: 'user', content: basePrompt }
           ],
           max_completion_tokens: 2000,
           temperature: 0.7,

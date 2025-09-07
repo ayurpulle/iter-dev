@@ -127,30 +127,30 @@ const MapView = () => {
     <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
       <TopBar />
       
-      {/* Fullscreen Globe View - Respecting top and bottom bars */}
+      {/* Fullscreen Globe View - Dynamically sized based on saved posts visibility */}
       <div className={`relative transition-all duration-500 ease-out ${
-        showPostsList ? 'h-1/2' : 'h-full'
-      } pt-16 pb-20`}>
+        showPostsList 
+          ? 'h-[calc(50vh-4rem)]' // Half screen minus top bar when posts are visible
+          : 'h-[calc(100vh-8rem)]' // Full screen minus top and bottom bars when posts are hidden
+      } mt-16`}>
 
         {/* Swipe up indicator - Above bottom bar */}
         {!showPostsList && (
-          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20 shadow-lg">
               <p className="text-white/70 font-medium text-sm">Drag up to see saved posts</p>
             </div>
           </div>
         )}
 
-        {/* Fullscreen Interactive Globe - Centered between bars */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-full h-full">
-            <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
-          </div>
+        {/* Fullscreen Interactive Globe - Takes up full available space */}
+        <div className="w-full h-full flex items-center justify-center">
+          <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
         </div>
       </div>
 
       {/* Saved Posts List - Slides up from bottom */}
-      <div className={`fixed bottom-0 left-0 right-0 bg-background border-t transition-all duration-500 ease-out ${
+      <div className={`fixed bottom-20 left-0 right-0 bg-background border-t transition-all duration-500 ease-out ${
         showPostsList ? 'translate-y-0' : 'translate-y-full'
       }`} style={{ height: '50vh' }}>
         <SavedPostsList

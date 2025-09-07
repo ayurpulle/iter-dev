@@ -237,8 +237,9 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
       markers.push(marker);
     });
 
-    // Make remove function globally available
+    // Make remove functions globally available
     (window as any).removePhotoLocation = removePhotoLocation;
+    (window as any).removeCustomStop = removeCustomStop;
 
     // If we have multiple locations, draw a route line between them
     if (selectedLocations.length > 1) {
@@ -284,17 +285,27 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         };
         
         const newRoute = [...currentRoute, newPoint];
+        const currentStopIndex = currentRoute.length;
 
-        // Add marker for custom route point
+        // Add marker for custom route point with remove button
+        const markerElement = document.createElement('div');
+        markerElement.className = 'custom-stop-marker';
+        markerElement.innerHTML = `
+          <div style="background: #3b82f6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; position: relative;">
+            ${currentStopIndex + 1}
+            <button onclick="removeCustomStop(${currentStopIndex})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+          </div>
+        `;
+        
         const marker = new mapboxgl.Marker({ 
-          color: '#3b82f6', // Blue color for custom route points
-          scale: 0.8 
+          element: markerElement
         })
           .setLngLat([e.lngLat.lng, e.lngLat.lat])
           .setPopup(new mapboxgl.Popup().setHTML(`
             <div class="p-2">
               <h3 class="font-semibold">${newPoint.name}</h3>
               <p class="text-sm text-gray-600">Custom route point</p>
+              <button onclick="removeCustomStop(${currentStopIndex})" class="mt-2 px-2 py-1 bg-red-500 text-white text-xs rounded">Remove Stop</button>
             </div>
           `))
           .addTo(map.current!);
@@ -479,6 +490,21 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     toast({
       title: "Location removed",
       description: "Photo location pin removed from map",
+    });
+  };
+
+  const removeCustomStop = (stopIndex: number) => {
+    setTripRoute(prev => {
+      const newRoute = prev.filter((_, index) => index !== stopIndex);
+      // Update names for remaining stops
+      return newRoute.map((stop, index) => ({
+        ...stop,
+        name: `Stop ${index + 1}`
+      }));
+    });
+    toast({
+      title: "Stop removed",
+      description: "Custom route point removed from map",
     });
   };
 

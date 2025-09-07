@@ -262,73 +262,99 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
         }
       });
 
-      // Add pins to map
-      console.log('About to add pins to Mapbox map. Pins array:', pins);
-      console.log('Pins length:', pins.length);
-      pins.forEach((pin, index) => {
-        console.log(`Creating marker for pin ${index}:`, pin);
+      // Function to add pins after map is ready
+      const addPinsToMap = () => {
+        console.log('About to add pins to Mapbox map. Pins array:', pins);
+        console.log('Pins length:', pins.length);
         
-        const markerElement = document.createElement('div');
-        markerElement.className = 'custom-marker';
-        markerElement.style.cssText = `
-          width: 20px;
-          height: 20px;
-          background-color: #ef4444;
-          border: 3px solid white;
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          animation: pulse 2s infinite;
-        `;
-
-        if (index === 0) {
-          const style = document.createElement('style');
-          style.textContent = `
-            @keyframes pulse {
-              0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-              70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-              100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-            }
+        pins.forEach((pin, index) => {
+          console.log(`Creating marker for pin ${index}:`, pin);
+          
+          const markerElement = document.createElement('div');
+          markerElement.className = 'custom-marker';
+          markerElement.style.cssText = `
+            width: 30px;
+            height: 30px;
+            background-color: #ef4444;
+            border: 4px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 1000;
+            position: relative;
           `;
-          document.head.appendChild(style);
-        }
 
-        try {
-          const marker = new mapboxgl.Marker(markerElement)
-            .setLngLat([pin.lng, pin.lat])
-            .addTo(map.current!);
+          // Add pulse animation
+          if (index === 0) {
+            const style = document.createElement('style');
+            style.textContent = `
+              .custom-marker {
+                animation: marker-pulse 2s infinite;
+              }
+              @keyframes marker-pulse {
+                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+              }
+            `;
+            document.head.appendChild(style);
+          }
 
-          console.log(`Marker added for ${pin.location} at [${pin.lng}, ${pin.lat}]`);
+          try {
+            console.log(`Creating marker at lng: ${pin.lng}, lat: ${pin.lat}`);
+            const marker = new mapboxgl.Marker(markerElement)
+              .setLngLat([pin.lng, pin.lat])
+              .addTo(map.current!);
 
-          markerElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('Pin clicked:', pin);
-            onPinClick(pin);
-          });
+            console.log(`✅ Marker successfully added for ${pin.location} at [${pin.lng}, ${pin.lat}]`);
 
-          const popup = new mapboxgl.Popup({
-            offset: 25,
-            closeButton: false,
-            closeOnClick: false
-          }).setHTML(`
-            <div style="font-family: system-ui; padding: 4px; color: #333;">
-              <strong>${pin.location}</strong><br>
-              ${pin.friends.length} friends visited<br>
-              ${pin.trips} trips
-            </div>
-          `);
+            // Add click handler
+            markerElement.addEventListener('click', (e) => {
+              e.stopPropagation();
+              console.log('📍 Pin clicked:', pin);
+              onPinClick(pin);
+            });
 
-          markerElement.addEventListener('mouseenter', () => {
-            popup.setLngLat([pin.lng, pin.lat]).addTo(map.current!);
-          });
+            // Add popup on hover
+            const popup = new mapboxgl.Popup({
+              offset: 25,
+              closeButton: false,
+              closeOnClick: false
+            }).setHTML(`
+              <div style="font-family: system-ui; padding: 8px; color: #333; font-size: 12px;">
+                <strong>${pin.location}</strong><br>
+                ${pin.friends.length} friends visited<br>
+                ${pin.trips} trips
+              </div>
+            `);
 
-          markerElement.addEventListener('mouseleave', () => {
-            popup.remove();
-          });
-        } catch (error) {
-          console.error(`Error creating marker for ${pin.location}:`, error);
-        }
-      });
+            markerElement.addEventListener('mouseenter', () => {
+              popup.setLngLat([pin.lng, pin.lat]).addTo(map.current!);
+            });
+
+            markerElement.addEventListener('mouseleave', () => {
+              popup.remove();
+            });
+
+          } catch (error) {
+            console.error(`❌ Error creating marker for ${pin.location}:`, error);
+          }
+        });
+        
+        console.log(`✅ Finished adding ${pins.length} pins to map`);
+      };
+
+      // Add pins after map style loads
+      if (map.current.isStyleLoaded()) {
+        console.log('Map style already loaded, adding pins immediately');
+        addPinsToMap();
+      } else {
+        console.log('Waiting for map style to load before adding pins');
+        map.current.on('style.load', () => {
+          console.log('Map style loaded, now adding pins');
+          addPinsToMap();
+        });
+      }
 
       setTimeout(spinGlobe, 2000);
 

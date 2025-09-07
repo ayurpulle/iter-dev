@@ -180,7 +180,59 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     // Store markers in a ref to track them
     const markers: mapboxgl.Marker[] = [];
 
-    // Allow clicking to add route points
+    // Add markers for selected locations
+    selectedLocations.forEach((location, index) => {
+      const marker = new mapboxgl.Marker({ 
+        color: '#ef4444', // Red color for selected locations
+        scale: 1.2 
+      })
+        .setLngLat(location.coordinates)
+        .setPopup(new mapboxgl.Popup().setHTML(`
+          <div class="p-2">
+            <h3 class="font-semibold">${location.name}</h3>
+            <p class="text-sm text-gray-600">${location.fullName}</p>
+          </div>
+        `))
+        .addTo(map.current!);
+      
+      markers.push(marker);
+    });
+
+    // If we have multiple locations, draw a route line between them
+    if (selectedLocations.length > 1) {
+      const coordinates = selectedLocations.map(loc => loc.coordinates);
+      
+      map.current.on('load', () => {
+        map.current!.addSource('selected-route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: coordinates
+            }
+          }
+        });
+
+        map.current!.addLayer({
+          id: 'selected-route',
+          type: 'line',
+          source: 'selected-route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 3,
+            'line-dasharray': [2, 2]
+          }
+        });
+      });
+    }
+
+    // Allow clicking to add additional route points
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
       setTripRoute(currentRoute => {
         const newPoint = {
@@ -191,43 +243,52 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         
         const newRoute = [...currentRoute, newPoint];
 
-        // Add marker
-        const marker = new mapboxgl.Marker({ color: '#3b82f6' })
+        // Add marker for custom route point
+        const marker = new mapboxgl.Marker({ 
+          color: '#3b82f6', // Blue color for custom route points
+          scale: 0.8 
+        })
           .setLngLat([e.lngLat.lng, e.lngLat.lat])
+          .setPopup(new mapboxgl.Popup().setHTML(`
+            <div class="p-2">
+              <h3 class="font-semibold">${newPoint.name}</h3>
+              <p class="text-sm text-gray-600">Custom route point</p>
+            </div>
+          `))
           .addTo(map.current!);
         
         markers.push(marker);
 
-        // Draw route if we have multiple points
+        // Draw custom route if we have multiple custom points
         if (newRoute.length > 1) {
-          const coordinates = newRoute.map(point => [point.lng, point.lat]);
+          const customCoordinates = newRoute.map(point => [point.lng, point.lat]);
           
-          if (map.current!.getSource('route')) {
-            (map.current!.getSource('route') as mapboxgl.GeoJSONSource).setData({
+          if (map.current!.getSource('custom-route')) {
+            (map.current!.getSource('custom-route') as mapboxgl.GeoJSONSource).setData({
               type: 'Feature',
               properties: {},
               geometry: {
                 type: 'LineString',
-                coordinates: coordinates
+                coordinates: customCoordinates
               }
             });
           } else {
-            map.current!.addSource('route', {
+            map.current!.addSource('custom-route', {
               type: 'geojson',
               data: {
                 type: 'Feature',
                 properties: {},
                 geometry: {
                   type: 'LineString',
-                  coordinates: coordinates
+                  coordinates: customCoordinates
                 }
               }
             });
 
             map.current!.addLayer({
-              id: 'route',
+              id: 'custom-route',
               type: 'line',
-              source: 'route',
+              source: 'custom-route',
               layout: {
                 'line-join': 'round',
                 'line-cap': 'round'
@@ -246,7 +307,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
     map.current.on('click', handleMapClick);
 
-      return () => {
+    return () => {
       // Clean up markers
       markers.forEach(marker => marker.remove());
       map.current?.remove();
@@ -474,19 +535,20 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                   onClick={() => {
                     setTripRoute([]);
                     if (map.current) {
-                      // Clear markers and route
-                      const markers = document.querySelectorAll('.mapboxgl-marker');
-                      markers.forEach(marker => marker.remove());
-                      
-                      if (map.current.getSource('route')) {
-                        map.current.removeLayer('route');
-                        map.current.removeSource('route');
+                      // Clear only custom route markers and lines, keep selected location markers
+                      if (map.current.getSource('custom-route')) {
+                        map.current.removeLayer('custom-route');
+                        map.current.removeSource('custom-route');
                       }
+                      
+                      // Remove only blue custom markers, keep red location markers
+                      const customMarkers = document.querySelectorAll('.mapboxgl-marker[style*="rgb(59, 130, 246)"]');
+                      customMarkers.forEach(marker => marker.remove());
                     }
                   }}
                   className="ml-auto text-xs"
                 >
-                  Clear Route
+                  Clear Custom Route
                 </Button>
               )}
             </div>
@@ -494,8 +556,15 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
               {selectedLocations.length > 0 && (mapboxToken || userMapboxToken) ? (
                 <>
                   <div ref={mapContainer} className="absolute inset-0" />
-                  <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded p-2 text-xs">
-                    Click on map to add route stops
+                  <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded p-2 text-xs space-y-1">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span>Selected cities</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Click to add custom stops</span>
+                    </div>
                   </div>
                 </>
               ) : (

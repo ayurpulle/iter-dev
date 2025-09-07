@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Calendar, MessageCircle, UserPlus, MapPin, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +17,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { sendFriendRequest, cancelFriendRequest, getFriendshipStatus } = useFriends();
+  const { sendFriendRequest, cancelFriendRequest, unfollowUser, getFriendshipStatus } = useFriends();
   const [profileData, setProfileData] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,28 @@ const Profile = () => {
     }
   };
 
+  const handleUnfollow = async () => {
+    if (!user || !profileData) return;
+
+    try {
+      await unfollowUser(profileData.user_id);
+      setFriendshipId(null);
+      setFollowStatus('none');
+      toast({
+        title: "Unfollowed",
+        description: `You unfollowed ${profileData.name || profileData.username}`
+      });
+      // Reload profile data to get updated counts
+      await loadProfileWithCounts(profileData.user_id);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unfollow user",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleUnrequest = async () => {
     if (!friendshipId) return;
 
@@ -279,17 +302,46 @@ const Profile = () => {
           {/* Action Buttons */}
           {user?.id !== profileData.user_id && (
             <div className="flex gap-2 justify-center">
-              <Button
-                size="sm"
-                onClick={followStatus === 'pending' ? handleUnrequest : handleFollow}
-                disabled={followStatus === 'following'}
-                variant={followStatus === 'pending' ? 'outline' : 'default'}
-                className="flex-1 max-w-32"
-              >
-                <UserPlus size={16} className="mr-2" />
-                {followStatus === 'following' ? 'Following' : 
-                 followStatus === 'pending' ? 'Unrequest' : 'Follow'}
-              </Button>
+              {followStatus === 'following' ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 max-w-32"
+                    >
+                      <UserPlus size={16} className="mr-2" />
+                      Following
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Unfollow {profileData.name || profileData.username}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Their posts will no longer appear in your feed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleUnfollow}>
+                        Unfollow
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={
+                    followStatus === 'pending' ? handleUnrequest : handleFollow
+                  }
+                  variant={followStatus === 'pending' ? 'outline' : 'default'}
+                  className="flex-1 max-w-32"
+                >
+                  <UserPlus size={16} className="mr-2" />
+                  {followStatus === 'pending' ? 'Requested' : 'Follow'}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

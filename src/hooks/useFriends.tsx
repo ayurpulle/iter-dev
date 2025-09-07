@@ -177,7 +177,30 @@ export const useFriends = () => {
       .eq('id', friendshipId);
 
     if (error) throw error;
+    
+    // Force refresh of friends list and profile counts
     await fetchMutualFriends();
+    
+    // Manually trigger profile count refresh
+    window.dispatchEvent(new CustomEvent('profile-counts-changed'));
+  };
+
+  const unfollowUser = async (otherUserId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Find the friendship record
+    const { data: friendship, error: findError } = await supabase
+      .from('friends')
+      .select('id')
+      .or(`and(user_id.eq.${user.id},friend_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},friend_id.eq.${user.id})`)
+      .eq('status', 'accepted')
+      .single();
+
+    if (findError) throw findError;
+    
+    if (friendship) {
+      await removeFriend(friendship.id);
+    }
   };
 
   const getFriendshipStatus = async (otherUserId: string) => {
@@ -206,6 +229,7 @@ export const useFriends = () => {
     rejectFriendRequest,
     cancelFriendRequest,
     removeFriend,
+    unfollowUser,
     getFriendshipStatus,
     refetch: fetchMutualFriends
   };

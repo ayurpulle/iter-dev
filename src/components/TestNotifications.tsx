@@ -25,8 +25,7 @@ const TestNotifications = () => {
         title: 'Test Like',
         message: 'Someone liked your test post',
         related_user_id: user.id,
-        related_post_id: testPostId,
-        related_like_id: testLikeId
+        related_post_id: testPostId
       }).select();
       
       if (error) {

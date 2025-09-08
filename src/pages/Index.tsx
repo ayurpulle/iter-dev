@@ -285,22 +285,25 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
             </div>
-            <PostActions
-              postId={post.id}
-              postUserId={post.user_id}
-              content={post.content}
-              isPrivate={post.is_private || false}
-              onPostDeleted={() => onDelete(post.id)}
-              onPostUpdated={(updates) => {
-                // Handle post updates in the parent component
-                if (updates.content !== undefined) {
-                  post.content = updates.content;
-                }
-                if (updates.is_private !== undefined) {
-                  post.is_private = updates.is_private;
-                }
-              }}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isOwnPost && (
+                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
+                    <Trash2 size={14} className="mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share size={14} className="mr-2" />
+                  Share
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Trip title at top if available */}
@@ -455,7 +458,18 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                   <Heart size={18} className={isLiked ? 'fill-current' : ''} />
                   <span className="text-sm">{likesCount}</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-2 h-8 px-2"
+                  onClick={() => {
+                    toast({
+                      title: "Comments",
+                      description: "Comment functionality coming soon!",
+                      duration: 3000,
+                    });
+                  }}
+                >
                   <MessageCircle size={18} />
                   <span className="text-sm">{post.comments_count}</span>
                 </Button>

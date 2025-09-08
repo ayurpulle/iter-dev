@@ -705,5 +705,4 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
     </>
   );
 };
-
 export default UnifiedPostCard;

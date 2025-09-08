@@ -15,8 +15,9 @@ import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
-import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
+import Profile from "./pages/Profile";
+import PostDetail from "./pages/PostDetail";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
@@ -42,11 +43,12 @@ const App = () => (
                 <ProtectedRoute>
                   <MapView />
                 </ProtectedRoute>
-              } />
-              <Route path="/create" element={
-                <ProtectedRoute>
-                  <CreateTrip />
-                </ProtectedRoute>
+               } />
+               <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+               <Route path="/create" element={
+                 <ProtectedRoute>
+                   <CreateTrip />
+                 </ProtectedRoute>
               } />
               <Route path="/trip-details" element={
                 <ProtectedRoute>

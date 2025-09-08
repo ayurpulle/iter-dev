@@ -162,11 +162,12 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
       }
     } catch (error) {
       console.error('Error updating like:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update like",
-        variant: "destructive",
-      });
+        toast({
+          title: "Error",
+          description: "Failed to update like",
+          variant: "destructive",
+          duration: 3000,
+        });
     } finally {
       setIsLiking(false);
     }
@@ -175,18 +176,29 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const handleSavePost = async (folderId?: string) => {
     try {
       setIsSaved(true);
-      // The actual saving is handled by ItemFolderSelector component
+      toast({
+        title: "Post saved",
+        description: "Post added to your collection",
+        duration: 3000,
+      });
     } catch (error) {
       setIsSaved(false);
       console.error('Error saving post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save post",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast({
-      title: "Link copied",
-      description: "Post link copied to clipboard",
-    });
+      toast({
+        title: "Link copied",
+        description: "Post link copied to clipboard",
+        duration: 3000,
+      });
   };
 
   const handleDelete = async () => {
@@ -201,6 +213,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
       toast({
         title: "Post deleted",
         description: "Your post has been deleted successfully",
+        duration: 3000,
       });
       
       onDelete(post.id);
@@ -210,6 +223,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
         title: "Error",
         description: "Failed to delete post",
         variant: "destructive",
+        duration: 3000,
       });
     }
     setShowDeleteDialog(false);
@@ -452,9 +466,9 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''}`}
+                  className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''} hover:text-blue-500`}
                 >
-                  <Plus size={16} />
+                  <Plus size={16} className={isSaved ? 'fill-current' : ''} />
                 </Button>
               </ItemFolderSelector>
             </div>

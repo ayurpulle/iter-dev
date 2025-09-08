@@ -78,7 +78,7 @@ const App = () => (
               } />
               <Route path="/messages" element={
                 <ProtectedRoute>
-                  <Messages />
+                  <Chat />
                 </ProtectedRoute>
               } />
               <Route path="/notifications" element={

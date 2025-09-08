@@ -35,7 +35,7 @@ export const useShareToChat = () => {
         .select('id')
         .contains('participants', [user.id])
         .contains('participants', [friendId])
-        .single();
+        .maybeSingle();
 
       if (existingConv) {
         conversationId = existingConv.id;

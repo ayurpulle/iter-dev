@@ -13,6 +13,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import TripMapVisual from "@/components/TripMapVisual";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
+import { PostActions } from "@/components/PostActions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -578,15 +579,25 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                 </Button>
               </div>
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 gap-2"
-                onClick={() => handleSavePost()}
-              >
-                <Plus size={16} />
-                <span className="text-sm">Save</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <PostActions
+                  postId={post.id}
+                  postUserId={post.user_id}
+                  content={post.content || ''}
+                  isPrivate={post.is_private}
+                  onPostDeleted={() => onDelete?.(post.id)}
+                  onPostUpdated={() => {}}
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 gap-2"
+                  onClick={() => handleSavePost()}
+                >
+                  <Plus size={16} />
+                  <span className="text-sm">Save</span>
+                </Button>
+              </div>
             </div>
           </div>
 

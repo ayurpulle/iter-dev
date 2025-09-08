@@ -15,17 +15,12 @@ const TestNotifications = () => {
     console.log('Creating test notification for user:', user.id);
     
     try {
-      // Generate proper UUIDs for the test notification
-      const testPostId = crypto.randomUUID();
-      const testLikeId = crypto.randomUUID();
-      
       const { data, error } = await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'like',
         title: 'Test Like',
         message: 'Someone liked your test post',
-        related_user_id: user.id,
-        related_post_id: testPostId
+        related_user_id: user.id
       }).select();
       
       if (error) {

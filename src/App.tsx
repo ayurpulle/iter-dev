@@ -16,7 +16,7 @@ import TripDetails from "./pages/TripDetails";
 import Search from "./pages/Search";
 import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
-import Messages from "./pages/Messages";
+
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
 import Profile from "./pages/Profile";

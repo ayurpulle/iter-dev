@@ -21,6 +21,7 @@ import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
 import { ItineraryShareDialog } from "./ItineraryShareDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const TripPlanning = () => {
   console.log('TripPlanning component loaded');
@@ -58,10 +59,44 @@ const TripPlanning = () => {
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
-  const { saveItinerary, updateItinerary } = useSavedItineraries();
+  const { saveItinerary, updateItinerary, deleteItinerary } = useSavedItineraries();
   const { generateRAGPrompt } = useRAGIter();
+  const { user } = useAuth();
   
   console.log('TripPlanning state:', { currentView, generatedIter, isLoading });
+
+  // Auto-save itinerary when generated
+  useEffect(() => {
+    const autoSaveItinerary = async () => {
+      if (generatedIter && !lastGeneratedData?.id && user) {
+        console.log('Auto-saving generated itinerary');
+        try {
+          const result = await saveItinerary({
+            title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+            destination: lastGeneratedData?.destination || formData.destination,
+            start_date: formData.startDate,
+            end_date: formData.endDate,
+            budget: formData.budget,
+            interests: formData.holidayTypes,
+            itinerary_content: generatedIter,
+            friend_recommendations: friendRecommendations
+          });
+          
+          if (result) {
+            setLastGeneratedData(prev => ({ ...prev, id: result.id }));
+            toast({
+              title: "Itinerary Saved!",
+              description: "Your itinerary has been automatically saved."
+            });
+          }
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+        }
+      }
+    };
+
+    autoSaveItinerary();
+  }, [generatedIter, user, lastGeneratedData?.id]);
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {
@@ -727,70 +762,29 @@ const TripPlanning = () => {
             >
               Create Another
             </Button>
-            <Button 
-              className="flex-1"
-              onClick={async () => {
-                console.log('Save iter button clicked', { 
-                  hasLastGeneratedData: !!lastGeneratedData?.id,
-                  formData, 
-                  generatedIter: !!generatedIter,
-                  friendRecommendations 
-                });
-                
-                try {
-                  if (lastGeneratedData?.id) {
-                    // Update existing iter
-                    console.log('Updating existing iter with ID:', lastGeneratedData.id);
-                    const result = await updateItinerary(lastGeneratedData.id, {
-                      title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-                      destination: lastGeneratedData?.destination || formData.destination,
-                      start_date: formData.startDate,
-                      end_date: formData.endDate,
-                      budget: formData.budget,
-                      interests: formData.holidayTypes,
-                      itinerary_content: generatedIter,
-                      friend_recommendations: friendRecommendations
-                    });
-                    console.log('Update result:', result);
-                    if (result) {
-                      setLastGeneratedData(prev => ({ ...prev, id: result.id }));
-                    }
-                  } else {
-                    // Save new iter
-                    console.log('Saving new iter');
-                    const result = await saveItinerary({
-                      title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-                      destination: lastGeneratedData?.destination || formData.destination,
-                      start_date: formData.startDate,
-                      end_date: formData.endDate,
-                      budget: formData.budget,
-                      interests: formData.holidayTypes,
-                      itinerary_content: generatedIter,
-                      friend_recommendations: friendRecommendations
-                    });
-                    console.log('Save result:', result);
-                    if (result) {
-                      setLastGeneratedData(prev => ({ ...prev, id: result.id }));
-                    }
+            
+            {lastGeneratedData?.id && (
+              <Button 
+                variant="destructive"
+                onClick={async () => {
+                  const success = await deleteItinerary(lastGeneratedData.id);
+                  if (success) {
+                    setLastGeneratedData(null);
+                    setGeneratedIter(null);
                   }
-                } catch (error) {
-                  console.error('Error in save/update operation:', error);
-                }
-              }}
-            >
-              Save Iter
-            </Button>
-          </div>
-          
-          {/* Show sharing option if iter is saved */}
-          {lastGeneratedData?.id && (
-            <div className="mt-4">
-              <ItineraryShareDialog 
+                }}
+              >
+                Delete
+              </Button>
+            )}
+            
+            {lastGeneratedData?.id && (
+              <ItineraryShareDialog
                 itineraryId={lastGeneratedData.id}
                 itineraryTitle={`${lastGeneratedData?.destination || formData.destination} Trip`}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );

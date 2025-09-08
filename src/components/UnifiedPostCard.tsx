@@ -499,71 +499,52 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <p className="text-sm leading-relaxed mt-1">{post.content}</p>
+                      <p className="text-sm leading-relaxed">{post.content}</p>
                     </CollapsibleContent>
                   </Collapsible>
                 )}
               </div>
             )}
-            
-            {/* Collapsible Trip Details */}
+
+            {/* Trip stats */}
             {hasTrip && (
               <Collapsible open={showDetails} onOpenChange={setShowDetails}>
                 <CollapsibleTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full justify-between h-8 px-2 text-muted-foreground hover:text-foreground"
+                    className="mt-2 h-6 px-1 text-muted-foreground hover:text-foreground"
                   >
-                    <span className="text-xs">Tap to see trip details</span>
-                    {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    <span className="text-xs">
+                      {showDetails ? "Hide trip details" : "Show trip details"}
+                    </span>
+                    {showDetails ? <ChevronUp size={12} className="ml-1" /> : <ChevronDown size={12} className="ml-1" />}
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 pt-2">
-                  <div className="grid grid-cols-2 gap-3 text-xs">
+                <CollapsibleContent>
+                  <div className="mt-2 space-y-1">
                     {post.trips?.duration && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <Clock size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Duration</p>
-                          <p className="text-muted-foreground">{post.trips.duration}</p>
-                        </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock size={14} />
+                        <span>{post.trips.duration}</span>
                       </div>
                     )}
                     {post.trips?.distance && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <MapPin size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Distance</p>
-                          <p className="text-muted-foreground">{post.trips.distance}</p>
-                        </div>
-                      </div>
-                    )}
-                    {post.trips?.cost && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <DollarSign size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Budget</p>
-                          <p className="text-muted-foreground">{post.trips.cost}</p>
-                        </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <MapPin size={14} />
+                        <span>{post.trips.distance}</span>
                       </div>
                     )}
                     {post.trips?.companions && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <Users size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">With</p>
-                          <p className="text-muted-foreground">{post.trips.companions}</p>
-                        </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users size={14} />
+                        <span>{post.trips.companions}</span>
                       </div>
                     )}
-                    {post.trips?.stops && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 col-span-2">
-                        <MapPin size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Route</p>
-                          <p className="text-muted-foreground">{post.trips.stops.length} stops total</p>
-                        </div>
+                    {post.trips?.cost && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <DollarSign size={14} />
+                        <span>{post.trips.cost}</span>
                       </div>
                     )}
                   </div>
@@ -573,115 +554,113 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
           </div>
 
           {/* Actions */}
-          <div className="px-4 pb-4">
+          <div className="px-4 py-2 border-t">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
+                  className={`h-8 gap-2 ${isLiked ? 'text-red-500' : ''}`}
                   onClick={handleLike}
                   disabled={isLiking}
                 >
-                  <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                  <Heart size={16} className={isLiked ? 'fill-current' : ''} />
                   <span className="text-sm">{likesCount}</span>
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="flex items-center gap-2 h-8 px-2"
+                  className="h-8 gap-2"
                   onClick={() => setShowComments(!showComments)}
                 >
-                  <MessageCircle size={18} />
+                  <MessageCircle size={16} />
                   <span className="text-sm">{comments.length}</span>
                 </Button>
               </div>
               
-              {/* Save Button */}
-              <ItemFolderSelector itemId={post.id} itemType="post" onSave={handleSavePost}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''} hover:text-blue-500`}
-                >
-                  <Plus size={16} className={isSaved ? 'fill-current' : ''} />
-                </Button>
-              </ItemFolderSelector>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 gap-2"
+                onClick={() => handleSavePost()}
+              >
+                <Plus size={16} />
+                <span className="text-sm">Save</span>
+              </Button>
             </div>
-
-            {/* Comments Section */}
-            {showComments && (
-              <div className="px-4 pb-4 border-t pt-4 mt-4">
-                {/* Add Comment */}
-                <div className="flex gap-2 mb-4">
-                  <Avatar className="w-6 h-6 flex-shrink-0">
-                    <AvatarImage src={post.profiles?.avatar} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 flex gap-2">
-                    <Input
-                      placeholder="Add a comment..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
-                      className="flex-1"
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-3"
-                    >
-                      <Send size={14} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="space-y-3">
-                  {loadingComments ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-                    </div>
-                  ) : (
-                    comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-2">
-                        <Avatar className="w-6 h-6 flex-shrink-0">
-                          <AvatarImage src={comment.user.avatar} />
-                          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                            {comment.user.name[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{comment.user.name}</span>
-                            <span className="text-xs text-muted-foreground">{comment.created_at}</span>
-                            {comment.user_id === user?.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDeleteComment(comment.id)}
-                              >
-                                <Trash2 size={12} />
-                              </Button>
-                            )}
-                          </div>
-                          <p className="text-sm mt-1">{comment.content}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Comments Section */}
+          {showComments && (
+            <div className="px-4 py-3 border-t bg-muted/20">
+              {/* Add Comment */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddComment();
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  size="sm"
+                >
+                  <Send size={16} />
+                </Button>
+              </div>
+
+              {/* Comments List */}
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {loadingComments ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">Loading comments...</p>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>
+                  </div>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-3">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={comment.user.avatar || undefined} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {comment.user.name[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium">{comment.user.name}</p>
+                          <p className="text-xs text-muted-foreground">{comment.created_at}</p>
+                          {comment.user_id === user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteComment(comment.id)}
+                            >
+                              <Trash2 size={12} />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm break-words">{comment.content}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -692,9 +671,7 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

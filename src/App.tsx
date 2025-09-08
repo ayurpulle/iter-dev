@@ -6,21 +6,23 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+// Page imports
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import MapView from "./pages/MapView";
 import CreateTrip from "./pages/CreateTrip";
 import TripDetails from "./pages/TripDetails";
 import Search from "./pages/Search";
 import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
+import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
-import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
-import PostDetail from "./pages/PostDetail";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
+import PostDetail from "./pages/PostDetail";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -43,12 +45,16 @@ const App = () => (
                 <ProtectedRoute>
                   <MapView />
                 </ProtectedRoute>
-               } />
-               <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-               <Route path="/create" element={
-                 <ProtectedRoute>
-                   <CreateTrip />
-                 </ProtectedRoute>
+              } />
+              <Route path="/post/:postId" element={
+                <ProtectedRoute>
+                  <PostDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/create" element={
+                <ProtectedRoute>
+                  <CreateTrip />
+                </ProtectedRoute>
               } />
               <Route path="/trip-details" element={
                 <ProtectedRoute>

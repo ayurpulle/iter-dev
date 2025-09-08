@@ -55,23 +55,31 @@ export const useShareToChat = () => {
         conversationId = newConv.id;
       }
 
-      // Create share message
+      // Create share message with post ID for rich rendering
       let shareMessage = '';
+      let messageData = null;
+      
       if (itemType === 'itinerary') {
         shareMessage = `🗺️ I shared an itinerary with you: "${itemTitle}"`;
       } else {
-        shareMessage = `📸 I shared a post with you: "${itemTitle}"`;
-        if (content) shareMessage += `\n\n${content}`;
+        shareMessage = `📸 I shared a post with you`;
+        messageData = { type: 'shared_post', post_id: itemId };
       }
 
       // Send the message
+      const messageInsert: any = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: shareMessage
+      };
+      
+      if (messageData) {
+        messageInsert.metadata = messageData;
+      }
+
       const { error: messageError } = await supabase
         .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: shareMessage
-        });
+        .insert(messageInsert);
 
       if (messageError) throw messageError;
 

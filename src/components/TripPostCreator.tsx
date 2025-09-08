@@ -163,16 +163,19 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, mapboxToken, userMapboxToken]);
 
+  const mapMarkersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
+
   useEffect(() => {
     const token = mapboxToken || userMapboxToken;
-    if (!mapContainer.current || !token || (selectedLocations.length === 0 && photoLocations.length === 0)) return;
+    if (!mapContainer.current || !token || (selectedLocations.length === 0 && photoLocations.length === 0 && tripRoute.length === 0)) return;
 
     mapboxgl.accessToken = token;
 
-    // Calculate center based on all locations (selected + photo locations)
+    // Calculate center based on all locations (selected + photo locations + custom stops)
     const allLocations = [
       ...selectedLocations.map(loc => ({ lat: loc.coordinates[1], lng: loc.coordinates[0] })),
-      ...photoLocations
+      ...photoLocations,
+      ...tripRoute
     ];
     
     if (allLocations.length === 0) return;
@@ -189,8 +192,9 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // Store markers in a ref to track them
-    const markers: mapboxgl.Marker[] = [];
+    // Clear existing markers
+    Object.values(mapMarkersRef.current).forEach(marker => marker.remove());
+    mapMarkersRef.current = {};
 
     // Add markers for selected locations (red)
     selectedLocations.forEach((location, index) => {
@@ -207,7 +211,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         `))
         .addTo(map.current!);
       
-      markers.push(marker);
+      mapMarkersRef.current[`location_${location.id}`] = marker;
     });
 
     // Add markers for photo locations (green with photo info)
@@ -234,7 +238,34 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         `))
         .addTo(map.current!);
       
-      markers.push(marker);
+      mapMarkersRef.current[`photo_${photoLoc.photoIndex}`] = marker;
+    });
+
+    // Add markers for custom route stops (blue)
+    tripRoute.forEach((stop, index) => {
+      const markerElement = document.createElement('div');
+      markerElement.className = 'custom-stop-marker';
+      markerElement.innerHTML = `
+        <div style="background: #3b82f6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; position: relative;">
+          ${index + 1}
+          <button onclick="removeCustomStop(${index})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+        </div>
+      `;
+      
+      const marker = new mapboxgl.Marker({ 
+        element: markerElement
+      })
+        .setLngLat([stop.lng, stop.lat])
+        .setPopup(new mapboxgl.Popup().setHTML(`
+          <div class="p-2">
+            <h3 class="font-semibold">${stop.name}</h3>
+            <p class="text-sm text-gray-600">Custom route point</p>
+            <button onclick="removeCustomStop(${index})" class="mt-2 px-2 py-1 bg-red-500 text-white text-xs rounded">Remove Stop</button>
+          </div>
+        `))
+        .addTo(map.current!);
+      
+      mapMarkersRef.current[`stop_${index}`] = marker;
     });
 
     // Make remove functions globally available
@@ -285,87 +316,94 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         };
         
         const newRoute = [...currentRoute, newPoint];
-        const currentStopIndex = currentRoute.length;
-
-        // Add marker for custom route point with remove button
-        const markerElement = document.createElement('div');
-        markerElement.className = 'custom-stop-marker';
-        markerElement.innerHTML = `
-          <div style="background: #3b82f6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; position: relative;">
-            ${currentStopIndex + 1}
-            <button onclick="removeCustomStop(${currentStopIndex})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
-          </div>
-        `;
-        
-        const marker = new mapboxgl.Marker({ 
-          element: markerElement
-        })
-          .setLngLat([e.lngLat.lng, e.lngLat.lat])
-          .setPopup(new mapboxgl.Popup().setHTML(`
-            <div class="p-2">
-              <h3 class="font-semibold">${newPoint.name}</h3>
-              <p class="text-sm text-gray-600">Custom route point</p>
-              <button onclick="removeCustomStop(${currentStopIndex})" class="mt-2 px-2 py-1 bg-red-500 text-white text-xs rounded">Remove Stop</button>
-            </div>
-          `))
-          .addTo(map.current!);
-        
-        markers.push(marker);
-
-        // Draw custom route if we have multiple custom points
-        if (newRoute.length > 1) {
-          const customCoordinates = newRoute.map(point => [point.lng, point.lat]);
-          
-          if (map.current!.getSource('custom-route')) {
-            (map.current!.getSource('custom-route') as mapboxgl.GeoJSONSource).setData({
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: customCoordinates
-              }
-            });
-          } else {
-            map.current!.addSource('custom-route', {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: customCoordinates
-                }
-              }
-            });
-
-            map.current!.addLayer({
-              id: 'custom-route',
-              type: 'line',
-              source: 'custom-route',
-              layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-              },
-              paint: {
-                'line-color': '#3b82f6',
-                'line-width': 3
-              }
-            });
-          }
-        }
-
         return newRoute;
       });
     };
+
+    // Draw route lines
+    if (selectedLocations.length > 1) {
+      const coordinates = selectedLocations.map(loc => loc.coordinates);
+      
+      map.current.on('load', () => {
+        map.current!.addSource('selected-route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: coordinates
+            }
+          }
+        });
+
+        map.current!.addLayer({
+          id: 'selected-route',
+          type: 'line',
+          source: 'selected-route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 3,
+            'line-dasharray': [2, 2]
+          }
+        });
+      });
+    }
+
+    // Draw custom route if we have multiple custom points
+    if (tripRoute.length > 1) {
+      const customCoordinates = tripRoute.map(point => [point.lng, point.lat]);
+      
+      if (map.current.getSource('custom-route')) {
+        (map.current.getSource('custom-route') as mapboxgl.GeoJSONSource).setData({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: customCoordinates
+          }
+        });
+      } else {
+        map.current.addSource('custom-route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: customCoordinates
+            }
+          }
+        });
+
+        map.current.addLayer({
+          id: 'custom-route',
+          type: 'line',
+          source: 'custom-route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 3
+          }
+        });
+      }
+    }
 
     map.current.on('click', handleMapClick);
 
     return () => {
       // Clean up markers
-      markers.forEach(marker => marker.remove());
+      Object.values(mapMarkersRef.current).forEach(marker => marker.remove());
       map.current?.remove();
     };
-  }, [selectedLocations, photoLocations, mapboxToken, userMapboxToken]);
+  }, [selectedLocations, photoLocations, tripRoute, mapboxToken, userMapboxToken]);
 
   // Extract GPS coordinates from photo EXIF data
   const extractGPSFromPhoto = (dataUrl: string): Promise<{lat: number, lng: number} | null> => {
@@ -494,6 +532,13 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   };
 
   const removeCustomStop = (stopIndex: number) => {
+    // Remove marker from map
+    const markerKey = `stop_${stopIndex}`;
+    if (mapMarkersRef.current[markerKey]) {
+      mapMarkersRef.current[markerKey].remove();
+      delete mapMarkersRef.current[markerKey];
+    }
+
     setTripRoute(prev => {
       const newRoute = prev.filter((_, index) => index !== stopIndex);
       // Update names for remaining stops
@@ -502,6 +547,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
         name: `Stop ${index + 1}`
       }));
     });
+    
     toast({
       title: "Stop removed",
       description: "Custom route point removed from map",

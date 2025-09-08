@@ -6,6 +6,7 @@ interface MessageBadgeProps {
 
 const MessageBadge = ({ children }: MessageBadgeProps) => {
   const unreadCount = useMessageCount();
+  console.log('MessageBadge: unreadCount =', unreadCount);
 
   return (
     <div className="relative">

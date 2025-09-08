@@ -46,6 +46,7 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
   const { toggleLike, checkIfUserLiked } = usePostInteractions();
 
   useEffect(() => {
+    console.log('SharedPostCard: fetching post with ID:', postId);
     const fetchPost = async () => {
       try {
         const { data, error } = await supabase

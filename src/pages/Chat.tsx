@@ -112,11 +112,20 @@ const Chat = () => {
         (conversations || []).map(async (conv) => {
           const otherUserId = conv.participants.find((id: string) => id !== user.id);
           
-          const { data: profile } = await supabase
+          if (!otherUserId) {
+            console.log('No other user found for conversation:', conv.id);
+            return null;
+          }
+
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('user_id, name, username, avatar')
             .eq('user_id', otherUserId)
             .single();
+
+          if (profileError) {
+            console.log('Profile fetch error:', profileError);
+          }
 
           return {
             ...conv,
@@ -135,16 +144,19 @@ const Chat = () => {
         })
       );
 
-      console.log('Formatted conversations:', conversationsWithProfiles);
+      // Filter out null conversations
+      const validConversations = conversationsWithProfiles.filter(conv => conv !== null);
 
-      setConversations(conversationsWithProfiles.map(conv => ({
+      console.log('Valid conversations:', validConversations);
+
+      setConversations(validConversations.map(conv => ({
         id: conv.id,
         other_user: conv.other_user,
         last_message: conv.last_message || '',
         last_message_time: conv.last_message_at || '',
-        unread_count: 0 // TODO: Calculate actual unread count
+        unread_count: 0
       })));
-      console.log('Set conversations state');
+      console.log('Set conversations state with count:', validConversations.length);
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -311,18 +323,25 @@ const Chat = () => {
                        <span className="text-xs text-muted-foreground">
                          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                        </span>
-                     </div>
-                     {message.metadata?.type === 'shared_post' && message.metadata.post_id ? (
-                       <SharedPostCard postId={message.metadata.post_id} className="max-w-sm" />
-                     ) : (
-                       <div className={`inline-block p-3 rounded-lg ${
-                         message.user_id === user?.id 
-                           ? 'bg-primary text-primary-foreground ml-auto' 
-                           : 'bg-muted'
-                       }`}>
-                         <p className="text-sm">{message.content}</p>
-                       </div>
-                     )}
+                      </div>
+                      {(() => {
+                        console.log('Message metadata:', message.metadata);
+                        if (message.metadata?.type === 'shared_post' && message.metadata.post_id) {
+                          console.log('Rendering SharedPostCard for post:', message.metadata.post_id);
+                          return <SharedPostCard postId={message.metadata.post_id} className="max-w-sm" />;
+                        } else {
+                          console.log('Rendering regular message');
+                          return (
+                            <div className={`inline-block p-3 rounded-lg ${
+                              message.user_id === user?.id 
+                                ? 'bg-primary text-primary-foreground ml-auto' 
+                                : 'bg-muted'
+                            }`}>
+                              <p className="text-sm">{message.content}</p>
+                            </div>
+                          );
+                        }
+                      })()}
                    </div>
                 </div>
               ))}

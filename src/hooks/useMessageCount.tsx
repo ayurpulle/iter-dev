@@ -11,6 +11,7 @@ export const useMessageCount = () => {
 
     const fetchUnreadCount = async () => {
       try {
+        console.log('Fetching unread count for user:', user.id);
         // Get all conversations where user is a participant
         const { data: conversations, error: convError } = await supabase
           .from('conversations')
@@ -18,8 +19,10 @@ export const useMessageCount = () => {
           .contains('participants', [user.id]);
 
         if (convError) throw convError;
+        console.log('Found conversations:', conversations);
 
         if (!conversations || conversations.length === 0) {
+          console.log('No conversations found');
           setUnreadCount(0);
           return;
         }
@@ -35,9 +38,11 @@ export const useMessageCount = () => {
             .is('read_at', null);
 
           if (error) throw error;
+          console.log(`Conversation ${conv.id}: ${count} unread messages`);
           totalUnread += count || 0;
         }
 
+        console.log('Total unread messages:', totalUnread);
         setUnreadCount(totalUnread);
       } catch (error) {
         console.error('Error fetching message count:', error);

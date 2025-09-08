@@ -91,6 +91,7 @@ const Chat = () => {
 
   const fetchConversations = async () => {
     if (!user) return;
+    console.log('Fetching conversations for user:', user.id);
 
     try {
       const { data: conversations, error } = await supabase
@@ -104,7 +105,7 @@ const Chat = () => {
         .contains('participants', [user.id])
         .order('last_message_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Raw conversations:', conversations);
 
       // Get profile data for other participants
       const conversationsWithProfiles = await Promise.all(
@@ -134,6 +135,8 @@ const Chat = () => {
         })
       );
 
+      console.log('Formatted conversations:', conversationsWithProfiles);
+
       setConversations(conversationsWithProfiles.map(conv => ({
         id: conv.id,
         other_user: conv.other_user,
@@ -141,6 +144,7 @@ const Chat = () => {
         last_message_time: conv.last_message_at || '',
         unread_count: 0 // TODO: Calculate actual unread count
       })));
+      console.log('Set conversations state');
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -150,6 +154,7 @@ const Chat = () => {
 
   const fetchMessages = async (conversationId: string) => {
     if (!user) return;
+    console.log('Fetching messages for conversation:', conversationId);
 
     try {
       const { data: messages, error } = await supabase
@@ -170,7 +175,7 @@ const Chat = () => {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      console.log('Raw messages:', messages);
       
       const formattedMessages = (messages || []).map(msg => ({
         id: msg.id,
@@ -181,6 +186,7 @@ const Chat = () => {
         profiles: Array.isArray(msg.profiles) ? msg.profiles[0] : msg.profiles
       }));
       
+      console.log('Formatted messages:', formattedMessages);
       setMessages(formattedMessages as ChatMessage[]);
     } catch (error) {
       console.error('Error fetching messages:', error);

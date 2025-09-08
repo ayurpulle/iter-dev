@@ -69,38 +69,25 @@ export const useSavedItineraries = () => {
     setLoading(true);
     setError(null);
 
-    console.log('=== SAVE ITINERARY DEBUG ===');
-    
-    // Get current auth user directly from Supabase
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    console.log('Auth state:', { 
-      authUser: !!authUser, 
-      authUserId: authUser?.id,
-      authError, 
-      hasSession: !!session,
-      sessionError
-    });
-    
-    if (authError || !authUser || !session) {
-      console.log('No authenticated user found:', { authError, authUser, session });
-      toast({
-        title: "Authentication Required", 
-        description: "Please log in to save itineraries.",
-        variant: "destructive"
-      });
-      setLoading(false);
-      return null;
-    }
-
-    console.log('User authenticated, attempting to save:', authUser.id);
-    
     try {
-      console.log('Attempting to insert into saved_itineraries with user_id:', authUser.id);
+      // Force refresh the session before saving to ensure fresh authentication state
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !session) {
+        console.error('Session refresh failed:', sessionError);
+        toast({
+          title: "Authentication Required",
+          description: "Please log in again to save itineraries.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return null;
+      }
+
+      console.log('Session refreshed successfully, proceeding with save for user:', session.user.id);
       
       const insertData = {
-        user_id: authUser.id,
+        user_id: session.user.id,
         title: itineraryData.title,
         destination: itineraryData.destination,
         start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
@@ -111,15 +98,12 @@ export const useSavedItineraries = () => {
         friend_recommendations: itineraryData.friend_recommendations || {}
       };
       
-      console.log('Insert data:', insertData);
-      
       const { data, error } = await supabase
         .from('saved_itineraries')
         .insert(insertData)
         .select()
         .single();
 
-      console.log('Insert result:', { data, error });
       if (error) throw error;
 
       toast({
@@ -137,7 +121,10 @@ export const useSavedItineraries = () => {
         description: err.message || "Failed to save iter. Please try again.",
         variant: "destructive"
       });
+      setLoading(false);
       return null;
+    } finally {
+      setLoading(false);
     }
   };
 

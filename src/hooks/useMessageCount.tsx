@@ -24,7 +24,7 @@ export const useMessageCount = () => {
           return;
         }
 
-        // Count unread messages across all conversations
+        // Count unread messages across all conversations where current user is not the sender
         let totalUnread = 0;
         for (const conv of conversations) {
           const { count, error } = await supabase

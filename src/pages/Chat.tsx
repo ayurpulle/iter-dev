@@ -160,6 +160,7 @@ const Chat = () => {
           created_at,
           sender_id,
           metadata,
+          read_at,
           profiles!messages_sender_id_fkey (
             name,
             username,
@@ -185,6 +186,22 @@ const Chat = () => {
       console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markMessagesAsRead = async (conversationId: string) => {
+    if (!user) return;
+
+    try {
+      // Mark all unread messages in this conversation as read (except own messages)
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 

@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, MapPin, Share } from "lucide-react";
+import { Heart, MessageCircle, MapPin, Share, MoreHorizontal } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { usePostInteractions } from '@/hooks/usePostInteractions';
+import { Badge } from "@/components/ui/badge";
+import { PostActions } from './PostActions';
 
 interface Post {
   id: string;
@@ -16,6 +20,7 @@ interface Post {
   created_at: string;
   likes_count: number;
   comments_count: number;
+  is_private: boolean;
   profiles: {
     name: string;
     username: string;
@@ -35,7 +40,10 @@ interface SharedPostCardProps {
 const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPostLiked, setIsPostLiked] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toggleLike, checkIfUserLiked } = usePostInteractions();
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -60,6 +68,11 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
         if (error) throw error;
         if (data && data.profiles && !Array.isArray(data.profiles)) {
           setPost(data as unknown as Post);
+          // Check if user has liked this post
+          if (user) {
+            const liked = await checkIfUserLiked(data.id);
+            setIsPostLiked(liked);
+          }
         }
       } catch (error) {
         console.error('Error fetching shared post:', error);
@@ -69,13 +82,42 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     };
 
     fetchPost();
-  }, [postId]);
+  }, [postId, user, checkIfUserLiked]);
+
+  const handleLike = async () => {
+    if (!post || !user) return;
+    const success = await toggleLike(post.id);
+    if (success) {
+      setIsPostLiked(!isPostLiked);
+      // Refetch the post to get updated like count
+      const { data } = await supabase
+        .from('posts')
+        .select('likes_count')
+        .eq('id', post.id)
+        .single();
+      
+      if (data) {
+        setPost(prev => prev ? { ...prev, likes_count: data.likes_count } : null);
+      }
+    }
+  };
+
+  const handlePostClick = () => {
+    navigate(`/post/${post?.id}`);
+  };
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post) {
+      navigate('/profile', { state: { userData: post.profiles } });
+    }
+  };
 
   if (loading) {
     return (
       <Card className={`animate-pulse ${className}`}>
         <CardContent className="p-4">
-          <div className="h-16 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </CardContent>
       </Card>
     );
@@ -91,62 +133,82 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     );
   }
 
-  const handlePostClick = () => {
-    navigate(`/post/${post.id}`);
-  };
-
   return (
-    <Card className={`cursor-pointer hover:bg-muted/50 transition-colors ${className}`} onClick={handlePostClick}>
+    <Card className={`mb-4 ${className}`}>
       <CardContent className="p-4">
-        <div className="flex items-start gap-3 mb-3">
-          <Avatar className="w-8 h-8">
-            <AvatarImage src={post.profiles.avatar} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {(post.profiles.name || 'U')[0].toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{post.profiles.name}</span>
-              <span className="text-xs text-muted-foreground">
-                @{post.profiles.username}
-              </span>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </span>
-            </div>
-            {post.trips && (
-              <div className="flex items-center gap-1 mt-1">
-                <MapPin size={12} className="text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{post.trips.destination}</span>
+        <div className="flex items-start justify-between mb-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleProfileClick}
+          >
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={post.profiles.avatar} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {(post.profiles.name || 'U')[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-foreground">{post.profiles.name}</span>
+                <span className="text-muted-foreground text-sm">@{post.profiles.username}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground text-sm">
+                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                </span>
+                {post.is_private && (
+                  <Badge variant="secondary" className="text-xs">Private</Badge>
+                )}
               </div>
-            )}
+              {post.trips && (
+                <div className="flex items-center gap-1 mt-1">
+                  <MapPin size={14} className="text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{post.trips.destination}</span>
+                </div>
+              )}
+            </div>
           </div>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MoreHorizontal size={16} />
+          </Button>
         </div>
 
         {post.content && (
-          <p className="text-sm mb-3">{post.content}</p>
+          <p className="text-foreground mb-3 cursor-pointer" onClick={handlePostClick}>
+            {post.content}
+          </p>
         )}
 
         {post.image_url && (
-          <div className="mb-3">
+          <div className="mb-3 cursor-pointer" onClick={handlePostClick}>
             <img 
               src={post.image_url} 
               alt="Post image" 
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-64 object-cover rounded-lg"
             />
           </div>
         )}
 
-        <div className="flex items-center gap-4 text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Heart size={16} />
-            <span className="text-xs">{post.likes_count}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MessageCircle size={16} />
-            <span className="text-xs">{post.comments_count}</span>
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center gap-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`flex items-center gap-2 p-2 ${isPostLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+              onClick={handleLike}
+            >
+              <Heart size={18} className={isPostLiked ? 'fill-current' : ''} />
+              <span className="text-sm">{post.likes_count}</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2 p-2 text-muted-foreground"
+              onClick={handlePostClick}
+            >
+              <MessageCircle size={18} />
+              <span className="text-sm">{post.comments_count}</span>
+            </Button>
           </div>
         </div>
       </CardContent>

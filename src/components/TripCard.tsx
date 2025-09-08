@@ -3,15 +3,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
-import { ItemFolderSelector } from "./ItemFolderSelector";
-import { supabase } from "@/integrations/supabase/client";
-
-import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { ItemFolderSelector } from "./ItemFolderSelector";
 import CountryMap from "./CountryMap";
 import { ItineraryShareDialog } from "./ItineraryShareDialog";
 

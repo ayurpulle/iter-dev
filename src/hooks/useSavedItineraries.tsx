@@ -66,28 +66,21 @@ export const useSavedItineraries = () => {
     itinerary_content: string;
     friend_recommendations?: { [key: string]: any[] };
   }) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save itineraries.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Force refresh the session before saving to ensure fresh authentication state
-      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-      
-      if (sessionError || !session) {
-        console.error('Session refresh failed:', sessionError);
-        toast({
-          title: "Authentication Required",
-          description: "Please log in again to save itineraries.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return null;
-      }
-
-      console.log('Session refreshed successfully, proceeding with save for user:', session.user.id);
-      
       const insertData = {
-        user_id: session.user.id,
+        user_id: user.id,
         title: itineraryData.title,
         destination: itineraryData.destination,
         start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
@@ -121,7 +114,6 @@ export const useSavedItineraries = () => {
         description: err.message || "Failed to save iter. Please try again.",
         variant: "destructive"
       });
-      setLoading(false);
       return null;
     } finally {
       setLoading(false);

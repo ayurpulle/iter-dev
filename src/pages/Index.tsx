@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign } from "lucide-react";
+import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -25,6 +25,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PostActions } from "@/components/PostActions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Post {
   id: string;
@@ -73,6 +75,22 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
   const [showDetails, setShowDetails] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [comments, setComments] = useState([
+    {
+      id: "1",
+      content: "Amazing trip! Love the route you took.",
+      user: { name: "Travel Buddy", avatar: null },
+      created_at: "30 minutes ago"
+    },
+    {
+      id: "2", 
+      content: "Looks incredible! Adding this to my travel list.",
+      user: { name: "Explorer", avatar: null },
+      created_at: "about 1 hour ago"
+    }
+  ]);
 
   const isOwnPost = user?.id === post.user_id;
 
@@ -192,13 +210,25 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
       });
     }
   };
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied",
-        description: "Post link copied to clipboard",
-        duration: 3000,
-      });
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    
+    const comment = {
+      id: Date.now().toString(),
+      content: newComment,
+      user: { name: userName, avatar: post.profiles?.avatar },
+      created_at: "now"
+    };
+    
+    setComments(prev => [comment, ...prev]);
+    setNewComment("");
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been posted",
+      duration: 3000,
+    });
   };
 
   const handleDelete = async () => {
@@ -285,25 +315,21 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isOwnPost && (
+            {isOwnPost && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
                     <Trash2 size={14} className="mr-2" />
                     Delete
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={handleShare}>
-                  <Share size={14} className="mr-2" />
-                  Share
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           {/* Trip title at top if available */}
@@ -462,16 +488,10 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                   variant="ghost" 
                   size="sm" 
                   className="flex items-center gap-2 h-8 px-2"
-                  onClick={() => {
-                    toast({
-                      title: "Comments",
-                      description: "Comment functionality coming soon!",
-                      duration: 3000,
-                    });
-                  }}
+                  onClick={() => setShowComments(!showComments)}
                 >
                   <MessageCircle size={18} />
-                  <span className="text-sm">{post.comments_count}</span>
+                  <span className="text-sm">{comments.length}</span>
                 </Button>
               </div>
               
@@ -486,6 +506,59 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                 </Button>
               </ItemFolderSelector>
             </div>
+
+            {/* Comments Section */}
+            {showComments && (
+              <div className="px-4 pb-4 border-t pt-4 mt-4">
+                {/* Add Comment */}
+                <div className="flex gap-2 mb-4">
+                  <Avatar className="w-6 h-6 flex-shrink-0">
+                    <AvatarImage src={post.profiles?.avatar} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 flex gap-2">
+                    <Input
+                      placeholder="Add a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+                      className="flex-1"
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim()}
+                      className="px-3"
+                    >
+                      <Send size={14} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-2">
+                      <Avatar className="w-6 h-6 flex-shrink-0">
+                        <AvatarImage src={comment.user.avatar} />
+                        <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                          {comment.user.name[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{comment.user.name}</span>
+                          <span className="text-xs text-muted-foreground">{comment.created_at}</span>
+                        </div>
+                        <p className="text-sm mt-1">{comment.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

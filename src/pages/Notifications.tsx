@@ -1,4 +1,7 @@
 import { useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { Heart, MessageCircle, Users, MapPin, Sparkles, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,14 +12,16 @@ import BottomTabBar from "@/components/BottomTabBar";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useFriends } from "@/hooks/useFriends";
 import { useItineraryCollaboration } from "@/hooks/useItineraryCollaboration";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
 
 const Notifications = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useNotifications();
   const { acceptFriendRequest, rejectFriendRequest } = useFriends();
   const { respondToInvite } = useItineraryCollaboration();
-  const { toast } = useToast();
 
   const handleAcceptFriendRequest = async (requestId: string) => {
     try {
@@ -68,6 +73,28 @@ const Notifications = () => {
         description: error.message || "Failed to respond to invite",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    try {
+      // Mark as read if not already read
+      if (!notification.read) {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('id', notification.id);
+      }
+
+      // Navigate to post if it's a post-related notification
+      if (notification.related_post_id && (notification.type === 'like' || notification.type === 'comment' || notification.type === 'comment_reply')) {
+        navigate(`/post/${notification.related_post_id}`);
+      }
+      
+      // Refresh notifications
+      await refetch();
+    } catch (error) {
+      console.error('Error handling notification click:', error);
     }
   };
 
@@ -133,7 +160,7 @@ const Notifications = () => {
                       ? `${getNotificationColor(notification.type)} border-l-4` 
                       : 'hover:bg-muted/50'
                   }`}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">

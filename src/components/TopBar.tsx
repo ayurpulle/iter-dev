@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import NotificationBadge from "./NotificationBadge";
 
 const TopBar = () => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);

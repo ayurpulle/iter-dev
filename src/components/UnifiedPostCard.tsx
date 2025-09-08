@@ -239,18 +239,16 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
         setIsLiked(true);
         setLikesCount(prev => prev + 1);
 
-        // Create notification for post author
-        if (post.user_id !== user.id) {
-          await supabase.from('notifications').insert({
-            user_id: post.user_id,
-            type: 'like',
-            title: 'New Like',
-            message: `${userName} liked your post`,
-            related_user_id: user.id,
-            related_post_id: post.id,
-            related_like_id: Math.random().toString() // temporary ID for grouping
-          });
-        }
+        // Create notification for post author (including self for testing)
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          type: 'like',
+          title: 'New Like',
+          message: `${userName} liked your post`,
+          related_user_id: user.id,
+          related_post_id: post.id,
+          related_like_id: Math.random().toString() // temporary ID for grouping
+        });
       }
     } catch (error) {
       console.error('Error updating like:', error);
@@ -315,18 +313,16 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
       setComments(prev => [newCommentFormatted, ...prev]);
       setNewComment("");
 
-      // Create notification for post author
-      if (post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
-          user_id: post.user_id,
-          type: 'comment',
-          title: 'New Comment',
-          message: `${userName} commented on your post`,
-          related_user_id: user.id,
-          related_post_id: post.id,
-          related_comment_id: data.id
-        });
-      }
+      // Create notification for post author (including self for testing)
+      await supabase.from('notifications').insert({
+        user_id: post.user_id,
+        type: 'comment',
+        title: 'New Comment',
+        message: `${userName} commented on your post`,
+        related_user_id: user.id,
+        related_post_id: post.id,
+        related_comment_id: data.id
+      });
       
       toast({
         title: "Comment added",

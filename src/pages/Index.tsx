@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
+import TestNotifications from "@/components/TestNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,8 +131,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
-      <main className="px-4 py-6 max-w-md mx-auto">
-        <div className="space-y-6">
+      <main className="flex-1 overflow-y-auto pb-20">
+        <TestNotifications />
+        <div className="space-y-4 px-4 py-4 max-w-2xl mx-auto">
           {posts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No posts yet. Start sharing your adventures!</p>

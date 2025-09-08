@@ -76,6 +76,7 @@ const Chat = () => {
 
     if (selectedConversation) {
       fetchMessages(selectedConversation);
+      markMessagesAsRead(selectedConversation);
     } else {
       fetchConversations();
     }
@@ -367,6 +368,36 @@ const Chat = () => {
         ) : (
           <div className="px-4 py-6 max-w-md mx-auto">
             <div className="space-y-2">
+              {/* Test conversation for debugging */}
+              <Card 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setSelectedConversation('451bef03-dbd3-49d7-9581-7dcd535337d0')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-12 h-12">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        A
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm">Test User</p>
+                        <span className="text-xs text-muted-foreground">
+                          2h ago
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground truncate">📸 I shared a post with you</p>
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          1
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {conversations.map((conversation) => (
                 <Card 
                   key={conversation.id} 
@@ -402,12 +433,15 @@ const Chat = () => {
                 </Card>
               ))}
 
-              {conversations.length === 0 && (
+              {conversations.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <MessageIcon size={48} className="mx-auto text-muted-foreground/50 mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No conversations yet</h3>
                   <p className="text-muted-foreground">
                     Start chatting with other travelers!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Debug: conversations.length = {conversations.length}, loading = {loading.toString()}
                   </p>
                 </div>
               )}

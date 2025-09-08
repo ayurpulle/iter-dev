@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
-import TripCard from "@/components/TripCard";
+import UnifiedPostCard from "@/components/UnifiedPostCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -562,29 +562,40 @@ const GlobalSearchPage = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {exploreTrips.map((trip) => (
-                    <TripCard
-                      key={trip.id}
-                      user={{
-                        name: trip.profiles?.name || 'Unknown User',
-                        username: trip.profiles?.username || 'unknown',
-                        avatar: trip.profiles?.avatar
-                      }}
-                      trip={{
+                  {exploreTrips.map((trip) => {
+                    // Convert trip to post format for unified display
+                    const postData = {
+                      id: trip.id,
+                      content: `Shared a journey: ${trip.title}`,
+                      user_id: trip.user_id,
+                      trip_id: trip.id,
+                      created_at: new Date().toISOString(),
+                      likes_count: 0,
+                      comments_count: 0,
+                      profiles: trip.profiles ? {
+                        id: `profile-${trip.user_id}`,
+                        user_id: trip.user_id,
+                        name: trip.profiles.name,
+                        username: trip.profiles.username,
+                        avatar: trip.profiles.avatar
+                      } : null,
+                      trips: {
                         id: trip.id,
-                        title: trip.title || 'Untitled Trip',
-                        duration: trip.duration || '0 hours',
-                        distance: trip.distance || '0 km',
-                        stops: Array.isArray(trip.stops) ? trip.stops : [],
-                        photoCount: trip.photo_count || 0,
-                        hashtags: trip.hashtags
-                      }}
-                      stats={{
-                        likes: 0,
-                        comments: 0
-                      }}
-                    />
-                  ))}
+                        title: trip.title,
+                        duration: trip.duration,
+                        distance: trip.distance,
+                        stops: trip.stops
+                      }
+                    };
+
+                    return (
+                      <UnifiedPostCard
+                        key={trip.id}
+                        post={postData}
+                        onDelete={() => {}}
+                      />
+                    );
+                  })}
 
                   {exploreTrips.length === 0 && (
                     <div className="text-center py-12">

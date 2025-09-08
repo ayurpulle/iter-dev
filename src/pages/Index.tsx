@@ -4,29 +4,7 @@ import BottomTabBar from "@/components/BottomTabBar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { formatDistanceToNow } from "date-fns";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import TripMapVisual from "@/components/TripMapVisual";
-import { ItemFolderSelector } from "@/components/ItemFolderSelector";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { PostActions } from "@/components/PostActions";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import UnifiedPostCard from "@/components/UnifiedPostCard";
 
 interface Post {
   id: string;
@@ -64,545 +42,19 @@ interface PostWithProfile extends Post {
   trips?: Trip | null;
 }
 
-const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId: string) => void }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes_count);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string>("");
-  const [isLiking, setIsLiking] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [showFullCaption, setShowFullCaption] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState([
-    {
-      id: "1",
-      content: "Amazing trip! Love the route you took.",
-      user: { name: "Travel Buddy", avatar: null },
-      created_at: "30 minutes ago"
-    },
-    {
-      id: "2", 
-      content: "Looks incredible! Adding this to my travel list.",
-      user: { name: "Explorer", avatar: null },
-      created_at: "about 1 hour ago"
-    }
-  ]);
-
-  const isOwnPost = user?.id === post.user_id;
-
-  // Check if user has liked this post and get mapbox token
-  useEffect(() => {
-    const checkLikeStatus = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('post_likes')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data && !error) {
-          setIsLiked(true);
-        }
-      } catch (error) {
-        console.log('No existing like found');
-      }
-    };
-
-    const getMapboxToken = async () => {
-      try {
-        const { data } = await supabase.functions.invoke('get-mapbox-token');
-        if (data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (error) {
-        console.log('Failed to get Mapbox token');
-      }
-    };
-    
-    getMapboxToken();
-    checkLikeStatus();
-  }, [post.id, user?.id]);
-
-  const handleLike = async () => {
-    if (!user?.id || isLiking) return;
-    
-    setIsLiking(true);
-    
-    try {
-      if (isLiked) {
-        // Unlike the post
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-        
-        // Update post likes count
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({ likes_count: Math.max(0, likesCount - 1) })
-          .eq('id', post.id);
-        
-        if (updateError) throw updateError;
-        
-        setIsLiked(false);
-        setLikesCount(prev => Math.max(0, prev - 1));
-      } else {
-        // Like the post
-        const { error } = await supabase
-          .from('post_likes')
-          .insert({
-            post_id: post.id,
-            user_id: user.id
-          });
-        
-        if (error) throw error;
-        
-        // Update post likes count
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({ likes_count: likesCount + 1 })
-          .eq('id', post.id);
-        
-        if (updateError) throw updateError;
-        
-        setIsLiked(true);
-        setLikesCount(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error('Error updating like:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update like",
-          variant: "destructive",
-          duration: 3000,
-        });
-    } finally {
-      setIsLiking(false);
-    }
-  };
-  
-  const handleSavePost = async (folderId?: string) => {
-    try {
-      setIsSaved(true);
-      toast({
-        title: "Post saved",
-        description: "Post added to your collection",
-        duration: 3000,
-      });
-    } catch (error) {
-      setIsSaved(false);
-      console.error('Error saving post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save post",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-  };
-
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-    
-    const comment = {
-      id: Date.now().toString(),
-      content: newComment,
-      user: { name: userName, avatar: post.profiles?.avatar },
-      created_at: "now"
-    };
-    
-    setComments(prev => [comment, ...prev]);
-    setNewComment("");
-    
-    toast({
-      title: "Comment added",
-      description: "Your comment has been posted",
-      duration: 3000,
-    });
-  };
-
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', post.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Post deleted",
-        description: "Your post has been deleted successfully",
-        duration: 3000,
-      });
-      
-      onDelete(post.id);
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete post",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-    setShowDeleteDialog(false);
-  };
-
-  const userName = post.profiles?.name || 'User';
-  const username = post.profiles?.username || 'user';
-  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-
-  // Parse image URLs - could be single URL or JSON array
-  const getImageUrls = () => {
-    if (!post.image_url) return [];
-    
-    try {
-      // Try to parse as JSON array first
-      const parsed = JSON.parse(post.image_url);
-      return Array.isArray(parsed) ? parsed : [post.image_url];
-    } catch {
-      // If not JSON, treat as single URL
-      return [post.image_url];
-    }
-  };
-
-  const images = getImageUrls();
-  const hasImages = images.length > 0;
-  const hasTrip = !!post.trips && !!post.trip_id; // Simply check if trip exists
-  const shouldShowCarousel = hasTrip || hasImages;
-
-  // Caption logic
-  const maxCaptionLength = 150;
-  const isCaptionLong = post.content && post.content.length > maxCaptionLength;
-  const captionToShow = isCaptionLong && !showFullCaption 
-    ? post.content.slice(0, maxCaptionLength) + "..."
-    : post.content;
-
-  // Dynamic height calculation
-  const getCardHeight = () => {
-    if (!post.content) return "h-auto max-h-60";
-    if (post.content.length <= 50) return "h-auto";
-    if (post.content.length <= 100) return "h-auto max-h-48";
-    return "h-auto max-h-60";
-  };
-
-  return (
-    <>
-      <Card className={`overflow-hidden ${getCardHeight()}`}>
-        <CardContent className="p-0">
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 pb-2">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={post.profiles?.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-medium text-sm">{userName}</p>
-              <p className="text-xs text-muted-foreground">
-                @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </p>
-            </div>
-            {isOwnPost && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal size={16} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 size={14} className="mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-
-          {/* Trip title at top if available */}
-          {hasTrip && post.trips?.title && (
-            <div className="px-4 pb-3">
-              <h3 className="font-semibold text-base">{post.trips.title}</h3>
-            </div>
-          )}
-
-          {/* Image/Map Carousel */}
-          {shouldShowCarousel && (
-            <div className="w-full h-52">
-              <Carousel className="w-full h-full">
-                <CarouselContent className="h-full ml-0">
-                  {/* Trip Map - ALWAYS FIRST when trip exists */}
-                   {hasTrip && (
-                     <CarouselItem className="h-full pl-0">
-                       <TripMapVisual 
-                         stops={post.trips?.stops || []} 
-                         className="w-full h-full"
-                       />
-                     </CarouselItem>
-                   )}
-                  
-                  {/* Images - Come after trip map */}
-                  {images.map((imageUrl, index) => (
-                    <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                      <img 
-                        src={imageUrl} 
-                        alt={`Post image ${index + 1}`} 
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                {/* Show navigation if there's a trip map + images, or multiple images */}
-                {((hasTrip && hasImages) || images.length > 1) && (
-                  <>
-                    <CarouselPrevious className="left-2" />
-                    <CarouselNext className="right-2" />
-                  </>
-                )}
-              </Carousel>
-            </div>
-          )}
-
-          {/* Trip Details at bottom - Fixed height */}
-          <div className="px-4 pb-3">
-            {/* Caption/Description */}
-            {post.content && (
-              <div>
-                <p className="text-sm leading-relaxed">{captionToShow}</p>
-                {isCaptionLong && (
-                  <Collapsible open={showFullCaption} onOpenChange={setShowFullCaption}>
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="mt-1 h-6 px-1 text-muted-foreground hover:text-foreground"
-                      >
-                        <span className="text-xs">
-                          {showFullCaption ? "Show less" : "Show more"}
-                        </span>
-                        {showFullCaption ? <ChevronUp size={12} className="ml-1" /> : <ChevronDown size={12} className="ml-1" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <p className="text-sm leading-relaxed mt-1">{post.content}</p>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-              </div>
-            )}
-            
-            {/* Collapsible Trip Details */}
-            {hasTrip && (
-              <Collapsible open={showDetails} onOpenChange={setShowDetails}>
-                <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full justify-between h-8 px-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <span className="text-xs">Tap to see trip details</span>
-                    {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 pt-2">
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {post.trips?.duration && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <Clock size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Duration</p>
-                          <p className="text-muted-foreground">{post.trips.duration}</p>
-                        </div>
-                      </div>
-                    )}
-                    {post.trips?.distance && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <MapPin size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Distance</p>
-                          <p className="text-muted-foreground">{post.trips.distance}</p>
-                        </div>
-                      </div>
-                    )}
-                    {post.trips?.cost && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <DollarSign size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Budget</p>
-                          <p className="text-muted-foreground">{post.trips.cost}</p>
-                        </div>
-                      </div>
-                    )}
-                    {post.trips?.companions && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                        <Users size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">With</p>
-                          <p className="text-muted-foreground">{post.trips.companions}</p>
-                        </div>
-                      </div>
-                    )}
-                    {post.trips?.stops && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 col-span-2">
-                        <MapPin size={12} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Route</p>
-                          <p className="text-muted-foreground">{post.trips.stops.length} stops total</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`flex items-center gap-2 h-8 px-2 ${isLiked ? 'text-red-500' : ''}`}
-                  onClick={handleLike}
-                  disabled={isLiking}
-                >
-                  <Heart size={18} className={isLiked ? 'fill-current' : ''} />
-                  <span className="text-sm">{likesCount}</span>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex items-center gap-2 h-8 px-2"
-                  onClick={() => setShowComments(!showComments)}
-                >
-                  <MessageCircle size={18} />
-                  <span className="text-sm">{comments.length}</span>
-                </Button>
-              </div>
-              
-              {/* Save Button */}
-              <ItemFolderSelector itemId={post.id} itemType="post" onSave={handleSavePost}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''} hover:text-blue-500`}
-                >
-                  <Plus size={16} className={isSaved ? 'fill-current' : ''} />
-                </Button>
-              </ItemFolderSelector>
-            </div>
-
-            {/* Comments Section */}
-            {showComments && (
-              <div className="px-4 pb-4 border-t pt-4 mt-4">
-                {/* Add Comment */}
-                <div className="flex gap-2 mb-4">
-                  <Avatar className="w-6 h-6 flex-shrink-0">
-                    <AvatarImage src={post.profiles?.avatar} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 flex gap-2">
-                    <Input
-                      placeholder="Add a comment..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
-                      className="flex-1"
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-3"
-                    >
-                      <Send size={14} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="space-y-3">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-2">
-                      <Avatar className="w-6 h-6 flex-shrink-0">
-                        <AvatarImage src={comment.user.avatar} />
-                        <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                          {comment.user.name[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{comment.user.name}</span>
-                          <span className="text-xs text-muted-foreground">{comment.created_at}</span>
-                        </div>
-                        <p className="text-sm mt-1">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Post</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-};
-
 const Index = () => {
-  const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<PostWithProfile[]>([]);
-  const { toast } = useToast();
   const { user } = useAuth();
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  const { toast } = useToast();
+  const [posts, setPosts] = useState<PostWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchPosts = async () => {
     try {
-        const { data, error } = await supabase
+      const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles!inner (
+          profiles (
             id,
             user_id,
             name,
@@ -620,18 +72,18 @@ const Index = () => {
             images
           )
         `)
-        .or(`is_private.is.null,is_private.eq.false,user_id.eq.${user?.id || 'null'}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setPosts(data || []);
+      setPosts(postsData || []);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
         title: "Error",
         description: "Failed to load posts",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setLoading(false);
@@ -642,13 +94,35 @@ const Index = () => {
     setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading posts...</p>
-        </div>
+      <div className="min-h-screen bg-background pb-20">
+        <TopBar />
+        <main className="px-4 py-6 max-w-md mx-auto">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 rounded w-3/4 mb-1"></div>
+                    <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="h-48 bg-gray-300 rounded mb-3"></div>
+                <div className="flex gap-4">
+                  <div className="h-8 bg-gray-300 rounded w-16"></div>
+                  <div className="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+        <BottomTabBar />
       </div>
     );
   }
@@ -656,21 +130,23 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
-      
       <main className="px-4 py-6 max-w-md mx-auto">
         <div className="space-y-6">
           {posts.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No posts yet. Be the first to share your journey!</p>
+              <p className="text-muted-foreground">No posts yet. Start sharing your adventures!</p>
             </div>
           ) : (
             posts.map((post) => (
-              <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
+              <UnifiedPostCard
+                key={post.id}
+                post={post}
+                onDelete={handleDeletePost}
+              />
             ))
           )}
         </div>
       </main>
-      
       <BottomTabBar />
     </div>
   );

@@ -85,10 +85,11 @@ const CountryMap = ({ stops, className = "h-full w-full", mapboxToken }: Country
         });
       }
 
-      // Add markers for each stop
+      // Add markers for each stop - smaller for trip posts
       stops.forEach((stop, index) => {
         const marker = new mapboxgl.Marker({ 
-          color: index === 0 ? '#10b981' : index === stops.length - 1 ? '#ef4444' : '#3b82f6'
+          color: index === 0 ? '#10b981' : index === stops.length - 1 ? '#ef4444' : '#3b82f6',
+          scale: 0.7  // Smaller pins for trip posts
         })
           .setLngLat([stop.lng, stop.lat])
           .addTo(map.current!);

@@ -151,7 +151,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11',
+        style: 'mapbox://styles/mapbox/satellite-v9', // Changed to satellite style for better sea/land contrast
         projection: { name: 'globe' },
         zoom: 1.2,
         center: [-98, 39], // Center on North America to show both SF and NYC
@@ -175,9 +175,9 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       map.current.on('style.load', () => {
         if (map.current) {
           map.current.setFog({
-            color: 'rgb(60, 80, 110)',
-            'high-color': 'rgb(20, 40, 80)',
-            'horizon-blend': 0.05,
+            color: 'rgb(135, 206, 235)', // Sky blue color for atmosphere
+            'high-color': 'rgb(70, 130, 180)', // Steel blue for high altitude
+            'horizon-blend': 0.1,
             'space-color': 'rgb(10, 15, 25)',
             'star-intensity': 0.8,
           });

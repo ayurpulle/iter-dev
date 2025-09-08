@@ -7,7 +7,7 @@ import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TravelMap from "@/components/TravelMap";
 import EditProfile from "@/components/EditProfile";
-import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Bookmark, Folder, FolderOpen, Edit, LogOut, Trash2 } from "lucide-react";
+import { Globe, MapPin, Calendar, Settings, Heart, MessageCircle, Plus, Folder, FolderOpen, Edit, LogOut, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -594,7 +594,7 @@ const Account = () => {
               </div>
             ) : savedPosts.length === 0 ? (
               <div className="text-center py-8">
-                <Bookmark size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <Plus size={48} className="mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-2">No saved posts yet</p>
                 <p className="text-sm text-muted-foreground">Posts you save will appear here</p>
               </div>
@@ -642,7 +642,7 @@ const Account = () => {
                           className="h-8 w-8 p-0 text-primary"
                           onClick={() => handleUnsavePost(post.id)}
                         >
-                          <Bookmark size={16} className="fill-current" />
+                          <Plus size={16} />
                         </Button>
                       </div>
                     </CardContent>

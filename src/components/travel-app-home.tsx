@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MapPin, Calendar, Users, DollarSign, ChevronDown, ChevronUp, Navigation, Clock, Star } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Plus, MapPin, Calendar, Users, DollarSign, ChevronDown, ChevronUp, Navigation, Clock, Star } from 'lucide-react';
 
 // Enhanced TripPost Component with country map and photo carousel
 const TripPost = ({ trip }) => {
@@ -191,7 +191,7 @@ const TripPost = ({ trip }) => {
               isSaved ? 'text-blue-500' : 'text-gray-600 dark:text-gray-400'
             }`}
           >
-            <Bookmark size={20} fill={isSaved ? 'currentColor' : 'none'} />
+            <Plus size={20} />
           </button>
         </div>
 

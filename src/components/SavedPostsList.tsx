@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bookmark, ChevronDown, X } from "lucide-react";
+import { Plus, ChevronDown, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { SavedPost } from "@/hooks/useSavedPosts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -89,7 +89,7 @@ const SavedPostsList = ({
           {filteredPosts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <div className="mb-4">
-                <Bookmark size={48} className="mx-auto text-muted-foreground/50" />
+                <Plus size={48} className="mx-auto text-muted-foreground/50" />
               </div>
               <p className="text-lg font-medium mb-2">Save posts to fill up your world!</p>
               <p className="text-sm">Discover amazing places through your friends' adventures</p>
@@ -122,7 +122,7 @@ const SavedPostsList = ({
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                             </span>
-                            <Bookmark size={16} className="text-primary fill-current" />
+                            <Plus size={16} className="text-primary" />
                           </div>
                         </div>
                       </div>

@@ -6,6 +6,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
 import { ItemFolderSelector } from "./ItemFolderSelector";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -123,7 +124,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
     });
   };
 
-  const handleComment = () => {
+  const handleComment = async () => {
     if (showComments === true) {
       setShowComments(false);
       setComments([]);
@@ -131,13 +132,19 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
     }
     
     setShowComments(true);
-    // Load real comments from database
+    // Show demo comments for now
     setComments([
       {
         id: "1",
         content: "Amazing trip! Love the route you took.",
         user: "Travel Buddy",
         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
+      },
+      {
+        id: "2", 
+        content: "Looks incredible! Adding this to my travel list.",
+        user: "Explorer",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString() // 1 hour ago
       }
     ]);
   };

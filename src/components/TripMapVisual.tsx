@@ -147,9 +147,12 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
       map.current.on('load', () => {
         console.log('=== DEBUG: Map load event fired ===');
         
-        // Add markers for all stops
+        // Add markers for all stops - smaller size for trip posts
         stops.forEach((stop, index) => {
-          const marker = new mapboxgl.Marker({ color: '#3B82F6' })
+          const marker = new mapboxgl.Marker({ 
+            color: '#3B82F6',
+            scale: 0.7  // Smaller pins for trip posts
+          })
             .setLngLat([stop.lng, stop.lat])
             .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
               `<div style="font-weight: bold;">${index + 1}. ${stop.name}</div>`

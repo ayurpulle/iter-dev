@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Bookmark, Clock, MapPin, Users, DollarSign } from "lucide-react";
+import { Heart, MessageCircle, Share, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -454,7 +454,7 @@ const PostCard = ({ post, onDelete }: { post: PostWithProfile; onDelete: (postId
                   size="sm" 
                   className={`h-8 w-8 p-0 ${isSaved ? 'text-blue-500' : ''}`}
                 >
-                  <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
+                  <Plus size={16} />
                 </Button>
               </ItemFolderSelector>
             </div>

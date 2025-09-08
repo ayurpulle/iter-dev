@@ -59,31 +59,18 @@ export const useSavedItineraries = () => {
     setLoading(true);
     setError(null);
 
-    const result = await executeQuery<SavedItinerary>(async (client) => {
-      // Get fresh user from current session instead of potentially stale React context
-      const { data: { session }, error: sessionError } = await client.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-
-      const insertData = {
-        user_id: session.user.id, // Use fresh session user, not React context user
-        title: itineraryData.title,
-        destination: itineraryData.destination,
-        start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
-        end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
-        budget: itineraryData.budget || null,
-        interests: itineraryData.interests || [],
-        itinerary_content: itineraryData.itinerary_content,
-        friend_recommendations: itineraryData.friend_recommendations || {}
-      };
-      
-      return client
-        .from('saved_itineraries')
-        .insert(insertData)
-        .select()
-        .single();
+    const result = await executeQuery<string>(async (client) => {
+      // Use the database function that handles auth server-side
+      return client.rpc('save_user_itinerary', {
+        p_title: itineraryData.title,
+        p_destination: itineraryData.destination,
+        p_start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+        p_end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+        p_budget: itineraryData.budget || null,
+        p_interests: itineraryData.interests || [],
+        p_itinerary_content: itineraryData.itinerary_content,
+        p_friend_recommendations: itineraryData.friend_recommendations || {}
+      });
     });
     
     setLoading(false);
@@ -94,7 +81,7 @@ export const useSavedItineraries = () => {
         description: "Your iter has been saved successfully.",
       });
       fetchSavedItineraries();
-      return result;
+      return { id: result };
     }
     
     return null;

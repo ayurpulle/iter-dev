@@ -77,28 +77,17 @@ export const PostActions = ({
 
   return (
     <>
-      <div className="flex gap-2">
-        <ShareToChatDialog
-          itemType="post"
-          itemId={postId}
-          itemTitle="Post"
-          content={content}
-          triggerText="Send"
-          variant="ghost"
-          size="sm"
-        />
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share URL
-            </DropdownMenuItem>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MoreHorizontal size={16} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleShare}>
+            <Share2 className="h-4 w-4 mr-2" />
+            Share URL
+          </DropdownMenuItem>
           
           {isOwner && (
             <>
@@ -129,7 +118,6 @@ export const PostActions = ({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      </div>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>

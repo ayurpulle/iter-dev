@@ -419,41 +419,17 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
               </p>
             </div>
             
-            {/* Action buttons for all posts */}
-            <div className="flex items-center gap-1">
-              <PostActions
-                postId={post.id}
-                postUserId={post.user_id}
-                content={post.content || ''}
-                isPrivate={post.is_private}
-                onPostDeleted={() => onDelete?.(post.id)}
-                onPostUpdated={() => {}}
-              />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0"
-                onClick={() => handleSavePost()}
-              >
-                <Plus size={16} />
-              </Button>
-              
-              {isOwnPost && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreHorizontal size={16} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-                      <Trash2 size={14} className="mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+          {/* Unified action dropdown */}
+          <div className="flex items-center gap-1">
+            <PostActions
+              postId={post.id}
+              postUserId={post.user_id}
+              content={post.content || ''}
+              isPrivate={post.is_private}
+              onPostDeleted={() => onDelete?.(post.id)}
+              onPostUpdated={() => {}}
+            />
+          </div>
           </div>
 
           {/* Trip title at top if available */}
@@ -575,6 +551,44 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
             )}
           </div>
 
+          {/* Actions - Likes, Comments, Save */}
+          <div className="flex items-center justify-between px-4 py-2">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                disabled={isLiking}
+                className={`p-2 ${isLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+              >
+                <Heart 
+                  className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} 
+                />
+                <span className="ml-1 text-sm">{likesCount}</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="p-2 text-muted-foreground"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="ml-1 text-sm">{comments.length}</span>
+              </Button>
+              
+              <ItemFolderSelector
+                itemId={post.id}
+                itemType="post"
+                onSave={handleSavePost}
+              >
+                <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
+                  <Plus className="w-5 h-5" />
+                  <span className="ml-1 text-sm">Save</span>
+                </Button>
+              </ItemFolderSelector>
+            </div>
+          </div>
 
           {/* Comments Section */}
           {showComments && (
@@ -646,21 +660,6 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
         </CardContent>
       </Card>
 
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Post</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };

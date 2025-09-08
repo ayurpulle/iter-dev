@@ -54,7 +54,7 @@ export const ItineraryShareDialog = ({ itineraryId, itineraryTitle }: ItineraryS
         itemType="itinerary"
         itemId={itineraryId}
         itemTitle={itineraryTitle}
-        triggerText="Share to Chat"
+        triggerText="Send"
         variant="outline"
         size="sm"
       />

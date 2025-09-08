@@ -66,41 +66,41 @@ export const useSavedItineraries = () => {
     itinerary_content: string;
     friend_recommendations?: { [key: string]: any[] };
   }) => {
+    setLoading(true);
+    setError(null);
+
     console.log('saveItinerary called with:', { 
+      hasItineraryData: !!itineraryData,
       hasUser: !!user, 
       userId: user?.id, 
       hasSession: !!session,
       itineraryDataKeys: Object.keys(itineraryData)
     });
     
-    if (!user || !session) {
-      console.log('No user or session found, showing auth error');
+    // Get current auth user directly from Supabase to ensure we have the latest auth state
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('Direct auth check:', { authUser: !!authUser, authError, authUserId: authUser?.id });
+    
+    if (authError || !authUser) {
+      console.log('No authenticated user found:', { authError, authUser });
       toast({
         title: "Authentication Required", 
         description: "Please log in to save itineraries. Redirecting to login...",
         variant: "destructive"
       });
-      // Redirect to auth page
       window.location.href = '/auth';
+      setLoading(false);
       return null;
     }
 
-    console.log('User authenticated, attempting to save:', user.id);
+    console.log('User authenticated, attempting to save:', authUser.id);
     
-    // Test auth by making a simple query first
-    const { data: testQuery, error: testError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1);
-    
-    console.log('Auth test query result:', { testQuery, testError, authUid: (await supabase.auth.getUser()).data.user?.id });
-
     try {
-      console.log('Attempting to insert into saved_itineraries with user_id:', user.id);
+      console.log('Attempting to insert into saved_itineraries with user_id:', authUser.id);
       
       const insertData = {
-        user_id: user.id,
+        user_id: authUser.id,
         title: itineraryData.title,
         destination: itineraryData.destination,
         start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,

@@ -83,7 +83,7 @@ export const PostActions = ({
           itemId={postId}
           itemTitle="Post"
           content={content}
-          triggerText="Share to Chat"
+          triggerText="Send"
           variant="ghost"
           size="sm"
         />

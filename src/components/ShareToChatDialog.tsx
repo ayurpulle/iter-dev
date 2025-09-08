@@ -30,7 +30,7 @@ export const ShareToChatDialog = ({
   itemId, 
   itemTitle, 
   content,
-  triggerText = "Share to Chat",
+  triggerText = "Send",
   variant = "outline",
   size = "sm"
 }: ShareToChatDialogProps) => {
@@ -59,7 +59,7 @@ export const ShareToChatDialog = ({
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Share to Chat</DialogTitle>
+          <DialogTitle>Send to Chat</DialogTitle>
           <DialogDescription>
             Share "{itemTitle}" with a friend in your chat
           </DialogDescription>

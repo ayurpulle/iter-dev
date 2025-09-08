@@ -589,6 +589,19 @@ export type Database = {
           can_view: boolean
         }[]
       }
+      save_user_itinerary: {
+        Args: {
+          p_budget: number
+          p_destination: string
+          p_end_date: string
+          p_friend_recommendations: Json
+          p_interests: string[]
+          p_itinerary_content: string
+          p_start_date: string
+          p_title: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

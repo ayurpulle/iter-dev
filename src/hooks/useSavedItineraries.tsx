@@ -66,36 +66,21 @@ export const useSavedItineraries = () => {
     itinerary_content: string;
     friend_recommendations?: { [key: string]: any[] };
   }) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to save itineraries.",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const insertData = {
-        user_id: user.id,
-        title: itineraryData.title,
-        destination: itineraryData.destination,
-        start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
-        end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
-        budget: itineraryData.budget || null,
-        interests: itineraryData.interests || [],
-        itinerary_content: itineraryData.itinerary_content,
-        friend_recommendations: itineraryData.friend_recommendations || {}
-      };
-      
-      const { data, error } = await supabase
-        .from('saved_itineraries')
-        .insert(insertData)
-        .select()
-        .single();
+      // Use the database function that handles authentication properly
+      const { data, error } = await supabase.rpc('save_user_itinerary', {
+        p_title: itineraryData.title,
+        p_destination: itineraryData.destination,
+        p_start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+        p_end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+        p_budget: itineraryData.budget || null,
+        p_interests: itineraryData.interests || [],
+        p_itinerary_content: itineraryData.itinerary_content,
+        p_friend_recommendations: itineraryData.friend_recommendations || {}
+      });
 
       if (error) throw error;
 
@@ -106,7 +91,7 @@ export const useSavedItineraries = () => {
 
       // Refresh the list
       fetchSavedItineraries();
-      return data;
+      return { id: data };
     } catch (err: any) {
       console.error('Error saving iter:', err);
       toast({

@@ -574,10 +574,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      debug_auth_context: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

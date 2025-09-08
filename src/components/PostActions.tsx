@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PostEditDialog } from './PostEditDialog';
 import { PostPrivacyToggle } from './PostPrivacyToggle';
+import { ShareToChatDialog } from './ShareToChatDialog';
 import { usePostManagement } from '@/hooks/usePostManagement';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -76,17 +77,28 @@ export const PostActions = ({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleShare}>
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </DropdownMenuItem>
+      <div className="flex gap-2">
+        <ShareToChatDialog
+          itemType="post"
+          itemId={postId}
+          itemTitle="Post"
+          content={content}
+          triggerText="Share to Chat"
+          variant="ghost"
+          size="sm"
+        />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleShare}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share URL
+            </DropdownMenuItem>
           
           {isOwner && (
             <>
@@ -117,6 +129,7 @@ export const PostActions = ({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>

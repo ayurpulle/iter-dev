@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Share2, Users } from 'lucide-react';
+import { Share2, Users, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useItineraryCollaboration } from '@/hooks/useItineraryCollaboration';
 import { useFriends } from '@/hooks/useFriends';
+import { ShareToChatDialog } from './ShareToChatDialog';
 
 interface ItineraryShareDialogProps {
   itineraryId: string;
@@ -48,18 +49,28 @@ export const ItineraryShareDialog = ({ itineraryId, itineraryTitle }: ItineraryS
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Share2 className="h-4 w-4 mr-2" />
-          Share
-        </Button>
-      </DialogTrigger>
+    <div className="flex gap-2">
+      <ShareToChatDialog
+        itemType="itinerary"
+        itemId={itineraryId}
+        itemTitle={itineraryTitle}
+        triggerText="Share to Chat"
+        variant="outline"
+        size="sm"
+      />
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Users className="h-4 w-4 mr-2" />
+            Collaborate
+          </Button>
+        </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Itinerary</DialogTitle>
+          <DialogTitle>Collaborate on Itinerary</DialogTitle>
           <DialogDescription>
-            Share "{itineraryTitle}" with your friends
+            Invite friends to collaborate on "{itineraryTitle}"
           </DialogDescription>
         </DialogHeader>
         
@@ -105,11 +116,12 @@ export const ItineraryShareDialog = ({ itineraryId, itineraryTitle }: ItineraryS
               onClick={handleShare} 
               disabled={selectedFriends.length === 0 || loading}
             >
-              {loading ? 'Sharing...' : `Share with ${selectedFriends.length} friend${selectedFriends.length !== 1 ? 's' : ''}`}
+              {loading ? 'Inviting...' : `Invite ${selectedFriends.length} friend${selectedFriends.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+    </div>
   );
 };

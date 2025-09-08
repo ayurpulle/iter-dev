@@ -6,15 +6,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send } from "lucide-react";
+import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import TripMapVisual from "@/components/TripMapVisual";
+import { ShareToChatDialog } from "@/components/ShareToChatDialog";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -85,8 +85,17 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
     user: { name: string; avatar: string | null };
     created_at: string;
     user_id?: string;
+    replies?: Array<{
+      id: string;
+      content: string;
+      user: { name: string; avatar: string | null };
+      created_at: string;
+      user_id?: string;
+    }>;
   }>>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
 
   const isOwnPost = user?.id === post.user_id;
 
@@ -227,6 +236,19 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
         
         setIsLiked(true);
         setLikesCount(prev => prev + 1);
+
+        // Create notification for post author
+        if (post.user_id !== user.id) {
+          await supabase.from('notifications').insert({
+            user_id: post.user_id,
+            type: 'like',
+            title: 'New Like',
+            message: `${userName} liked your post`,
+            related_user_id: user.id,
+            related_post_id: post.id,
+            related_like_id: Math.random().toString() // temporary ID for grouping
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating like:', error);
@@ -290,6 +312,19 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
       
       setComments(prev => [newCommentFormatted, ...prev]);
       setNewComment("");
+
+      // Create notification for post author
+      if (post.user_id !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          type: 'comment',
+          title: 'New Comment',
+          message: `${userName} commented on your post`,
+          related_user_id: user.id,
+          related_post_id: post.id,
+          related_comment_id: data.id
+        });
+      }
       
       toast({
         title: "Comment added",
@@ -432,12 +467,7 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
           </div>
           </div>
 
-          {/* Trip title at top if available */}
-          {hasTrip && post.trips?.title && (
-            <div className="px-4 pb-3">
-              <h3 className="font-semibold text-base">{post.trips.title}</h3>
-            </div>
-          )}
+          {/* Trip title at top if available - MOVED TO AFTER MAP */}
 
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
@@ -587,6 +617,21 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                   <span className="ml-1 text-sm">Save</span>
                 </Button>
               </ItemFolderSelector>
+              
+              <ShareToChatDialog
+                itemType="post"
+                itemId={post.id}
+                itemTitle={post.trips?.title || "Post"}
+                content={post.content || ""}
+                triggerText="Send"
+                variant="ghost"
+                size="sm"
+              >
+                <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
+                  <Send className="w-5 h-5" />
+                  <span className="ml-1 text-sm">Send</span>
+                </Button>
+              </ShareToChatDialog>
             </div>
           </div>
 

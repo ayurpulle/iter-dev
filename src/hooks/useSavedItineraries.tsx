@@ -69,27 +69,27 @@ export const useSavedItineraries = () => {
     setLoading(true);
     setError(null);
 
-    console.log('saveItinerary called with:', { 
-      hasItineraryData: !!itineraryData,
-      hasUser: !!user, 
-      userId: user?.id, 
+    console.log('=== SAVE ITINERARY DEBUG ===');
+    
+    // Get current auth user directly from Supabase
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('Auth state:', { 
+      authUser: !!authUser, 
+      authUserId: authUser?.id,
+      authError, 
       hasSession: !!session,
-      itineraryDataKeys: Object.keys(itineraryData)
+      sessionError
     });
     
-    // Get current auth user directly from Supabase to ensure we have the latest auth state
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-    
-    console.log('Direct auth check:', { authUser: !!authUser, authError, authUserId: authUser?.id });
-    
-    if (authError || !authUser) {
-      console.log('No authenticated user found:', { authError, authUser });
+    if (authError || !authUser || !session) {
+      console.log('No authenticated user found:', { authError, authUser, session });
       toast({
         title: "Authentication Required", 
-        description: "Please log in to save itineraries. Redirecting to login...",
+        description: "Please log in to save itineraries.",
         variant: "destructive"
       });
-      window.location.href = '/auth';
       setLoading(false);
       return null;
     }

@@ -418,21 +418,42 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                 @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
             </div>
-            {isOwnPost && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal size={16} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 size={14} className="mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            
+            {/* Action buttons for all posts */}
+            <div className="flex items-center gap-1">
+              <PostActions
+                postId={post.id}
+                postUserId={post.user_id}
+                content={post.content || ''}
+                isPrivate={post.is_private}
+                onPostDeleted={() => onDelete?.(post.id)}
+                onPostUpdated={() => {}}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => handleSavePost()}
+              >
+                <Plus size={16} />
+              </Button>
+              
+              {isOwnPost && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreHorizontal size={16} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 size={14} className="mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
 
           {/* Trip title at top if available */}
@@ -554,52 +575,6 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
             )}
           </div>
 
-          {/* Actions */}
-          <div className="px-4 py-2 border-t">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`h-8 gap-2 ${isLiked ? 'text-red-500' : ''}`}
-                  onClick={handleLike}
-                  disabled={isLiking}
-                >
-                  <Heart size={16} className={isLiked ? 'fill-current' : ''} />
-                  <span className="text-sm">{likesCount}</span>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 gap-2"
-                  onClick={() => setShowComments(!showComments)}
-                >
-                  <MessageCircle size={16} />
-                  <span className="text-sm">{comments.length}</span>
-                </Button>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <PostActions
-                  postId={post.id}
-                  postUserId={post.user_id}
-                  content={post.content || ''}
-                  isPrivate={post.is_private}
-                  onPostDeleted={() => onDelete?.(post.id)}
-                  onPostUpdated={() => {}}
-                />
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 gap-2"
-                  onClick={() => handleSavePost()}
-                >
-                  <Plus size={16} />
-                  <span className="text-sm">Save</span>
-                </Button>
-              </div>
-            </div>
-          </div>
 
           {/* Comments Section */}
           {showComments && (

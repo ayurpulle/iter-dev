@@ -11,6 +11,7 @@ export const useNotificationCount = () => {
 
     const fetchUnreadCount = async () => {
       try {
+        console.log('Fetching unread count for user:', user.id);
         const { count, error } = await supabase
           .from('notifications')
           .select('*', { count: 'exact', head: true })
@@ -18,6 +19,7 @@ export const useNotificationCount = () => {
           .eq('read', false);
 
         if (error) throw error;
+        console.log('Unread count:', count);
         setUnreadCount(count || 0);
       } catch (error) {
         console.error('Error fetching notification count:', error);
@@ -38,12 +40,16 @@ export const useNotificationCount = () => {
           filter: `user_id=eq.${user.id}`
         },
         () => {
+          console.log('Real-time notification change detected!');
           fetchUnreadCount();
         }
       )
       .subscribe();
 
+    console.log('Subscribed to notification changes for user:', user.id);
+
     return () => {
+      console.log('Unsubscribing from notification changes');
       supabase.removeChannel(channel);
     };
   }, [user?.id]);

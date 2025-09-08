@@ -7,10 +7,15 @@ const TestNotifications = () => {
   const { user } = useAuth();
 
   const createTestNotification = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found!');
+      return;
+    }
 
+    console.log('Creating test notification for user:', user.id);
+    
     try {
-      await supabase.from('notifications').insert({
+      const { data, error } = await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'like',
         title: 'Test Like',
@@ -18,17 +23,24 @@ const TestNotifications = () => {
         related_user_id: user.id,
         related_post_id: 'test-post-id',
         related_like_id: 'test-like-id'
-      });
+      }).select();
       
-      console.log('Test notification created!');
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
+      }
+      
+      console.log('Test notification created successfully!', data);
     } catch (error) {
       console.error('Error creating test notification:', error);
     }
   };
 
   return (
-    <div className="p-4">
-      <Button onClick={createTestNotification}>
+    <div className="p-4 border border-dashed border-gray-300 rounded-lg mb-4">
+      <p className="text-sm text-gray-600 mb-2">Debug: Test Notifications</p>
+      <p className="text-xs text-gray-500 mb-2">User ID: {user?.id || 'Not logged in'}</p>
+      <Button onClick={createTestNotification} disabled={!user}>
         Create Test Notification
       </Button>
     </div>

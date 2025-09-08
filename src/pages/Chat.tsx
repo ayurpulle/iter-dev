@@ -271,13 +271,22 @@ const Chat = () => {
     if (!user) return;
 
     try {
+      console.log('Marking messages as read for conversation:', conversationId);
       // Mark all unread messages in this conversation as read (except own messages)
-      await supabase
+      const { error } = await supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user.id)
         .is('read_at', null);
+
+      if (error) {
+        console.error('Error marking messages as read:', error);
+      } else {
+        console.log('Successfully marked messages as read');
+        // Refresh conversations to update unread counts
+        fetchConversations();
+      }
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -314,6 +323,48 @@ const Chat = () => {
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendSharedPost = async (postId: string) => {
+    if (!user || !selectedConversation) return;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation,
+          sender_id: user.id,
+          content: `📸 Shared a post with you`,
+          metadata: {
+            type: 'shared_post',
+            post_id: postId
+          }
+        });
+
+      if (error) throw error;
+
+      // Update conversation last message
+      await supabase
+        .from('conversations')
+        .update({
+          last_message: `📸 Shared a post with you`,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', selectedConversation);
+
+      fetchMessages(selectedConversation);
+      toast({
+        title: "Post shared!",
+        description: "Your post has been shared to the conversation.",
+      });
+    } catch (error) {
+      console.error('Error sharing post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to share post. Please try again.",
         variant: "destructive",
       });
     }
@@ -394,14 +445,14 @@ const Chat = () => {
               className={`flex ${message.user_id === user?.id ? 'justify-end' : 'justify-start'}`}
             >
               {(() => {
-                console.log('Message metadata:', message.metadata);
+                console.log('Rendering message:', message.id, 'metadata:', message.metadata);
                 if (message.metadata?.type === 'shared_post' && message.metadata.post_id) {
                   console.log('Rendering SharedPostCard for post:', message.metadata.post_id);
                   return (
-                    <div className="max-w-sm">
+                    <div className="max-w-sm w-full">
                       <SharedPostCard postId={message.metadata.post_id} />
-                      <p className="text-xs text-muted-foreground mt-1 text-center">
-                        {formatTime(message.created_at)}
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Shared by {message.user_id === user?.id ? 'You' : 'them'} • {formatTime(message.created_at)}
                       </p>
                     </div>
                   );
@@ -440,6 +491,14 @@ const Chat = () => {
             />
             <Button onClick={sendMessage} disabled={!newMessage.trim()}>
               <Send className="h-4 w-4" />
+            </Button>
+            {/* Test button to share a post - you can remove this later */}
+            <Button 
+              variant="outline" 
+              onClick={() => sendSharedPost('test-post-id')}
+              className="whitespace-nowrap"
+            >
+              Share Post
             </Button>
           </div>
         </div>

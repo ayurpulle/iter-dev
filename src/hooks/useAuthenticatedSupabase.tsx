@@ -17,9 +17,11 @@ export const useAuthenticatedSupabase = () => {
       const { data, error } = await operation(client);
       
       if (error) {
-        // Handle specific auth errors
-        if (error.code === 'PGRST301' || error.message?.includes('JWT') || error.code === '42501') {
-          // Token expired, invalid, or RLS violation
+        // Handle specific auth errors - be more specific about when to redirect
+        if (error.code === 'PGRST301' || 
+            (error.message?.includes('JWT') && error.message?.includes('expired')) ||
+            (error.code === '42501' && error.message?.includes('authentication'))) {
+          // Only redirect on actual auth failures, not general RLS violations
           toast({
             title: "Session Expired",
             description: "Please log in again to continue.",

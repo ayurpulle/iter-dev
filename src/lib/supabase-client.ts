@@ -68,17 +68,25 @@ class SupabaseClientManager {
   public async getAuthenticatedClient() {
     const { data: { session }, error } = await this.client.auth.getSession();
     
-    if (!session || error) {
-      // Try to refresh
-      const { data: { session: newSession }, error: refreshError } = 
-        await this.client.auth.refreshSession();
-      
-      if (!newSession || refreshError) {
-        throw new Error('Authentication required. Please log in again.');
-      }
+    // If we have a session and no error, use it
+    if (session && !error) {
+      return this.client;
     }
     
-    return this.client;
+    // If no session or error, try to refresh but don't fail immediately
+    console.log('Attempting session refresh...');
+    const { data: { session: newSession }, error: refreshError } = 
+      await this.client.auth.refreshSession();
+    
+    // If refresh succeeds, use the client
+    if (newSession && !refreshError) {
+      console.log('Session refresh successful');
+      return this.client;
+    }
+    
+    // Only throw error if both session check and refresh fail
+    console.log('Session refresh failed, requiring re-authentication');
+    throw new Error('Authentication required. Please log in again.');
   }
 }
 

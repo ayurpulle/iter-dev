@@ -12,9 +12,11 @@ import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import TripMapVisual from "@/components/TripMapVisual";
+import { CommentReplies } from "@/components/CommentReplies";
 import { ShareToChatDialog } from "@/components/ShareToChatDialog";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -626,12 +628,7 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                 triggerText="Send"
                 variant="ghost"
                 size="sm"
-              >
-                <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
-                  <Send className="w-5 h-5" />
-                  <span className="ml-1 text-sm">Send</span>
-                </Button>
-              </ShareToChatDialog>
+              />
             </div>
           </div>
 

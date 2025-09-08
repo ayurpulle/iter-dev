@@ -574,6 +574,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      debug_saved_itineraries_policy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          auth_uid: string
+          policy_check: boolean
+        }[]
+      }
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

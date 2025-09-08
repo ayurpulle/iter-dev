@@ -1,14 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, X } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { ChevronDown, X, Plus } from "lucide-react";
 import { SavedPost } from "@/hooks/useSavedPosts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import UnifiedPostCard from "@/components/UnifiedPostCard";
 
 interface SavedPostsListProps {
   yourSavedPosts: SavedPost[];
@@ -45,6 +42,11 @@ const SavedPostsList = ({
 
     fetchFolders();
   }, [user]);
+
+  const handleDeletePost = (postId: string) => {
+    // This is handled by the parent component or could trigger unsaving
+    console.log('Delete post:', postId);
+  };
   
   const filteredPosts = selectedFolder === "all" 
     ? yourSavedPosts 
@@ -99,58 +101,42 @@ const SavedPostsList = ({
               const post = savedPost.posts;
               if (!post) return null;
 
+              // Convert saved post to the format expected by UnifiedPostCard
+              const unifiedPost = {
+                id: post.id,
+                content: post.content || '',
+                image_url: post.image_url,
+                user_id: post.user_id,
+                trip_id: post.trip_id,
+                created_at: post.created_at,
+                likes_count: 0, // Default values for saved posts
+                comments_count: 0,
+                is_private: false,
+                profiles: post.profiles ? {
+                  id: `profile-${post.user_id}`,
+                  user_id: post.user_id,
+                  name: post.profiles.name,
+                  username: post.profiles.username,
+                  avatar: post.profiles.avatar
+                } : null,
+                trips: post.trips ? {
+                  id: post.id, // Use post id as trip id
+                  title: post.trips.title,
+                  duration: undefined,
+                  distance: undefined,
+                  cost: undefined,
+                  companions: undefined,
+                  stops: post.trips.stops,
+                  images: undefined
+                } : null
+              };
+
               return (
-                <Card key={savedPost.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={post.profiles?.avatar} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {(post.profiles?.name || 'U')[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
-                            <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
-                            {post.trips?.title && (
-                              <p className="text-xs text-primary font-medium">{post.trips.title}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                            </span>
-                            <Plus size={16} className="text-primary" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {post.content && (
-                      <p className="text-sm mb-3">{post.content}</p>
-                    )}
-                    
-                    {/* Photo indicator */}
-                    {post.image_url && (
-                      <div className="bg-muted rounded-lg p-3 mb-3">
-                        <p className="text-sm text-muted-foreground">
-                          📸 Photo attached
-                        </p>
-                      </div>
-                    )}
-                    
-                    {/* Trip info */}
-                    {post.trips?.stops && (
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          🗺️ {post.trips.stops.length} stops
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <UnifiedPostCard
+                  key={savedPost.id}
+                  post={unifiedPost}
+                  onDelete={handleDeletePost}
+                />
               );
             })
           )}

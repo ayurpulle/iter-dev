@@ -78,24 +78,18 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
   const [showFullCaption, setShowFullCaption] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState([
-    {
-      id: "1",
-      content: "Amazing trip! Love the route you took.",
-      user: { name: "Travel Buddy", avatar: null },
-      created_at: "30 minutes ago"
-    },
-    {
-      id: "2", 
-      content: "Looks incredible! Adding this to my travel list.",
-      user: { name: "Explorer", avatar: null },
-      created_at: "about 1 hour ago"
-    }
-  ]);
+  const [comments, setComments] = useState<Array<{
+    id: string;
+    content: string;
+    user: { name: string; avatar: string | null };
+    created_at: string;
+    user_id?: string;
+  }>>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   const isOwnPost = user?.id === post.user_id;
 
-  // Check if user has liked this post and get mapbox token
+  // Check if user has liked this post and get mapbox token + load comments
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!user?.id) return;
@@ -126,9 +120,63 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
         console.log('Failed to get Mapbox token');
       }
     };
+
+    const loadComments = async () => {
+      setLoadingComments(true);
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id
+          `)
+          .eq('post_id', post.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Get user profiles for comments
+        const userIds = [...new Set((data || []).map(comment => comment.user_id))];
+        let profiles = [];
+        
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('user_id, name, avatar')
+            .in('user_id', userIds);
+          
+          if (!profilesError) {
+            profiles = profilesData || [];
+          }
+        }
+
+        const formattedComments = (data || []).map(comment => {
+          const userProfile = profiles.find(p => p.user_id === comment.user_id);
+          return {
+            id: comment.id,
+            content: comment.content,
+            user: {
+              name: userProfile?.name || 'Unknown User',
+              avatar: userProfile?.avatar || null
+            },
+            created_at: formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }),
+            user_id: comment.user_id
+          };
+        });
+
+        setComments(formattedComments);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      } finally {
+        setLoadingComments(false);
+      }
+    };
     
     getMapboxToken();
     checkLikeStatus();
+    loadComments();
   }, [post.id, user?.id]);
 
   const handleLike = async () => {
@@ -212,24 +260,77 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
     }
   };
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !user?.id) return;
     
-    const comment = {
-      id: Date.now().toString(),
-      content: newComment,
-      user: { name: userName, avatar: post.profiles?.avatar },
-      created_at: "now"
-    };
-    
-    setComments(prev => [comment, ...prev]);
-    setNewComment("");
-    
-    toast({
-      title: "Comment added",
-      description: "Your comment has been posted",
-      duration: 3000,
-    });
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: post.id,
+          user_id: user.id,
+          content: newComment.trim()
+        })
+        .select('id, content, created_at, user_id')
+        .single();
+
+      if (error) throw error;
+
+      const newCommentFormatted = {
+        id: data.id,
+        content: data.content,
+        user: {
+          name: userName,
+          avatar: post.profiles?.avatar || null
+        },
+        created_at: "now",
+        user_id: data.user_id
+      };
+      
+      setComments(prev => [newCommentFormatted, ...prev]);
+      setNewComment("");
+      
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      setComments(prev => prev.filter(comment => comment.id !== commentId));
+      
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleDelete = async () => {
@@ -540,23 +641,39 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
 
                 {/* Comments List */}
                 <div className="space-y-3">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-2">
-                      <Avatar className="w-6 h-6 flex-shrink-0">
-                        <AvatarImage src={comment.user.avatar} />
-                        <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                          {comment.user.name[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{comment.user.name}</span>
-                          <span className="text-xs text-muted-foreground">{comment.created_at}</span>
-                        </div>
-                        <p className="text-sm mt-1">{comment.content}</p>
-                      </div>
+                  {loadingComments ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
                     </div>
-                  ))}
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-2">
+                        <Avatar className="w-6 h-6 flex-shrink-0">
+                          <AvatarImage src={comment.user.avatar} />
+                          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                            {comment.user.name[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{comment.user.name}</span>
+                            <span className="text-xs text-muted-foreground">{comment.created_at}</span>
+                            {comment.user_id === user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDeleteComment(comment.id)}
+                              >
+                                <Trash2 size={12} />
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-sm mt-1">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}

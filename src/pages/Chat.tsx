@@ -13,12 +13,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import SharedPostCard from "@/components/SharedPostCard";
 
 interface ChatMessage {
   id: string;
   user_id: string;
   content: string;
   created_at: string;
+  metadata?: {
+    type: string;
+    post_id?: string;
+  };
   profiles: {
     name: string;
     username: string;
@@ -88,8 +93,54 @@ const Chat = () => {
     if (!user) return;
 
     try {
-      // For now, set empty conversations until real implementation
-      setConversations([]);
+      const { data: conversations, error } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          participants,
+          last_message,
+          last_message_at
+        `)
+        .contains('participants', [user.id])
+        .order('last_message_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get profile data for other participants
+      const conversationsWithProfiles = await Promise.all(
+        (conversations || []).map(async (conv) => {
+          const otherUserId = conv.participants.find((id: string) => id !== user.id);
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_id, name, username, avatar')
+            .eq('user_id', otherUserId)
+            .single();
+
+          return {
+            ...conv,
+            other_user: profile ? {
+              id: profile.user_id,
+              name: profile.name || 'Unknown User',
+              username: profile.username || 'unknown',
+              avatar: profile.avatar || ''
+            } : {
+              id: otherUserId,
+              name: 'Unknown User',
+              username: 'unknown',
+              avatar: ''
+            }
+          };
+        })
+      );
+
+      setConversations(conversationsWithProfiles.map(conv => ({
+        id: conv.id,
+        other_user: conv.other_user,
+        last_message: conv.last_message || '',
+        last_message_time: conv.last_message_at || '',
+        unread_count: 0 // TODO: Calculate actual unread count
+      })));
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
@@ -101,8 +152,35 @@ const Chat = () => {
     if (!user) return;
 
     try {
-      // For now, set empty messages until real implementation
-      setMessages([]);
+      const { data: messages, error } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          content,
+          created_at,
+          sender_id,
+          metadata,
+          profiles!messages_sender_id_fkey (
+            name,
+            username,
+            avatar
+          )
+        `)
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      
+      const formattedMessages = (messages || []).map(msg => ({
+        id: msg.id,
+        user_id: msg.sender_id,
+        content: msg.content,
+        created_at: msg.created_at,
+        metadata: msg.metadata as any,
+        profiles: Array.isArray(msg.profiles) ? msg.profiles[0] : msg.profiles
+      }));
+      
+      setMessages(formattedMessages as ChatMessage[]);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -115,14 +193,27 @@ const Chat = () => {
     if (!newMessage.trim() || !user || !selectedConversation) return;
 
     try {
-      // For now, just show a success message until real implementation
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation,
+          sender_id: user.id,
+          content: newMessage.trim()
+        });
+
+      if (error) throw error;
+
+      // Update conversation last message
+      await supabase
+        .from('conversations')
+        .update({
+          last_message: newMessage.trim(),
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', selectedConversation);
+
       setNewMessage("");
-      setNewMessage("");
-      
-      toast({
-        title: "Message sent",
-        description: "Your message has been sent.",
-      });
+      fetchMessages(selectedConversation);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -191,21 +282,25 @@ const Chat = () => {
                       {(message.profiles.name || 'U')[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className={`flex-1 min-w-0 ${message.user_id === user?.id ? 'text-right' : ''}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{message.profiles.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <div className={`inline-block p-3 rounded-lg ${
-                      message.user_id === user?.id 
-                        ? 'bg-primary text-primary-foreground ml-auto' 
-                        : 'bg-muted'
-                    }`}>
-                      <p className="text-sm">{message.content}</p>
-                    </div>
-                  </div>
+                   <div className={`flex-1 min-w-0 ${message.user_id === user?.id ? 'text-right' : ''}`}>
+                     <div className="flex items-center gap-2 mb-1">
+                       <span className="text-sm font-medium">{message.profiles.name}</span>
+                       <span className="text-xs text-muted-foreground">
+                         {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                       </span>
+                     </div>
+                     {message.metadata?.type === 'shared_post' && message.metadata.post_id ? (
+                       <SharedPostCard postId={message.metadata.post_id} className="max-w-sm" />
+                     ) : (
+                       <div className={`inline-block p-3 rounded-lg ${
+                         message.user_id === user?.id 
+                           ? 'bg-primary text-primary-foreground ml-auto' 
+                           : 'bg-muted'
+                       }`}>
+                         <p className="text-sm">{message.content}</p>
+                       </div>
+                     )}
+                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />

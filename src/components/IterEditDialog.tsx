@@ -22,7 +22,7 @@ interface IterEditDialogProps {
     is_owner?: boolean;
     can_edit?: boolean;
   };
-  onIterUpdated?: (newContent: string) => void;
+  onIterUpdated?: (newContent: string, newDestination?: string) => void;
 }
 
 export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps) => {
@@ -69,10 +69,12 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
 
       // If the itinerary was actually updated
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
-        onIterUpdated?.(data.updatedItinerary);
+        onIterUpdated?.(data.updatedItinerary, data.newDestination);
         toast({
           title: "Iter Updated!",
-          description: "Your itinerary has been updated successfully.",
+          description: data.newDestination 
+            ? `Your itinerary has been updated and destination changed to ${data.newDestination}.`
+            : "Your itinerary has been updated successfully.",
         });
       }
 

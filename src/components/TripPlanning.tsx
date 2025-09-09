@@ -535,11 +535,13 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   is_owner: viewingIter.is_owner,
                   can_edit: viewingIter.can_edit
                 }}
-                onIterUpdated={(newContent) => {
-                  // Update the viewing itinerary with new content
+                onIterUpdated={(newContent, newDestination) => {
+                  // Update the viewing itinerary with new content and destination
                   setViewingIter(prev => ({
                     ...prev,
-                    itinerary_content: newContent
+                    itinerary_content: newContent,
+                    destination: newDestination || prev.destination,
+                    title: newDestination || prev.title // Update title to match destination
                   }));
                   // Also refresh the saved itineraries list
                   refetchSavedItineraries();

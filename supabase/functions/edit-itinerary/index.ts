@@ -41,10 +41,12 @@ Guidelines:
 2. Maintain day-by-day organization
 3. When making changes, be specific and detailed
 4. If the user asks for general improvements, suggest concrete additions
-5. Always respond with either:
+5. If the destination changes, update all references throughout the itinerary
+6. Always respond with either:
    - The UPDATED itinerary content if changes should be made
    - An explanation of the changes if no content update is needed
-6. Start your response with either "UPDATED_ITINERARY:" followed by the new content, or "EXPLANATION:" followed by your explanation`
+7. Start your response with either "UPDATED_ITINERARY:" followed by the new content, or "EXPLANATION:" followed by your explanation
+8. If the destination changes, also include "NEW_DESTINATION:" followed by the new destination name on a separate line before the itinerary content`
       },
       ...conversationHistory.map(msg => ({
         role: msg.role,
@@ -59,7 +61,7 @@ Guidelines:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-2025-04-14',
         messages: messages,
         max_tokens: 3000,
         temperature: 0.7,
@@ -79,18 +81,32 @@ Guidelines:
 
     // Check if the response contains an updated itinerary
     let updatedItinerary = null;
+    let newDestination = null;
     let explanation = aiResponse;
 
     if (aiResponse.startsWith('UPDATED_ITINERARY:')) {
-      updatedItinerary = aiResponse.replace('UPDATED_ITINERARY:', '').trim();
+      const content = aiResponse.replace('UPDATED_ITINERARY:', '').trim();
+      
+      // Check if there's a new destination specified
+      if (content.startsWith('NEW_DESTINATION:')) {
+        const lines = content.split('\n');
+        newDestination = lines[0].replace('NEW_DESTINATION:', '').trim();
+        updatedItinerary = lines.slice(1).join('\n').trim();
+      } else {
+        updatedItinerary = content;
+      }
+      
       explanation = `I've updated your itinerary based on your request: "${editRequest}"`;
+      if (newDestination) {
+        explanation += ` The destination has been changed to ${newDestination}.`;
+      }
     } else if (aiResponse.startsWith('EXPLANATION:')) {
       explanation = aiResponse.replace('EXPLANATION:', '').trim();
     }
 
     // If we have an updated itinerary, we need to save it to the database
     if (updatedItinerary) {
-      console.log('Updating itinerary in database...');
+      console.log('Updating itinerary in database...', { newDestination });
       
       // Create a Supabase client for server-side operations
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -141,13 +157,22 @@ Guidelines:
         throw new Error('You do not have permission to edit this itinerary');
       }
 
+      // Prepare update data
+      const updateData: any = {
+        itinerary_content: updatedItinerary,
+        updated_at: new Date().toISOString()
+      };
+
+      // If destination changed, update it and the title
+      if (newDestination && newDestination !== destination) {
+        updateData.destination = newDestination;
+        updateData.title = newDestination; // Update title to match new destination
+      }
+
       // Update the itinerary
       const { error: updateError } = await supabase
         .from('saved_itineraries')
-        .update({
-          itinerary_content: updatedItinerary,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', itinerary.id);
 
       if (updateError) {
@@ -161,6 +186,7 @@ Guidelines:
     return new Response(JSON.stringify({
       response: explanation,
       updatedItinerary: updatedItinerary,
+      newDestination: newDestination,
       hasUpdate: !!updatedItinerary
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

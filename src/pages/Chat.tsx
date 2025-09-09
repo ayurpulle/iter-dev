@@ -82,10 +82,6 @@ const Chat = () => {
       fetchMessages(selectedConversation);
       markMessagesAsRead(selectedConversation);
       
-      // Trigger immediate message count update after a short delay to ensure DB is updated
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('messageCountUpdate'));
-      }, 300);
     } else {
       fetchConversations();
     }
@@ -313,9 +309,6 @@ const Chat = () => {
 
       console.log('Successfully marked messages as read');
       
-      // Trigger immediate message count update
-      window.dispatchEvent(new CustomEvent('messageCountUpdate'));
-      
       // Refresh conversations to update unread counts
       setTimeout(() => {
         fetchConversations();
@@ -483,10 +476,10 @@ const Chat = () => {
                 if (message.metadata?.type === 'shared_post' && message.metadata.post_id) {
                   console.log('Rendering SharedPostCard for post:', message.metadata.post_id);
                   return (
-                    <div className="max-w-sm w-full">
+                    <div className="max-w-xs w-full">
                       <SharedPostCard postId={message.metadata.post_id} />
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Shared by {message.user_id === user?.id ? 'You' : 'them'} • {formatTime(message.created_at)}
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        {formatTime(message.created_at)}
                       </p>
                     </div>
                   );

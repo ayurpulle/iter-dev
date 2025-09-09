@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import NotificationBadge from "./NotificationBadge";
-import MessageBadge from "./MessageBadge";
 
 const TopBar = () => {
   const { user, signOut } = useAuth();
@@ -54,16 +53,14 @@ const TopBar = () => {
             </Button>
           </NotificationBadge>
           
-          <MessageBadge>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0"
-              onClick={() => navigate('/messages')}
-            >
-              <MessageCircle size={18} className="text-muted-foreground" />
-            </Button>
-          </MessageBadge>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0"
+            onClick={() => navigate('/messages')}
+          >
+            <MessageCircle size={18} className="text-muted-foreground" />
+          </Button>
           
           <Button 
             variant="ghost" 

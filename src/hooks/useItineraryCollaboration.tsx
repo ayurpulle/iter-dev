@@ -40,59 +40,29 @@ export const useItineraryCollaboration = () => {
 
     setLoading(true);
     try {
-      // First check if collaboration already exists
-      const { data: existingCollaboration, error: checkError } = await supabase
+      // Use upsert to handle existing collaborations gracefully
+      const { data, error } = await supabase
         .from('itinerary_collaborators')
-        .select('*')
-        .eq('itinerary_id', itineraryId)
-        .eq('user_id', friendId)
-        .maybeSingle();
+        .upsert({
+          itinerary_id: itineraryId,
+          user_id: friendId,
+          permission,
+          invited_by: user.id,
+          status: 'pending' // Reset to pending if it was declined before
+        }, {
+          onConflict: 'itinerary_id,user_id'
+        })
+        .select()
+        .single();
 
-      if (checkError) throw checkError;
+      if (error) throw error;
 
-      if (existingCollaboration) {
-        // If collaboration exists, update it instead of creating new one
-        const { data, error } = await supabase
-          .from('itinerary_collaborators')
-          .update({
-            permission,
-            status: 'pending', // Reset to pending if it was declined before
-            invited_by: user.id
-          })
-          .eq('id', existingCollaboration.id)
-          .select()
-          .single();
+      toast({
+        title: "Success",
+        description: "Collaboration invite sent!"
+      });
 
-        if (error) throw error;
-
-        toast({
-          title: "Success", 
-          description: "Collaboration invite updated!"
-        });
-
-        return data;
-      } else {
-        // Create new collaboration
-        const { data, error } = await supabase
-          .from('itinerary_collaborators')
-          .insert({
-            itinerary_id: itineraryId,
-            user_id: friendId,
-            permission,
-            invited_by: user.id
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Collaboration invite sent!"
-        });
-
-        return data;
-      }
+      return data;
     } catch (error: any) {
       console.error('Error inviting collaborator:', error);
       toast({

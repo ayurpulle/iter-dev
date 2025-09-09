@@ -59,7 +59,7 @@ export const UnifiedItineraryShareDialog = ({
       }
     } else {
       // Send collaboration invites
-      const success = await shareItinerary(itineraryId, selectedFriends);
+      const success = await shareItinerary(itineraryId, selectedFriends, itineraryTitle);
       if (!success) return;
     }
     

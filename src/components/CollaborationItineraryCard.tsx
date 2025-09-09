@@ -1,24 +1,23 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, ExternalLink } from 'lucide-react';
+import { MapPin, Calendar, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSavedItineraries } from '@/hooks/useSavedItineraries';
 import { useToast } from '@/hooks/use-toast';
 
-interface SharedItineraryCardProps {
+interface CollaborationItineraryCardProps {
   itineraryId: string;
   itineraryTitle: string;
   itineraryContent?: string;
 }
 
-export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryContent }: SharedItineraryCardProps) => {
+export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itineraryContent }: CollaborationItineraryCardProps) => {
   const navigate = useNavigate();
   const { savedItineraries, saveItinerary } = useSavedItineraries();
   const { toast } = useToast();
 
-  const handleViewItinerary = async () => {
+  const handleCollaborate = async () => {
     try {
       // Check if itinerary already exists in saved itineraries
       const existingIter = savedItineraries.find(iter => iter.id === itineraryId);
@@ -37,10 +36,10 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       // Navigate to home with parameters to show saved trips and open this itinerary
       navigate(`/?view=savedTrips&openIter=${itineraryId}`);
     } catch (error) {
-      console.error('Error handling shared itinerary:', error);
+      console.error('Error handling collaboration itinerary:', error);
       toast({
         title: "Error",
-        description: "Failed to open shared itinerary",
+        description: "Failed to open collaboration itinerary",
         variant: "destructive",
       });
     }
@@ -51,9 +50,9 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       <div className="space-y-4">
         {/* Header with badge */}
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-primary" />
+          <Users className="h-5 w-5 text-primary" />
           <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-            Shared Itinerary
+            Collaboration Invite
           </Badge>
         </div>
         
@@ -65,17 +64,17 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
         {/* Subtitle */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          <span>Tap to view full itinerary</span>
+          <span>Tap to collaborate on this itinerary</span>
         </div>
         
         {/* Action button */}
         <Button 
           size="lg" 
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={handleViewItinerary}
+          onClick={handleCollaborate}
         >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          View Iter
+          <Users className="h-4 w-4 mr-2" />
+          Collaborate on
         </Button>
       </div>
     </div>

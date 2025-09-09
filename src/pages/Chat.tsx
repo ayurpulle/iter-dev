@@ -16,6 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "react-router-dom";
 import SharedPostCard from "@/components/SharedPostCard";
 import { SharedItineraryCard } from "@/components/SharedItineraryCard";
+import { CollaborationItineraryCard } from "@/components/CollaborationItineraryCard";
 import { ConversationActions } from "@/components/ConversationActions";
 
 interface ChatMessage {
@@ -493,6 +494,19 @@ const Chat = () => {
                       <SharedItineraryCard 
                         itineraryId={message.metadata.itinerary_id}
                         itineraryTitle={message.metadata.itinerary_title || 'Shared Itinerary'}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        {formatTime(message.created_at)}
+                      </p>
+                    </div>
+                  );
+                } else if (message.metadata?.type === 'collaboration_invite' && message.metadata.itinerary_id) {
+                  console.log('Rendering CollaborationItineraryCard for itinerary:', message.metadata.itinerary_id);
+                  return (
+                    <div className="max-w-xs w-full">
+                      <CollaborationItineraryCard 
+                        itineraryId={message.metadata.itinerary_id}
+                        itineraryTitle={message.metadata.itinerary_title || 'Collaboration Invite'}
                       />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}

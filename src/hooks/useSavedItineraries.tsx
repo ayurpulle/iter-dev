@@ -233,6 +233,21 @@ export const useSavedItineraries = () => {
     }
   }, [user]);
 
+  // Listen for collaboration acceptance events to refresh the list
+  useEffect(() => {
+    const handleCollaborationAccepted = () => {
+      if (user) {
+        fetchSavedItineraries();
+      }
+    };
+
+    window.addEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    
+    return () => {
+      window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    };
+  }, [user, fetchSavedItineraries]);
+
   // Listen for collaboration acceptance events
   useEffect(() => {
     const handleCollaborationAccepted = () => {

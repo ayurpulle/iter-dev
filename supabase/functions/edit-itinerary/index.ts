@@ -31,25 +31,24 @@ serve(async (req) => {
     const messages = [
       {
         role: 'system',
-        content: `You are a specialized travel itinerary assistant. You ONLY respond to travel-related questions and requests. Your database includes:
-- Current itinerary content for various destinations
-- User's saved travel posts and experiences
-- Travel recommendations from friends and other users
+        content: `You are an expert travel itinerary assistant with access to comprehensive travel data including saved itineraries, user posts, and friend recommendations.
 
-STRICT GUIDELINES:
-1. ONLY respond to travel, tourism, vacation, trip planning, or itinerary-related requests
-2. If asked about anything non-travel related, politely decline and redirect to travel topics
-3. Use the provided itinerary content and travel data as your primary information source
-4. Keep the same overall structure and formatting when editing itineraries
-5. Maintain day-by-day organization
-6. When making changes, be specific and detailed about travel activities, locations, and experiences
-7. If the user asks for general improvements, suggest concrete travel-related additions
-8. If the destination changes, update all travel references throughout the itinerary
-9. Always respond with either:
-   - The UPDATED itinerary content if changes should be made
-   - An explanation of the changes if no content update is needed
-10. Start your response with either "UPDATED_ITINERARY:" followed by the new content, or "EXPLANATION:" followed by your explanation
-11. If the destination changes, also include "NEW_DESTINATION:" followed by the new destination name on a separate line before the itinerary content
+CORE CAPABILITIES:
+- Edit and enhance existing travel itineraries
+- Understand context from travel requests, even brief ones like "more luxury", "different", "extend", "shorter"
+- Access to user's saved travel experiences and preferences
+- Friend recommendations and travel tips from the community
+
+GUIDELINES:
+1. Interpret travel-related requests flexibly - "more luxury" means upgrade hotels/restaurants/experiences, "different" means suggest alternatives, etc.
+2. When editing itineraries, maintain structure but enhance content based on the request
+3. Use the provided travel data and context to make informed suggestions
+4. If destination changes, update all location references throughout
+5. For brief requests, infer intent from context (luxury = higher-end options, different = alternatives, etc.)
+6. Always respond with either:
+   - "UPDATED_ITINERARY:" followed by the revised content if changes are made
+   - "EXPLANATION:" followed by details if no content update is needed
+7. If destination changes, include "NEW_DESTINATION:" on a separate line before content
 
 Current itinerary for ${destination}:
 ${itineraryContent}`
@@ -134,34 +133,55 @@ ${itineraryContent}`
         throw new Error('Invalid authentication token');
       }
 
-      // Find the itinerary to update by matching the content
-      const { data: itineraries, error: fetchError } = await supabase
+      // Find the itinerary to update - try multiple approaches
+      let itinerary = null;
+      
+      // First try to find by destination and partial content match
+      const { data: itinerariesByDest, error: fetchError1 } = await supabase
         .from('saved_itineraries')
         .select('id, user_id')
         .eq('destination', destination)
-        .eq('itinerary_content', itineraryContent);
+        .eq('user_id', user.id); // Only look at user's own itineraries for now
 
-      if (fetchError) {
-        console.error('Error fetching itinerary:', fetchError);
-        throw new Error('Failed to find itinerary to update');
+      if (fetchError1) {
+        console.error('Error fetching itinerary by destination:', fetchError1);
       }
 
-      if (!itineraries || itineraries.length === 0) {
-        throw new Error('Itinerary not found');
-      }
-
-      const itinerary = itineraries[0];
-
-      // Check if user has permission to edit this itinerary
-      const { data: permissions } = await supabase
-        .rpc('get_user_itinerary_permissions', {
-          itinerary_uuid: itinerary.id,
-          user_uuid: user.id
+      if (itinerariesByDest && itinerariesByDest.length > 0) {
+        // If multiple, try to find exact content match
+        const exactMatch = itinerariesByDest.find(async (iter) => {
+          const { data: fullIter } = await supabase
+            .from('saved_itineraries')
+            .select('itinerary_content')
+            .eq('id', iter.id)
+            .single();
+          return fullIter?.itinerary_content === itineraryContent;
         });
-
-      if (!permissions?.can_edit) {
-        throw new Error('You do not have permission to edit this itinerary');
+        
+        itinerary = exactMatch || itinerariesByDest[0]; // Use exact match or first one
       }
+
+      if (!itinerary) {
+        // Try a broader search - find by user and destination only
+        const { data: userItineraries, error: fetchError2 } = await supabase
+          .from('saved_itineraries')
+          .select('id, user_id, title')
+          .eq('user_id', user.id)
+          .ilike('destination', `%${destination}%`);
+
+        if (userItineraries && userItineraries.length > 0) {
+          itinerary = userItineraries[0];
+          console.log('Found itinerary by broader search:', itinerary);
+        }
+      }
+
+      if (!itinerary) {
+        console.error('No itinerary found for user:', user.id, 'destination:', destination);
+        throw new Error('Itinerary not found - you may not have permission to edit this itinerary');
+      }
+
+      // Since we already filtered by user_id, we know they can edit it
+      console.log('User has permission to edit itinerary:', itinerary.id);
 
       // Prepare update data
       const updateData: any = {

@@ -185,11 +185,103 @@ export const useItineraryCollaboration = () => {
     }
   }, []);
 
+  const sendCollaborationChatMessage = useCallback(async (friendId: string, itineraryId: string, itineraryTitle: string) => {
+    if (!user) return;
+    
+    try {
+      console.log('Creating collaboration chat message for friend:', friendId, 'itinerary:', itineraryId);
+      
+      // Find or create conversation
+      let conversationId = null;
+      
+      // Check if conversation already exists
+      const { data: existingConv, error: searchError } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participants', [user.id])
+        .contains('participants', [friendId])
+        .maybeSingle();
+
+      if (searchError) {
+        console.error('Error searching for existing conversation:', searchError);
+        throw searchError;
+      }
+
+      if (existingConv) {
+        conversationId = existingConv.id;
+        console.log('Found existing conversation:', conversationId);
+      } else {
+        // Create new conversation
+        console.log('Creating new conversation between:', user.id, 'and', friendId);
+        const { data: newConv, error: convError } = await supabase
+          .from('conversations')
+          .insert({
+            participants: [user.id, friendId],
+            last_message: `Collaboration invite: ${itineraryTitle}`,
+            last_message_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+
+        if (convError) {
+          console.error('Error creating conversation:', convError);
+          throw convError;
+        }
+        conversationId = newConv.id;
+        console.log('Created new conversation:', conversationId);
+      }
+
+      // Create collaboration message
+      const shareMessage = `🤝 I invited you to collaborate on: "${itineraryTitle}"`;
+      const messageData = { 
+        type: 'collaboration_invite', 
+        itinerary_id: itineraryId,
+        itinerary_title: itineraryTitle 
+      };
+
+      console.log('Sending collaboration message to conversation:', conversationId);
+      // Send the message
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: shareMessage,
+          metadata: messageData
+        });
+
+      if (messageError) {
+        console.error('Error sending message:', messageError);
+        throw messageError;
+      }
+
+      // Update conversation last message
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({
+          last_message: shareMessage,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      if (updateError) {
+        console.error('Error updating conversation:', updateError);
+        throw updateError;
+      }
+
+      console.log('Successfully sent collaboration chat message');
+    } catch (error) {
+      console.error('Error sending collaboration chat message:', error);
+    }
+  }, [user]);
+
   const shareItinerary = useCallback(async (itineraryId: string, friendIds: string[], itineraryTitle?: string) => {
     if (!user) return false;
 
     setLoading(true);
     try {
+      console.log('Sharing itinerary with friends:', friendIds, 'title:', itineraryTitle);
+      
       const invites = friendIds.map(friendId => ({
         itinerary_id: itineraryId,
         user_id: friendId,
@@ -207,6 +299,7 @@ export const useItineraryCollaboration = () => {
       if (error) throw error;
 
       // Send collaboration chat messages to each friend
+      console.log('Sending chat messages to friends...');
       for (const friendId of friendIds) {
         await sendCollaborationChatMessage(friendId, itineraryId, itineraryTitle || 'Itinerary');
       }
@@ -228,72 +321,7 @@ export const useItineraryCollaboration = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
-
-  const sendCollaborationChatMessage = async (friendId: string, itineraryId: string, itineraryTitle: string) => {
-    try {
-      // Find or create conversation
-      let conversationId = null;
-      
-      // Check if conversation already exists
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .contains('participants', [user?.id])
-        .contains('participants', [friendId])
-        .maybeSingle();
-
-      if (existingConv) {
-        conversationId = existingConv.id;
-      } else {
-        // Create new conversation
-        const { data: newConv, error: convError } = await supabase
-          .from('conversations')
-          .insert({
-            participants: [user?.id, friendId],
-            last_message: `Collaboration invite: ${itineraryTitle}`,
-            last_message_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-
-        if (convError) throw convError;
-        conversationId = newConv.id;
-      }
-
-      // Create collaboration message
-      const shareMessage = `🤝 I invited you to collaborate on: "${itineraryTitle}"`;
-      const messageData = { 
-        type: 'collaboration_invite', 
-        itinerary_id: itineraryId,
-        itinerary_title: itineraryTitle 
-      };
-
-      // Send the message
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user?.id,
-          content: shareMessage,
-          metadata: messageData
-        });
-
-      if (messageError) throw messageError;
-
-      // Update conversation last message
-      await supabase
-        .from('conversations')
-        .update({
-          last_message: shareMessage,
-          last_message_at: new Date().toISOString()
-        })
-        .eq('id', conversationId);
-
-    } catch (error) {
-      console.error('Error sending collaboration chat message:', error);
-    }
-  };
+  }, [user, toast, sendCollaborationChatMessage]);
 
   return {
     inviteCollaborator,

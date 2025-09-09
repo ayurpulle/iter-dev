@@ -4,18 +4,46 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, Users, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useSavedItineraries } from '@/hooks/useSavedItineraries';
+import { useToast } from '@/hooks/use-toast';
 
 interface SharedItineraryCardProps {
   itineraryId: string;
   itineraryTitle: string;
+  itineraryContent?: string;
 }
 
-export const SharedItineraryCard = ({ itineraryId, itineraryTitle }: SharedItineraryCardProps) => {
+export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryContent }: SharedItineraryCardProps) => {
   const navigate = useNavigate();
+  const { savedItineraries, saveItinerary } = useSavedItineraries();
+  const { toast } = useToast();
 
-  const handleViewItinerary = () => {
-    // Navigate to the create trip page to view the itinerary
-    navigate(`/create?viewIter=${itineraryId}`);
+  const handleViewItinerary = async () => {
+    try {
+      // Check if itinerary already exists in saved itineraries
+      const existingIter = savedItineraries.find(iter => iter.id === itineraryId);
+      
+      if (!existingIter) {
+        // If it doesn't exist, save it first
+        if (itineraryContent) {
+          await saveItinerary({
+            title: itineraryTitle,
+            destination: "Shared Location", // Will be updated when viewed
+            itinerary_content: itineraryContent
+          }, false); // Don't show toast for automatic save
+        }
+      }
+      
+      // Navigate to home with parameters to show saved trips and open this itinerary
+      navigate(`/?view=savedTrips&openIter=${itineraryId}`);
+    } catch (error) {
+      console.error('Error handling shared itinerary:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open shared itinerary",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

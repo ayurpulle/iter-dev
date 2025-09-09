@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TestNotifications from "@/components/TestNotifications";
+import TripPlanning from "@/components/TripPlanning";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,8 +49,13 @@ interface PostWithProfile extends Post {
 const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [posts, setPosts] = useState<PostWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Check if we should show trip planning (saved trips view)
+  const shouldShowTripPlanning = searchParams.get('view') === 'savedTrips';
+  const openIterId = searchParams.get('openIter');
 
   const fetchPosts = async () => {
     try {
@@ -126,6 +133,15 @@ const Index = () => {
           </div>
         </main>
         <BottomTabBar />
+      </div>
+    );
+  }
+
+  // Show trip planning component when view=savedTrips
+  if (shouldShowTripPlanning) {
+    return (
+      <div className="min-h-screen bg-background">
+        <TripPlanning openIterId={openIterId} />
       </div>
     );
   }

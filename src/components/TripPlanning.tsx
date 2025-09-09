@@ -23,7 +23,11 @@ import { useRAGIter } from "@/hooks/useRAGItinerary";
 import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
 import { useAuth } from "@/hooks/useAuth";
 
-const TripPlanning = () => {
+interface TripPlanningProps {
+  openIterId?: string | null;
+}
+
+const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   console.log('TripPlanning component loaded');
   const [formData, setFormData] = useState({
     destination: "",
@@ -109,10 +113,10 @@ const TripPlanning = () => {
     };
   }, [refetchSavedItineraries]);
 
-  // Handle viewing shared itineraries from URL params
+  // Handle viewing shared itineraries from URL params or props
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const viewIterId = urlParams.get('viewIter');
+    const viewIterId = urlParams.get('viewIter') || openIterId;
     
     if (viewIterId && savedItineraries.length > 0) {
       const sharedIter = savedItineraries.find(iter => iter.id === viewIterId);
@@ -123,7 +127,14 @@ const TripPlanning = () => {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
-  }, [savedItineraries]);
+  }, [savedItineraries, openIterId]);
+
+  // Auto-show saved trips view when openIterId is provided
+  useEffect(() => {
+    if (openIterId) {
+      setCurrentView('savedTrips');
+    }
+  }, [openIterId]);
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {

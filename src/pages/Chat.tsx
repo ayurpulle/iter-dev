@@ -81,6 +81,11 @@ const Chat = () => {
     if (selectedConversation) {
       fetchMessages(selectedConversation);
       markMessagesAsRead(selectedConversation);
+      // Also trigger a global message count update
+      setTimeout(() => {
+        // This will trigger the useMessageCount hook to refetch
+        window.dispatchEvent(new CustomEvent('messageCountUpdate'));
+      }, 100);
     } else {
       fetchConversations();
     }
@@ -304,8 +309,10 @@ const Chat = () => {
         console.error('Error marking messages as read:', error);
       } else {
         console.log('Successfully marked messages as read');
-        // Refresh conversations to update unread counts
-        fetchConversations();
+        // Small delay to ensure DB is updated, then refresh conversations
+        setTimeout(() => {
+          fetchConversations();
+        }, 200);
       }
     } catch (error) {
       console.error('Error marking messages as read:', error);

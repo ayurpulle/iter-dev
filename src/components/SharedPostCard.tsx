@@ -49,31 +49,45 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     console.log('SharedPostCard: fetching post with ID:', postId);
     const fetchPost = async () => {
       try {
-        const { data, error } = await supabase
+        const { data: postData, error } = await supabase
           .from('posts')
-          .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              name,
-              username,
-              avatar
-            ),
-            trips (
-              title,
-              destination
-            )
-          `)
+          .select('*')
           .eq('id', postId)
           .maybeSingle();
 
         if (error) throw error;
-        if (data && data.profiles && !Array.isArray(data.profiles)) {
-          setPost(data as unknown as Post);
-          // Check if user has liked this post
-          if (user) {
-            const liked = await checkIfUserLiked(data.id);
-            setIsPostLiked(liked);
-          }
+        if (!postData) return;
+
+        // Get profile data separately
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name, username, avatar')
+          .eq('user_id', postData.user_id)
+          .maybeSingle();
+
+        // Get trip data if trip_id exists
+        let tripData = null;
+        if (postData.trip_id) {
+          const { data } = await supabase
+            .from('trips')
+            .select('title, destination')
+            .eq('id', postData.trip_id)
+            .maybeSingle();
+          tripData = data;
+        }
+
+        const combinedData = {
+          ...postData,
+          profiles: profileData || { name: 'Unknown User', username: 'unknown', avatar: '' },
+          trips: tripData
+        };
+
+        
+        setPost(combinedData as Post);
+        // Check if user has liked this post
+        if (user) {
+          const liked = await checkIfUserLiked(combinedData.id);
+          setIsPostLiked(liked);
         }
       } catch (error) {
         console.error('Error fetching shared post:', error);

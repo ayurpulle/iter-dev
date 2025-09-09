@@ -68,8 +68,17 @@ export const useMessageCount = () => {
       )
       .subscribe();
 
+    // Listen for manual message count updates
+    const handleMessageCountUpdate = () => {
+      console.log('Manual message count update triggered');
+      setTimeout(fetchUnreadCount, 100);
+    };
+    
+    window.addEventListener('messageCountUpdate', handleMessageCountUpdate);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('messageCountUpdate', handleMessageCountUpdate);
     };
   }, [user?.id]);
 

@@ -482,34 +482,36 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <h1 className="text-2xl font-bold text-foreground">Your Iter</h1>
               <p className="text-muted-foreground">{viewingIter.destination}</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Go to edit mode by restoring form data and switching to planning view
-                setFormData({
-                  destination: viewingIter.destination,
-                  startDate: viewingIter.start_date ? new Date(viewingIter.start_date) : null,
-                  endDate: viewingIter.end_date ? new Date(viewingIter.end_date) : null,
-                  budget: viewingIter.budget || 0,
-                  holidayTypes: viewingIter.interests || [],
-                  inspirationSource: "none",
-                  inspirationFolder: "",
-                  notes: ""
-                });
-                setGeneratedIter(viewingIter.itinerary_content);
-                setFriendRecommendations(viewingIter.friend_recommendations || {});
-                setLastGeneratedData({
-                  destination: viewingIter.destination,
-                  itinerary: viewingIter.itinerary_content,
-                  friendRecommendations: viewingIter.friend_recommendations || {},
-                  id: viewingIter.id
-                });
-                setCurrentView('planning');
-              }}
-            >
-              Edit
-            </Button>
+            {(viewingIter.is_owner || viewingIter.can_edit) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Go to edit mode by restoring form data and switching to planning view
+                  setFormData({
+                    destination: viewingIter.destination,
+                    startDate: viewingIter.start_date ? new Date(viewingIter.start_date) : null,
+                    endDate: viewingIter.end_date ? new Date(viewingIter.end_date) : null,
+                    budget: viewingIter.budget || 0,
+                    holidayTypes: viewingIter.interests || [],
+                    inspirationSource: "none",
+                    inspirationFolder: "",
+                    notes: ""
+                  });
+                  setGeneratedIter(viewingIter.itinerary_content);
+                  setFriendRecommendations(viewingIter.friend_recommendations || {});
+                  setLastGeneratedData({
+                    destination: viewingIter.destination,
+                    itinerary: viewingIter.itinerary_content,
+                    friendRecommendations: viewingIter.friend_recommendations || {},
+                    id: viewingIter.id
+                  });
+                  setCurrentView('planning');
+                }}
+              >
+                Edit
+              </Button>
+            )}
           </div>
 
           <Card>

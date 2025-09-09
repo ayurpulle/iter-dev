@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit, Share2 } from "lucide-react";
 import { format } from "date-fns";
-import { useSavedItineraries } from "@/hooks/useSavedItineraries";
+import { useSavedItineraries, SavedItinerary } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { StructuredItinerary } from "./StructuredItinerary";
 import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
@@ -121,6 +121,17 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     >
                       <Eye size={16} />
                     </Button>
+                    {(itinerary.is_owner || itinerary.can_edit) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditIter(itinerary)}
+                        className="p-2"
+                        title="Edit itinerary"
+                      >
+                        <Edit size={16} />
+                      </Button>
+                    )}
                     {itinerary.is_owner && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

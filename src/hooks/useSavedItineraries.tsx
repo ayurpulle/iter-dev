@@ -3,7 +3,7 @@ import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 import { useAuthenticatedSupabase } from "./useAuthenticatedSupabase";
 
-interface SavedItinerary {
+export interface SavedItinerary {
   id: string;
   title: string;
   destination: string;
@@ -19,6 +19,7 @@ interface SavedItinerary {
   creator_username?: string;
   creator_name?: string;
   is_owner?: boolean;
+  can_edit?: boolean;
 }
 
 export const useSavedItineraries = () => {
@@ -68,7 +69,8 @@ export const useSavedItineraries = () => {
         ...iter,
         creator_username: iter.profiles?.username || 'Unknown',
         creator_name: iter.profiles?.name || 'Unknown User',
-        is_owner: true
+        is_owner: true,
+        can_edit: true // Owner can always edit
       }));
 
       // Process collaborative itineraries
@@ -76,7 +78,8 @@ export const useSavedItineraries = () => {
         ...iter,
         creator_username: iter.profiles?.username || 'Unknown',
         creator_name: iter.profiles?.name || 'Unknown User',
-        is_owner: false
+        is_owner: false,
+        can_edit: iter.itinerary_collaborators?.[0]?.permission === 'edit' || iter.itinerary_collaborators?.[0]?.permission === 'admin'
       }));
 
       // Combine and deduplicate results

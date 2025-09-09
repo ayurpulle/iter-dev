@@ -40,25 +40,59 @@ export const useItineraryCollaboration = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First check if collaboration already exists
+      const { data: existingCollaboration, error: checkError } = await supabase
         .from('itinerary_collaborators')
-        .insert({
-          itinerary_id: itineraryId,
-          user_id: friendId,
-          permission,
-          invited_by: user.id
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('itinerary_id', itineraryId)
+        .eq('user_id', friendId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (checkError) throw checkError;
 
-      toast({
-        title: "Success",
-        description: "Collaboration invite sent!"
-      });
+      if (existingCollaboration) {
+        // If collaboration exists, update it instead of creating new one
+        const { data, error } = await supabase
+          .from('itinerary_collaborators')
+          .update({
+            permission,
+            status: 'pending', // Reset to pending if it was declined before
+            invited_by: user.id
+          })
+          .eq('id', existingCollaboration.id)
+          .select()
+          .single();
 
-      return data;
+        if (error) throw error;
+
+        toast({
+          title: "Success", 
+          description: "Collaboration invite updated!"
+        });
+
+        return data;
+      } else {
+        // Create new collaboration
+        const { data, error } = await supabase
+          .from('itinerary_collaborators')
+          .insert({
+            itinerary_id: itineraryId,
+            user_id: friendId,
+            permission,
+            invited_by: user.id
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Collaboration invite sent!"
+        });
+
+        return data;
+      }
     } catch (error: any) {
       console.error('Error inviting collaborator:', error);
       toast({

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import CountryMap from "./CountryMap";
 import { useToast } from "@/hooks/use-toast";
+import { ItemFolderSelector } from "./ItemFolderSelector";
 
 interface Stop {
   name: string;
@@ -118,6 +119,16 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
         if (user) {
           const liked = await checkIfUserLiked(combinedData.id);
           setIsPostLiked(liked);
+          
+          // Check if post is saved
+          const { data: savedItem } = await supabase
+            .from('saved_items')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('item_id', combinedData.id)
+            .eq('item_type', 'post')
+            .maybeSingle();
+          setIsSaved(!!savedItem);
         }
       } catch (error) {
         console.error('Error fetching shared post:', error);
@@ -147,13 +158,9 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     }
   };
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-    toast({
-      title: isSaved ? "Removed from collection" : "Saved to collection",
-      description: isSaved ? "Post removed from your collection" : "Post saved to your collection",
-      duration: 3000,
-    });
+  const handleSave = (folderId?: string) => {
+    setIsSaved(true);
+    // Toast is handled by ItemFolderSelector
   };
 
   const handlePostClick = () => {
@@ -259,11 +266,11 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
             <Carousel className="w-full h-full">
               <CarouselContent className="h-full">
                 {/* Trip Map - Always first when trip exists */}
-                {hasTrip && (
+                {hasTrip && post.trips?.stops && post.trips.stops.length > 0 && (
                   <CarouselItem className="h-full">
                     <div className="h-full">
                       <CountryMap 
-                        stops={post.trips?.stops || []} 
+                        stops={post.trips.stops} 
                         className="h-full w-full" 
                         mapboxToken={mapboxToken}
                       />
@@ -344,14 +351,19 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
               </Button>
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`h-7 w-7 p-0 ${isSaved ? 'text-blue-500' : 'hover:text-blue-500'}`}
-              onClick={handleSave}
+            <ItemFolderSelector
+              itemId={post.id}
+              itemType="post"
+              onSave={handleSave}
             >
-              <Plus size={14} className={isSaved ? 'fill-current' : ''} />
-            </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-7 w-7 p-0 ${isSaved ? 'text-blue-500' : 'hover:text-blue-500'}`}
+              >
+                <Plus size={14} className={isSaved ? 'fill-current' : ''} />
+              </Button>
+            </ItemFolderSelector>
           </div>
         </div>
       </CardContent>

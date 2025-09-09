@@ -297,7 +297,8 @@ const Chat = () => {
 
     try {
       console.log('Marking messages as read for conversation:', conversationId);
-      // Mark all unread messages in this conversation as read (except own messages)
+      
+      // Mark all unread messages in this conversation as read
       const { error } = await supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
@@ -307,12 +308,19 @@ const Chat = () => {
 
       if (error) {
         console.error('Error marking messages as read:', error);
-      } else {
-        console.log('Successfully marked messages as read');
-        // Refresh conversations and trigger message count update
-        fetchConversations();
-        window.dispatchEvent(new CustomEvent('messageCountUpdate'));
+        return;
       }
+
+      console.log('Successfully marked messages as read');
+      
+      // Trigger immediate message count update
+      window.dispatchEvent(new CustomEvent('messageCountUpdate'));
+      
+      // Refresh conversations to update unread counts
+      setTimeout(() => {
+        fetchConversations();
+      }, 100);
+      
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }

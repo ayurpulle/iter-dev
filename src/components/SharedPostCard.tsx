@@ -92,9 +92,17 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
           tripData = data;
         }
 
-        // Try to get mapbox token from localStorage for enhanced map view
-        const token = localStorage.getItem('mapbox_token');
-        if (token) setMapboxToken(token);
+        // Try to get mapbox token from edge function
+        try {
+          const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
+          if (tokenData?.token) {
+            setMapboxToken(tokenData.token);
+          }
+        } catch (error) {
+          console.log('Failed to get Mapbox token from edge function, checking localStorage');
+          const token = localStorage.getItem('mapbox_token');
+          if (token) setMapboxToken(token);
+        }
 
         const combinedData = {
           ...postData,

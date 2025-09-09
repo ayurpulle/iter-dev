@@ -68,33 +68,13 @@ export const useMessageCount = () => {
       )
       .subscribe();
 
-    // Listen for manual message count updates
+    // Listen for manual message count updates (when chat is viewed)
     const handleMessageCountUpdate = () => {
       console.log('Manual message count update triggered');
       setTimeout(fetchUnreadCount, 100);
     };
     
     window.addEventListener('messageCountUpdate', handleMessageCountUpdate);
-
-    const markConversationAsRead = async (conversationId: string) => {
-      if (!user?.id) return;
-      
-      try {
-        const { error } = await supabase
-          .from('messages')
-          .update({ read_at: new Date().toISOString() })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user.id)
-          .is('read_at', null);
-
-        if (error) throw error;
-        
-        // Force refetch of unread count
-        setTimeout(fetchUnreadCount, 100);
-      } catch (error) {
-        console.error('Error marking conversation as read:', error);
-      }
-    };
 
     return () => {
       supabase.removeChannel(channel);

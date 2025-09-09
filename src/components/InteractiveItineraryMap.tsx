@@ -191,7 +191,10 @@ export const InteractiveItineraryMap = ({ destinations = [], className }: Intera
             setSelectedLocation(location);
           });
 
-          const marker = new mapboxgl.Marker({ element: markerElement })
+          const marker = new mapboxgl.Marker({ 
+            element: markerElement,
+            anchor: 'bottom'
+          })
             .setLngLat(location.coordinates)
             .addTo(map.current!);
 

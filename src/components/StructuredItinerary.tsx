@@ -150,9 +150,6 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
   };
 
   const renderContentWithLinks = (content: string) => {
-    // Only render actual working links, not placeholder text
-    const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com)[^\s]*)/g;
-    
     // Enhanced time-based section formatting
     const formatTimeBasedContent = (text: string) => {
       // Match time-based patterns like "Morning", "Afternoon", "Evening", "Lunch", "Dinner", etc.
@@ -173,7 +170,23 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
         .replace(/(?:^|\n)(Travel [Tt]ips|Tips|Recommendations|Getting Around)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:TRAVEL_RECOMMENDATIONS**\n');
     };
 
-    const processedContent = formatTravelContent(formatTimeBasedContent(content));
+    // Clean up AI-generated explanatory text
+    const cleanContent = (text: string) => {
+      return text
+        // Remove "here's the booking link" type phrases
+        .replace(/(?:here'?s?\s+(?:the\s+)?(?:booking\s+)?link|here\s+is\s+(?:the\s+)?(?:booking\s+)?link)[:\-\s]*/gmi, '')
+        // Remove "you can book" type phrases
+        .replace(/(?:you\s+can\s+book)[:\-\s]*/gmi, '')
+        // Remove standalone explanatory phrases
+        .replace(/(?:^|\n)(?:for\s+booking|to\s+book|booking\s+available)[:\-\s]*(?:\n|$)/gmi, '\n')
+        // Clean up multiple newlines
+        .replace(/\n{3,}/g, '\n\n');
+    };
+
+    // Only render actual working links, not placeholder text
+    const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com)[^\s]*)/g;
+    
+    const processedContent = cleanContent(formatTravelContent(formatTimeBasedContent(content)));
     const parts = processedContent.split(urlRegex);
     
     return parts.map((part, index) => {

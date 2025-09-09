@@ -21,6 +21,7 @@ interface StructuredItineraryProps {
 
 export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: StructuredItineraryProps) => {
   const [showFullDetails, setShowFullDetails] = useState(false);
+  const [showBookingLinks, setShowBookingLinks] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
 
   const toggleDay = (day: string) => {
@@ -121,8 +122,8 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
   };
 
   const renderContentWithLinks = (content: string) => {
-    // Convert URLs to clickable links
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    // Only render actual working links, not placeholder text
+    const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com)[^\s]*)/g;
     const parts = content.split(urlRegex);
     
     return parts.map((part, index) => {
@@ -133,11 +134,15 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1 break-all"
           >
             {part.includes('booking.com') ? 'Book Hotel' : 
              part.includes('skyscanner') ? 'Find Flights' :
-             part.includes('getyourguide') ? 'Book Activity' : 'View Link'}
+             part.includes('getyourguide') ? 'Book Activity' :
+             part.includes('airbnb') ? 'Book Stay' :
+             part.includes('expedia') ? 'Book Travel' :
+             part.includes('hotels.com') ? 'Book Hotel' :
+             part.includes('tripadvisor') ? 'See Reviews' : 'View Link'}
             <ExternalLink className="h-3 w-3" />
           </a>
         );
@@ -171,8 +176,10 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
       {parsed.summary && (
         <Card>
           <CardContent className="pt-6">
-            <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
-              {renderContentWithLinks(parsed.summary)}
+            <div className="space-y-2">
+              {parsed.summary.split('\n').filter(line => line.trim()).slice(0, 3).map((line, index) => (
+                <p key={index} className="text-muted-foreground leading-relaxed">{line.trim()}</p>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -291,9 +298,21 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
         </div>
       )}
 
-      {/* Booking Links - Always Visible at Bottom */}
-      {parsed.bookingLinks && (
-        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
+      {/* Booking Links - Toggle Button */}
+      <div className="flex justify-center">
+        <Button 
+          onClick={() => setShowBookingLinks(!showBookingLinks)}
+          variant="outline"
+          className="px-8 py-2"
+        >
+          {showBookingLinks ? 'Hide Booking Links' : 'Show Booking Links'}
+          {showBookingLinks ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Booking Links - Collapsible */}
+      {showBookingLinks && parsed.bookingLinks && (
+        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800 animate-in slide-in-from-top-2 duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-orange-800 dark:text-orange-200">
               <ExternalLink className="h-5 w-5" />
@@ -301,31 +320,8 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {parsed.bookingLinks.split('\n').filter(line => line.includes('http')).map((link, index) => {
-                const urlMatch = link.match(/(https?:\/\/[^\s]+)/);
-                if (!urlMatch) return null;
-                
-                const url = urlMatch[1];
-                const linkText = link.replace(urlMatch[0], '').replace(/[-:]/g, '').trim();
-                
-                return (
-                  <a
-                    key={index}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700 hover:shadow-md transition-shadow group"
-                  >
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {linkText || (url.includes('booking.com') ? 'Book Hotels' : 
-                                   url.includes('skyscanner') ? 'Find Flights' :
-                                   url.includes('getyourguide') ? 'Book Activities' : 'Book Now')}
-                    </span>
-                    <ExternalLink className="h-4 w-4 text-orange-600 group-hover:text-orange-700 flex-shrink-0" />
-                  </a>
-                );
-              })}
+            <div className="text-sm space-y-3 break-words">
+              {renderContentWithLinks(parsed.bookingLinks)}
             </div>
           </CardContent>
         </Card>

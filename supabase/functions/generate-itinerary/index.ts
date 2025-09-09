@@ -178,52 +178,43 @@ ${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been the
 
     const prompt = `${ragPrompt}
 
-Create a travel itinerary that feels personal and conversational. Write like you're a knowledgeable local friend giving advice, not a formal travel guide.
+Create a travel itinerary that sounds natural and conversational, like advice from a well-traveled friend. Avoid formal language, bullet points, asterisks, and structured formatting that looks AI-generated.
 
 Use this exact format:
 
 SUMMARY:
-Write a warm, engaging 2-3 sentence overview of the trip highlighting the best experiences. Make it sound exciting and personal, like "You're going to absolutely love ${destination}! This itinerary balances must-see sights with hidden gems, plus some amazing food spots your friends recommended."
+Write exactly 3 lines that capture the essence of this trip. Each line should be a complete sentence about what makes this destination special. Focus on the overall experience, vibe, and highlights.
 
 FLIGHTS:
-- Getting there: Suggest the best routes from ${baseLocation} to ${destination} with actual booking sites
-- Coming home: Return flight suggestions with timing tips
+Write a natural paragraph about flight options from ${baseLocation} to ${destination}, including practical advice about airlines, timing, and booking. Only mention specific booking sites if you're certain they work (like skyscanner.com or expedia.com).
 
 ACCOMMODATION:
-- Perfect stay: [Specific hotel with booking.com link and why it's great]
-- Budget-friendly: [Alternative with why it's still awesome]
+Write conversational recommendations about where to stay. Describe 2-3 options in paragraph form, explaining the neighborhood, vibe, and what type of traveler would love each place. Only include booking links if you can provide actual working URLs.
 
 DAY-BY-DAY ITINERARY:
 
-**Day 1: [Catchy theme like "First Taste of Magic" or "Getting Your Bearings"]**
-- **Morning:** What to do first - include cost and why it's special
-- **Lunch:** Where to eat with price range and what to order
-- **Afternoon:** Main activity with practical tips
-- **Dinner:** Restaurant recommendation with atmosphere description
-- **Evening:** How to end the day (could be early rest or nightlife)
-- **Daily budget:** Total expected cost
+Day 1: [Engaging theme]
+Write in natural paragraphs what to do each part of the day. Start with "Your first morning should begin with..." or "Wake up and head to..." Make it flow like a conversation. Include approximate costs in ${defaultCurrency} naturally in the text. Mention meal suggestions organically. End with evening plans.
 
-**Day 2: [Another engaging theme]**
-[Continue same personal, detailed format]
+Day 2: [Different theme]
+Continue the same conversational style. Each day should feel distinct and build on the previous day's experiences.
 
 [Continue for all ${duration} days]
 
 BOOKING LINKS & TIPS:
-- Flights: https://www.skyscanner.com/transport/flights/${baseLocation.toLowerCase().replace(/\s+/g, '-')}/${destination.toLowerCase().replace(/\s+/g, '-')}/
-- Hotels: https://www.booking.com/searchresults.html?ss=${destination}
-- Activities: https://www.getyourguide.com/s/?q=${destination}
-- Local transport: [Specific apps or websites for ${destination}]
+Only include actual working links from major sites like skyscanner.com, booking.com, or getyourguide.com. Write this as friendly advice paragraphs, not bullet points. Include practical tips about local transport, payment methods, and cultural notes.
 
 PRACTICAL TIPS:
-Write 3-4 conversational tips about money, transport, culture, and communication. Make them personal and specific to ${destination}.
+Write 3-4 conversational paragraphs covering money matters, getting around, cultural etiquette, and communication. Make it personal and specific to ${destination}, like you're sharing insider knowledge.
 
 Guidelines:
-- Write like you're texting a friend, not writing a formal guide
-- Include specific prices in ${defaultCurrency} 
+- Write in complete sentences and paragraphs, never use bullet points or asterisks
+- Sound like a knowledgeable friend, not a travel guide
+- Include specific prices naturally in conversation
 - When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name
-- Focus on experiences, not just sightseeing
-- Give insider tips about timing, crowds, and local customs
-- Make each day feel distinct with its own personality`;
+- Only include links if they're from major, trusted booking sites
+- Make each day's personality shine through the writing style
+- Focus on the experience and feelings, not just logistics`;
 
     console.log('Calling OpenAI API...');
     

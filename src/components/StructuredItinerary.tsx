@@ -425,7 +425,13 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                         <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
                           Day {day.number}
                         </Badge>
-                        <span className="font-medium text-left truncate">{day.title}</span>
+                        <span className="font-medium text-left truncate">
+                          {(() => {
+                            // Extract just the first 2 words after "Day X:"
+                            const titleParts = day.title.replace(/^Day \d+:\s*/, '').trim().split(' ');
+                            return titleParts.slice(0, 2).join(' ');
+                          })()}
+                        </span>
                       </div>
                       {expandedDays[`day-${day.number}`] ? (
                         <ChevronUp className="h-4 w-4 flex-shrink-0" />

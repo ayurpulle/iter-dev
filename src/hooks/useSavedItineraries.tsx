@@ -127,14 +127,29 @@ export const useSavedItineraries = () => {
 
     setLoading(true);
     const result = await executeQuery(async (client) => {
+      // First check if user has permission to delete (must be owner)
+      const { data: itinerary, error: fetchError } = await client
+        .from('saved_itineraries')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      
+      if (itinerary.user_id !== user.id) {
+        throw new Error('You can only delete your own itineraries');
+      }
+
+      // Delete the itinerary
       return client
         .from('saved_itineraries')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id); // Extra safety check
     });
 
     setLoading(false);
-    if (result !== null) {
+    if (result) {
       toast({
         title: "Iter Deleted",
         description: "Your iter has been deleted successfully.",

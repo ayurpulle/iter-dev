@@ -27,6 +27,7 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
 
   const toggleDay = (day: string) => {
+    console.log('Toggling day:', day, 'Current state:', expandedDays[day]);
     setExpandedDays(prev => ({ ...prev, [day]: !prev[day] }));
   };
 

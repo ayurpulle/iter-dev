@@ -591,6 +591,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_unread_message_count: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
       get_unread_notification_count: {
         Args: { user_uuid: string }
         Returns: number

@@ -190,6 +190,13 @@ export const useItineraryCollaboration = () => {
     
     try {
       console.log('Creating collaboration chat message for friend:', friendId, 'itinerary:', itineraryId);
+      console.log('Current user ID:', user.id, 'Friend ID:', friendId);
+      
+      // Validate that we have different user IDs
+      if (user.id === friendId) {
+        console.error('Cannot create conversation with self. User ID and Friend ID are the same:', user.id);
+        return;
+      }
       
       // Find or create conversation
       let conversationId = null;

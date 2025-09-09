@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useItineraryCollaboration } from '@/hooks/useItineraryCollaboration';
 import { useFriends } from '@/hooks/useFriends';
 import { useShareToChat } from '@/hooks/useShareToChat';
+import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UnifiedItineraryShareDialogProps {
@@ -34,6 +35,7 @@ export const UnifiedItineraryShareDialog = ({
   const { shareItinerary, loading: collaborationLoading } = useItineraryCollaboration();
   const { shareToChat, loading: shareLoading } = useShareToChat();
   const { friends } = useFriends();
+  const { user } = useAuth();
 
   const handleFriendToggle = (friendId: string) => {
     setSelectedFriends(prev => 
@@ -121,9 +123,8 @@ export const UnifiedItineraryShareDialog = ({
             <div className="max-h-60 overflow-y-auto space-y-2">
               {friends.map((friend) => {
                 const friendProfile = friend.profile;
-                // Get the correct friend ID - the one that's not the current user
-                const currentUserId = friend.user_id; // This should be the authenticated user
-                const friendId = friend.friend_id;
+                // Get the correct friend ID - determine which user is NOT the current user
+                const friendId = friend.user_id === user?.id ? friend.friend_id : friend.user_id;
                 
                 return (
                   <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">

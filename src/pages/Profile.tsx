@@ -18,11 +18,11 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { sendFriendRequest, cancelFriendRequest, unfollowUser, getFriendshipStatus } = useFriends();
+  const { sendFriendRequest, cancelFriendRequest, unfollowUser, getFriendshipStatus, acceptFriendRequest } = useFriends();
   const [profileData, setProfileData] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'following'>('none');
+  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'following' | 'can_accept' | 'following_only'>('none');
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -128,14 +128,23 @@ const Profile = () => {
     if (!user) return;
 
     try {
-      const friendship = await getFriendshipStatus(otherUserId);
+      const friendshipStatus = await getFriendshipStatus(otherUserId);
       
-      if (friendship) {
-        setFriendshipId(friendship.id);
-        if (friendship.status === 'accepted') {
+      if (friendshipStatus) {
+        const { outgoing, incoming, isMutual } = friendshipStatus;
+        
+        if (isMutual) {
           setFollowStatus('following');
-        } else if (friendship.status === 'pending') {
+          setFriendshipId(outgoing?.id || incoming?.id);
+        } else if (outgoing?.status === 'pending') {
           setFollowStatus('pending');
+          setFriendshipId(outgoing.id);
+        } else if (incoming?.status === 'pending') {
+          setFollowStatus('can_accept');
+          setFriendshipId(incoming.id);
+        } else if (outgoing?.status === 'accepted') {
+          setFollowStatus('following_only');
+          setFriendshipId(outgoing.id);
         }
       }
     } catch (error) {
@@ -214,6 +223,69 @@ const Profile = () => {
         description: error.message || "Failed to cancel request",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!friendshipId) return;
+
+    try {
+      await acceptFriendRequest(friendshipId);
+      setFollowStatus('following');
+      toast({
+        title: "Request accepted",
+        description: "You are now friends!"
+      });
+      // Reload profile data to get updated counts
+      await loadProfileWithCounts(profileData.user_id);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getButtonAction = () => {
+    switch (followStatus) {
+      case 'pending':
+        return handleUnrequest;
+      case 'can_accept':
+        return handleAcceptRequest;
+      case 'following':
+      case 'following_only':
+        return () => {}; // Handled by unfollow dialog
+      default:
+        return handleFollow;
+    }
+  };
+
+  const getButtonText = () => {
+    switch (followStatus) {
+      case 'pending':
+        return 'Requested';
+      case 'can_accept':
+        return 'Accept';
+      case 'following':
+        return 'Following';
+      case 'following_only':
+        return 'Following';
+      default:
+        return 'Follow';
+    }
+  };
+
+  const getButtonVariant = () => {
+    switch (followStatus) {
+      case 'pending':
+      case 'can_accept':
+        return 'outline';
+      case 'following':
+      case 'following_only':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
@@ -353,14 +425,12 @@ const Profile = () => {
               ) : (
                 <Button
                   size="sm"
-                  onClick={
-                    followStatus === 'pending' ? handleUnrequest : handleFollow
-                  }
-                  variant={followStatus === 'pending' ? 'outline' : 'default'}
+                  onClick={getButtonAction()}
+                  variant={getButtonVariant()}
                   className="flex-1 max-w-32"
                 >
                   <UserPlus size={16} className="mr-2" />
-                  {followStatus === 'pending' ? 'Requested' : 'Follow'}
+                  {getButtonText()}
                 </Button>
               )}
               <Button

@@ -34,34 +34,48 @@ export const useFriends = () => {
       setLoading(true);
       setError(null);
 
-      // Get accepted friend relationships where current user is involved
-      const { data: friendships, error: friendError } = await supabase
+      // Get all accepted relationships where current user is involved
+      const { data: userRelationships, error: relationError } = await supabase
         .from('friends')
         .select('*')
         .eq('status', 'accepted')
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
-      if (friendError) throw friendError;
+      if (relationError) throw relationError;
 
-      // Get profile data for each friend
-      const friendsWithProfiles = await Promise.all(
-        (friendships || []).map(async (friendship) => {
-          const otherUserId = friendship.user_id === user.id ? friendship.friend_id : friendship.user_id;
-          
+      // Filter for mutual friendships only
+      const mutualFriends: Friend[] = [];
+      const relationshipMap = new Map();
+      
+      // Group relationships by other user
+      (userRelationships || []).forEach(rel => {
+        const otherUserId = rel.user_id === user.id ? rel.friend_id : rel.user_id;
+        const direction = rel.user_id === user.id ? 'outgoing' : 'incoming';
+        
+        if (!relationshipMap.has(otherUserId)) {
+          relationshipMap.set(otherUserId, {});
+        }
+        relationshipMap.get(otherUserId)[direction] = rel;
+      });
+
+      // Check for mutual relationships (both directions exist)
+      for (const [otherUserId, directions] of relationshipMap.entries()) {
+        if (directions.outgoing && directions.incoming) {
+          // This is a mutual friendship
           const { data: profile } = await supabase
             .from('profiles')
             .select('id, name, username, avatar')
             .eq('user_id', otherUserId)
             .single();
 
-          return {
-            ...friendship,
+          mutualFriends.push({
+            ...directions.outgoing, // Use one of the relationships as base
             profile: profile || null
-          };
-        })
-      );
+          });
+        }
+      }
 
-      setFriends(friendsWithProfiles as Friend[]);
+      setFriends(mutualFriends);
     } catch (err) {
       console.error('Error fetching friends:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch friends');
@@ -206,14 +220,23 @@ export const useFriends = () => {
   const getFriendshipStatus = async (otherUserId: string) => {
     if (!user) return null;
 
-    const { data, error } = await supabase
+    // Get all relationships between current user and other user
+    const { data: relationships, error } = await supabase
       .from('friends')
       .select('*')
-      .or(`and(user_id.eq.${user.id},friend_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},friend_id.eq.${user.id})`)
-      .single();
+      .or(`and(user_id.eq.${user.id},friend_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},friend_id.eq.${user.id})`);
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    
+    // Return relationship info including whether it's mutual
+    const outgoing = relationships?.find(r => r.user_id === user.id && r.friend_id === otherUserId);
+    const incoming = relationships?.find(r => r.user_id === otherUserId && r.friend_id === user.id);
+    
+    return {
+      outgoing,
+      incoming,
+      isMutual: outgoing?.status === 'accepted' && incoming?.status === 'accepted'
+    };
   };
 
   useEffect(() => {

@@ -18,9 +18,10 @@ interface FriendRecommendation {
 interface StructuredItineraryProps {
   itinerary: string;
   friendRecommendations?: { [venueName: string]: FriendRecommendation[] };
+  destination?: string;
 }
 
-export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: StructuredItineraryProps) => {
+export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, destination }: StructuredItineraryProps) => {
   const [showFullDetails, setShowFullDetails] = useState(false);
   const [showBookingLinks, setShowBookingLinks] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
@@ -89,64 +90,32 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
       destinations: [] as string[]
     };
 
-    // Extract destinations from summary or content - focus on main destination
-    const extractDestinations = (content: string) => {
-      const destinations = new Set<string>();
-      
-      // Primary patterns that typically indicate the main destination
-      const primaryPatterns = [
-        /(?:trip to|visiting|journey to|traveling to|explore|discover)\s+([A-Z][a-zA-Z\s]+?)(?:\s+(?:is|will|offers|features|,|\.|!))/gi,
-        /([A-Z][a-zA-Z\s]+?)\s+(?:adventure|experience|getaway|vacation|holiday|trip)/gi,
-        /(?:in|to)\s+([A-Z][a-zA-Z\s]+?)(?:\s+(?:you'll|offers|is|features|,|\.))/gi
-      ];
-      
-      // Look for the main destination first
-      primaryPatterns.forEach(pattern => {
-        let match;
-        pattern.lastIndex = 0; // Reset regex state
-        while ((match = pattern.exec(content)) !== null && destinations.size < 2) {
-          const dest = match[1]?.trim();
-          if (dest && dest.length > 2 && dest.length < 30 && 
-              !dest.toLowerCase().includes('day') && 
-              !dest.toLowerCase().includes('night') &&
-              !dest.toLowerCase().includes('budget') &&
-              !dest.toLowerCase().includes('perfect') &&
-              !dest.toLowerCase().includes('ultimate') &&
-              !/\d/.test(dest)) { // Exclude strings with numbers
-            destinations.add(dest);
-          }
-        }
-      });
-      
-      // If we didn't find good destinations, try simpler patterns
-      if (destinations.size === 0) {
-        const simplePatterns = [
-          /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/g // Simple proper nouns
-        ];
-        
-        simplePatterns.forEach(pattern => {
-          let match;
-          pattern.lastIndex = 0;
-          while ((match = pattern.exec(content)) !== null && destinations.size < 3) {
-            const dest = match[1]?.trim();
-            if (dest && dest.length > 3 && dest.length < 20 &&
-                !['Day', 'Night', 'Budget', 'Perfect', 'Ultimate', 'This', 'Your', 'The'].includes(dest)) {
-              destinations.add(dest);
-            }
-          }
-        });
+    // Use the provided destination or extract from content as fallback
+    const getDestinations = () => {
+      if (destination) {
+        return [destination];
       }
       
-      return Array.from(destinations).slice(0, 3); // Limit to 3 destinations max
+      // Fallback to basic extraction if no destination provided
+      const content = itinerary;
+      const cityCountryPattern = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g;
+      const matches = Array.from(content.matchAll(cityCountryPattern));
+      
+      if (matches.length > 0) {
+        return [matches[0][0]]; // Return first city, country match
+      }
+      
+      // Very basic fallback - look for common destination patterns
+      const basicPattern = /(?:Tokyo|Paris|London|New York|San Francisco|Rome|Barcelona|Amsterdam|Berlin|Sydney|Melbourne|Bangkok|Singapore|Dubai|Istanbul|Morocco|Japan|Italy|France|Spain|Germany|Australia|Thailand|UAE)/gi;
+      const basicMatches = content.match(basicPattern);
+      
+      return basicMatches ? [basicMatches[0]] : ['Destination'];
     };
 
     sections.forEach(section => {
       const trimmed = section.trim();
       if (trimmed.startsWith('SUMMARY:')) {
         parsed.summary = trimmed.replace('SUMMARY:', '').trim();
-        // Extract destinations from both summary and the first few lines
-        const combinedContent = parsed.summary;
-        parsed.destinations = extractDestinations(combinedContent);
       } else if (trimmed.startsWith('FLIGHTS:')) {
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {
@@ -174,6 +143,9 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
       }
     });
 
+    // Set destinations after parsing
+    parsed.destinations = getDestinations();
+    
     return parsed;
   };
 

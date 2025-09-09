@@ -654,6 +654,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                 <StructuredItinerary 
                   itinerary={viewingIter.itinerary_content}
                   friendRecommendations={viewingIter.friend_recommendations || {}}
+                  destination={viewingIter.destination}
                 />
               </CardContent>
             </Card>
@@ -860,6 +861,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   <StructuredItinerary 
                     itinerary={generatedIter}
                     friendRecommendations={friendRecommendations}
+                    destination={lastGeneratedData?.destination || formData.destination}
                   />
                 </CardContent>
               </Card>

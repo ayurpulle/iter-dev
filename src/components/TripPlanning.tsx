@@ -50,6 +50,7 @@ const TripPlanning = () => {
   const [whereDialogOpen, setWhereDialogOpen] = useState(false);
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [inspirationPopoverOpen, setInspirationPopoverOpen] = useState(false);
 
   // View state management
   const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewIter'>('planning');
@@ -59,7 +60,7 @@ const TripPlanning = () => {
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
-  const { saveItinerary, updateItinerary, deleteItinerary, refetch: refetchSavedItineraries } = useSavedItineraries();
+  const { saveItinerary, updateItinerary, deleteItinerary, refetch: refetchSavedItineraries, savedItineraries } = useSavedItineraries();
   const { generateRAGPrompt } = useRAGIter();
   const { user } = useAuth();
   
@@ -107,6 +108,22 @@ const TripPlanning = () => {
       window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
     };
   }, [refetchSavedItineraries]);
+
+  // Handle viewing shared itineraries from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewIterId = urlParams.get('viewIter');
+    
+    if (viewIterId && savedItineraries.length > 0) {
+      const sharedIter = savedItineraries.find(iter => iter.id === viewIterId);
+      if (sharedIter) {
+        setViewingIter(sharedIter);
+        setCurrentView('viewIter');
+        // Clear the URL param
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [savedItineraries]);
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {
@@ -1145,7 +1162,7 @@ const TripPlanning = () => {
                   </p>
                 </div>
               </div>
-              <Popover>
+              <Popover open={inspirationPopoverOpen} onOpenChange={setInspirationPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
                     <ChevronDown size={16} />
@@ -1155,28 +1172,40 @@ const TripPlanning = () => {
                   <div className="space-y-2">
                     <div
                       className="p-2 hover:bg-muted rounded cursor-pointer"
-                      onClick={() => setFormData(prev => ({ ...prev, inspirationSource: "none" }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, inspirationSource: "none" }));
+                        setInspirationPopoverOpen(false);
+                      }}
                     >
                       <p className="text-sm font-medium">No inspiration</p>
                       <p className="text-xs text-muted-foreground">Plan from scratch</p>
                     </div>
                     <div
                       className="p-2 hover:bg-muted rounded cursor-pointer"
-                      onClick={() => setFormData(prev => ({ ...prev, inspirationSource: "all" }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, inspirationSource: "all" }));
+                        setInspirationPopoverOpen(false);
+                      }}
                     >
                       <p className="text-sm font-medium">All saved posts</p>
                       <p className="text-xs text-muted-foreground">From your entire collection</p>
                     </div>
                     <div
                       className="p-2 hover:bg-muted rounded cursor-pointer"
-                      onClick={() => setFormData(prev => ({ ...prev, inspirationSource: "folder" }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, inspirationSource: "folder" }));
+                        // Keep popover open for folder selection
+                      }}
                     >
                       <p className="text-sm font-medium">Specific folder</p>
                       <p className="text-xs text-muted-foreground">From a saved folder</p>
                     </div>
                     <div
                       className="p-2 hover:bg-muted rounded cursor-pointer"
-                      onClick={() => setFormData(prev => ({ ...prev, inspirationSource: "search" }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, inspirationSource: "search" }));
+                        setInspirationPopoverOpen(false);
+                      }}
                     >
                       <p className="text-sm font-medium">Search posts</p>
                       <p className="text-xs text-muted-foreground">Find specific content</p>
@@ -1187,7 +1216,10 @@ const TripPlanning = () => {
             </div>
             {formData.inspirationSource === "folder" && (
               <div className="mt-3">
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, inspirationFolder: value }))}>
+                <Select onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, inspirationFolder: value }));
+                  setInspirationPopoverOpen(false); // Close popover when folder is selected
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a folder" />
                   </SelectTrigger>

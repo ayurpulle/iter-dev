@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "react-router-dom";
 import SharedPostCard from "@/components/SharedPostCard";
+import { SharedItineraryCard } from "@/components/SharedItineraryCard";
 import { ConversationActions } from "@/components/ConversationActions";
 
 interface ChatMessage {
@@ -25,6 +26,8 @@ interface ChatMessage {
   metadata?: {
     type: string;
     post_id?: string;
+    itinerary_id?: string;
+    itinerary_title?: string;
   };
   profiles: {
     name: string;
@@ -478,6 +481,19 @@ const Chat = () => {
                   return (
                     <div className="max-w-xs w-full">
                       <SharedPostCard postId={message.metadata.post_id} />
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        {formatTime(message.created_at)}
+                      </p>
+                    </div>
+                  );
+                } else if (message.metadata?.type === 'shared_itinerary' && message.metadata.itinerary_id) {
+                  console.log('Rendering SharedItineraryCard for itinerary:', message.metadata.itinerary_id);
+                  return (
+                    <div className="max-w-xs w-full">
+                      <SharedItineraryCard 
+                        itineraryId={message.metadata.itinerary_id}
+                        itineraryTitle={message.metadata.itinerary_title || 'Shared Itinerary'}
+                      />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}
                       </p>

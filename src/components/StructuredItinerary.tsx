@@ -28,7 +28,11 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
 
   const toggleDay = (day: string) => {
     console.log('Toggling day:', day, 'Current state:', expandedDays[day]);
-    setExpandedDays(prev => ({ ...prev, [day]: !prev[day] }));
+    setExpandedDays(prev => {
+      const newState = { ...prev, [day]: !prev[day] };
+      console.log('New expanded state:', newState);
+      return newState;
+    });
   };
 
   const renderFriendRecommendations = (venueName: string) => {
@@ -307,21 +311,6 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
 
   return (
     <div className="space-y-6">
-      {/* Interactive Map */}
-      {parsed.destinations.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              Trip Overview Map
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
-          </CardHeader>
-          <CardContent>
-            <InteractiveItineraryMap destinations={parsed.destinations} />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Summary Section */}
       {parsed.summary && (
@@ -440,23 +429,18 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm space-y-3 break-words">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {parsed.practicalTips.split('\n').filter(tip => tip.trim()).map((tip, index) => {
-                    const cleanTip = tip.trim();
-                    if (cleanTip.startsWith('•') || cleanTip.startsWith('-')) {
-                      return (
-                        <div key={index} className="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded">
-                          <span className="text-orange-600 mt-0.5">💡</span>
-                          <span className="flex-1">{cleanTip.replace(/^[•\-]\s*/, '')}</span>
-                        </div>
-                      );
-                    }
+                    const cleanTip = tip.trim().replace(/^[•\-]\s*/, '');
+                    if (!cleanTip) return null;
+                    
                     return (
-                      <p key={index} className="text-muted-foreground leading-relaxed">
-                        {renderContentWithLinks(cleanTip)}
-                      </p>
+                      <div key={index} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
+                        <span className="text-orange-600 mt-0.5 flex-shrink-0">💡</span>
+                        <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">{cleanTip}</span>
+                      </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                 </div>
               </CardContent>
             </Card>
@@ -495,6 +479,22 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
             </Card>
           )}
         </div>
+      )}
+
+      {/* Interactive Map at Bottom */}
+      {parsed.destinations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Trip Overview Map
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
+          </CardHeader>
+          <CardContent>
+            <InteractiveItineraryMap destinations={parsed.destinations} />
+          </CardContent>
+        </Card>
       )}
     </div>
   );

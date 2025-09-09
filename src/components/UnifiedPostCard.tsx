@@ -225,6 +225,23 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     setIsLiking(true);
     
     try {
+      // First check if the post still exists
+      const { data: postCheck } = await supabase
+        .from('posts')
+        .select('id')
+        .eq('id', post.id)
+        .single();
+
+      if (!postCheck) {
+        toast({
+          title: "Post not found",
+          description: "This post may have been deleted",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+
       if (isLiked) {
         // Unlike the post
         const { error } = await supabase
@@ -280,12 +297,14 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
       }
     } catch (error) {
       console.error('Error updating like:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update like",
-          variant: "destructive",
-          duration: 3000,
-        });
+      toast({
+        title: "Error",
+        description: error.message?.includes('violates foreign key constraint') 
+          ? "This post may have been deleted" 
+          : "Failed to update like",
+        variant: "destructive",
+        duration: 3000,
+      });
     } finally {
       setIsLiking(false);
     }

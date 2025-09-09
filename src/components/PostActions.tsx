@@ -92,20 +92,22 @@ export const PostActions = ({
           {isOwner && (
             <>
               <DropdownMenuSeparator />
-              <div className="px-2 py-2">
-                <PostPrivacyToggle
-                  postId={postId}
-                  isPrivate={isPrivate}
-                  onPrivacyChanged={handlePrivacyUpdate}
-                />
-              </div>
-              <div className="px-2 py-1">
+              <DropdownMenuItem asChild>
                 <PostEditDialog
                   postId={postId}
                   currentContent={content}
                   onContentUpdated={handleContentUpdate}
                 />
-              </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <div className="w-full">
+                  <PostPrivacyToggle
+                    postId={postId}
+                    isPrivate={isPrivate}
+                    onPrivacyChanged={handlePrivacyUpdate}
+                  />
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => setShowDeleteAlert(true)}

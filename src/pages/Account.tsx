@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import UnifiedPostCard from "@/components/UnifiedPostCard";
 
 interface SavedPost {
   id: string;
@@ -177,7 +178,27 @@ const Account = () => {
     try {
       const { data: posts, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          ),
+          trips (
+            id,
+            title,
+            destination,
+            duration,
+            distance,
+            cost,
+            companions,
+            stops,
+            images
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -488,62 +509,13 @@ const Account = () => {
             ) : (
               <div className="space-y-4">
                 {userPosts.map((post) => (
-                  <Card key={post.id} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={userProfile.avatar} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                            {userProfile.name?.[0]?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">{userProfile.name || 'You'}</p>
-                              <p className="text-xs text-muted-foreground">@{userProfile.username || 'you'}</p>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm mb-4">{post.content}</p>
-                      
-                      {post.image_url && (
-                        <div className="mb-4">
-                           <img
-                             src={post.image_url}
-                             alt="Post image"
-                             className="w-full rounded-lg max-h-64 object-cover object-center"
-                           />
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Heart size={16} />
-                            <span className="text-sm">{post.likes_count}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MessageCircle size={16} />
-                            <span className="text-sm">{post.comments_count}</span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePost(post.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <UnifiedPostCard
+                    key={post.id}
+                    post={post}
+                    onDelete={() => {
+                      setUserPosts(prev => prev.filter(p => p.id !== post.id));
+                    }}
+                  />
                 ))}
               </div>
             )}

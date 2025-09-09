@@ -92,8 +92,23 @@ const Profile = () => {
         .from('posts')
         .select(`
           *,
-          trips:trip_id (
-            id, title, destination, stops
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          ),
+          trips (
+            id,
+            title,
+            destination,
+            duration,
+            distance,
+            cost,
+            companions,
+            stops,
+            images
           )
         `)
         .eq('user_id', userId)

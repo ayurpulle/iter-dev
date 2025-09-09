@@ -2,14 +2,22 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, MapPin, Share, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, MapPin, Plus } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePostInteractions } from '@/hooks/usePostInteractions';
 import { Badge } from "@/components/ui/badge";
-import { PostActions } from './PostActions';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import CountryMap from "./CountryMap";
+import { useToast } from "@/hooks/use-toast";
+
+interface Stop {
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 interface Post {
   id: string;
@@ -27,8 +35,13 @@ interface Post {
     avatar: string;
   };
   trips?: {
+    id: string;
     title: string;
     destination: string;
+    duration?: string;
+    distance?: string;
+    stops?: Stop[];
+    images?: string[];
   };
 }
 
@@ -41,9 +54,12 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPostLiked, setIsPostLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string>("");
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toggleLike, checkIfUserLiked } = usePostInteractions();
+  const { toast } = useToast();
 
   useEffect(() => {
     console.log('SharedPostCard: fetching post with ID:', postId);
@@ -70,11 +86,15 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
         if (postData.trip_id) {
           const { data } = await supabase
             .from('trips')
-            .select('title, destination')
+            .select('id, title, destination, duration, distance, stops, images')
             .eq('id', postData.trip_id)
             .maybeSingle();
           tripData = data;
         }
+
+        // Try to get mapbox token from localStorage for enhanced map view
+        const token = localStorage.getItem('mapbox_token');
+        if (token) setMapboxToken(token);
 
         const combinedData = {
           ...postData,
@@ -117,6 +137,15 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     }
   };
 
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    toast({
+      title: isSaved ? "Removed from collection" : "Saved to collection",
+      description: isSaved ? "Post removed from your collection" : "Post saved to your collection",
+      duration: 3000,
+    });
+  };
+
   const handlePostClick = () => {
     navigate(`/post/${post?.id}`);
   };
@@ -127,6 +156,28 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
       navigate('/profile', { state: { userData: post.profiles } });
     }
   };
+
+  const userInitials = (post?.profiles.name || 'U')[0].toUpperCase();
+  
+  // Parse image URLs - could be single URL or JSON array
+  const getImageUrls = () => {
+    if (!post?.image_url) return [];
+    
+    try {
+      // Try to parse as JSON array first
+      const parsed = JSON.parse(post.image_url);
+      return Array.isArray(parsed) ? parsed : [post.image_url];
+    } catch {
+      // If not JSON, treat as single URL
+      return [post.image_url];
+    }
+  };
+
+  const images = getImageUrls();
+  const hasImages = images.length > 0;
+  const hasTrip = !!post?.trips && !!post?.trip_id;
+  const tripImages = post?.trips?.images || [];
+  const shouldShowCarousel = hasTrip || hasImages;
 
   if (loading) {
     return (
@@ -149,80 +200,147 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
   }
 
   return (
-    <Card className={`mb-4 ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+    <Card className={`overflow-hidden ${className}`}>
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-3 pb-2">
+          <Avatar 
+            className="w-7 h-7 cursor-pointer"
             onClick={handleProfileClick}
           >
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={post.profiles.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {(post.profiles.name || 'U')[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">{post.profiles.name}</span>
-                <span className="text-muted-foreground text-sm">@{post.profiles.username}</span>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-muted-foreground text-sm">
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                </span>
-                {post.is_private && (
-                  <Badge variant="secondary" className="text-xs">Private</Badge>
-                )}
-              </div>
-              {post.trips && (
-                <div className="flex items-center gap-1 mt-1">
-                  <MapPin size={14} className="text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{post.trips.destination}</span>
-                </div>
+            <AvatarImage src={post.profiles.avatar} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1" onClick={handleProfileClick}>
+            <div className="flex items-center gap-2 cursor-pointer">
+              <span className="font-medium text-sm">{post.profiles.name}</span>
+              <span className="text-muted-foreground text-xs">@{post.profiles.username}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground text-xs">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </span>
+              {post.is_private && (
+                <Badge variant="secondary" className="text-xs">Private</Badge>
               )}
             </div>
+            {post.trips && (
+              <div className="flex items-center gap-1 mt-1">
+                <MapPin size={12} className="text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{post.trips.destination}</span>
+              </div>
+            )}
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreHorizontal size={16} />
-          </Button>
         </div>
 
+        {/* Content */}
         {post.content && (
-          <p className="text-foreground mb-3 cursor-pointer" onClick={handlePostClick}>
-            {post.content}
-          </p>
-        )}
-
-        {post.image_url && (
-          <div className="mb-3 cursor-pointer" onClick={handlePostClick}>
-            <img 
-              src={post.image_url} 
-              alt="Post image" 
-              className="w-full h-64 object-cover rounded-lg"
-            />
+          <div className="px-3 pb-2">
+            <p className="text-sm text-foreground cursor-pointer" onClick={handlePostClick}>
+              {post.content}
+            </p>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <div className="flex items-center gap-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`flex items-center gap-2 p-2 ${isPostLiked ? 'text-red-500' : 'text-muted-foreground'}`}
-              onClick={handleLike}
-            >
-              <Heart size={18} className={isPostLiked ? 'fill-current' : ''} />
-              <span className="text-sm">{post.likes_count}</span>
-            </Button>
+        {/* Image/Map Carousel */}
+        {shouldShowCarousel && (
+          <div className="w-full h-44">
+            <Carousel className="w-full h-full">
+              <CarouselContent className="h-full">
+                {/* Trip Map - Always first when trip exists */}
+                {hasTrip && (
+                  <CarouselItem className="h-full">
+                    <div className="h-full">
+                      <CountryMap 
+                        stops={post.trips?.stops || []} 
+                        className="h-full w-full" 
+                        mapboxToken={mapboxToken}
+                      />
+                    </div>
+                  </CarouselItem>
+                )}
+                
+                {/* Trip Images */}
+                {hasTrip && tripImages.map((image, index) => (
+                  <CarouselItem key={`trip-${index}`} className="h-full">
+                    <div className="h-full">
+                      <img 
+                        src={image} 
+                        alt={`Trip photo ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+                
+                {/* Post Images */}
+                {images.map((image, index) => (
+                  <CarouselItem key={`post-${index}`} className="h-full">
+                    <div className="h-full">
+                      <img 
+                        src={image} 
+                        alt={`Post image ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {((hasTrip && (tripImages.length > 0 || hasImages)) || images.length > 1) && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </>
+              )}
+            </Carousel>
+          </div>
+        )}
+
+        {/* Trip Info */}
+        {hasTrip && (
+          <div className="px-3 py-2">
+            <h3 className="font-medium text-sm mb-1">{post.trips?.title}</h3>
+            <p className="text-xs text-muted-foreground">
+              {[post.trips?.duration, post.trips?.distance, post.trips?.stops && `${post.trips.stops.length} stops`]
+                .filter(Boolean)
+                .join(' • ')}
+            </p>
+          </div>
+        )}
+        
+        {/* Actions */}
+        <div className="px-3 py-2 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`flex items-center gap-2 h-7 px-2 ${isPostLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+                onClick={handleLike}
+              >
+                <Heart size={16} className={isPostLiked ? 'fill-current' : ''} />
+                <span className="text-xs">{post.likes_count}</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 h-7 px-2 text-muted-foreground"
+                onClick={handlePostClick}
+              >
+                <MessageCircle size={16} />
+                <span className="text-xs">{post.comments_count}</span>
+              </Button>
+            </div>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 p-2 text-muted-foreground"
-              onClick={handlePostClick}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`h-7 w-7 p-0 ${isSaved ? 'text-blue-500' : 'hover:text-blue-500'}`}
+              onClick={handleSave}
             >
-              <MessageCircle size={18} />
-              <span className="text-sm">{post.comments_count}</span>
+              <Plus size={14} className={isSaved ? 'fill-current' : ''} />
             </Button>
           </div>
         </div>

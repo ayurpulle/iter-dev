@@ -309,10 +309,9 @@ const Chat = () => {
         console.error('Error marking messages as read:', error);
       } else {
         console.log('Successfully marked messages as read');
-        // Small delay to ensure DB is updated, then refresh conversations
-        setTimeout(() => {
-          fetchConversations();
-        }, 200);
+        // Refresh conversations and trigger message count update
+        fetchConversations();
+        window.dispatchEvent(new CustomEvent('messageCountUpdate'));
       }
     } catch (error) {
       console.error('Error marking messages as read:', error);

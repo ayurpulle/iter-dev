@@ -22,6 +22,9 @@ const Notifications = () => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useNotifications();
   const { acceptFriendRequest, rejectFriendRequest } = useFriends();
   const { respondToInvite } = useItineraryCollaboration();
+  
+  // We'll need to trigger a refresh of saved itineraries when collaboration is accepted
+  // This could be done with a custom event or by importing useSavedItineraries
 
   const handleAcceptFriendRequest = async (requestId: string) => {
     try {
@@ -61,12 +64,19 @@ const Notifications = () => {
 
   const handleItineraryInviteResponse = async (collaborationId: string, status: 'accepted' | 'declined') => {
     try {
-      await respondToInvite(collaborationId, status);
-      toast({
-        title: `Invite ${status}`,
-        description: `Itinerary collaboration invite ${status} successfully!`
-      });
-      await refetch();
+      const success = await respondToInvite(collaborationId, status);
+      if (success) {
+        toast({
+          title: `Invite ${status}`,
+          description: `Itinerary collaboration invite ${status} successfully!`
+        });
+        await refetch();
+        
+        // If accepted, emit an event that other components can listen to for refreshing
+        if (status === 'accepted') {
+          window.dispatchEvent(new CustomEvent('itinerary-collaboration-accepted'));
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",

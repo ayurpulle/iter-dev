@@ -93,6 +93,12 @@ export const useItineraryCollaboration = () => {
         description: `Collaboration invite ${status}!`
       });
 
+      // If accepted, refresh saved itineraries to show the new shared itinerary
+      if (status === 'accepted') {
+        // We'll let the parent component handle refreshing the saved itineraries
+        // by listening to this event or refetching
+      }
+
       return true;
     } catch (error: any) {
       console.error('Error responding to invite:', error);

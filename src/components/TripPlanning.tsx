@@ -59,7 +59,7 @@ const TripPlanning = () => {
   
   const { savedPosts } = useSavedPosts();
   const { toast } = useToast();
-  const { saveItinerary, updateItinerary, deleteItinerary } = useSavedItineraries();
+  const { saveItinerary, updateItinerary, deleteItinerary, refetch: refetchSavedItineraries } = useSavedItineraries();
   const { generateRAGPrompt } = useRAGIter();
   const { user } = useAuth();
   
@@ -93,6 +93,20 @@ const TripPlanning = () => {
 
     autoSaveItinerary();
   }, [generatedIter, user, lastGeneratedData?.id]);
+
+  // Listen for collaboration acceptance events
+  useEffect(() => {
+    const handleCollaborationAccepted = () => {
+      // Refresh saved itineraries when a collaboration is accepted
+      refetchSavedItineraries();
+    };
+
+    window.addEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    
+    return () => {
+      window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    };
+  }, [refetchSavedItineraries]);
 
   // Helper function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {

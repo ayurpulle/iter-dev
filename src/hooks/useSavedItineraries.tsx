@@ -33,11 +33,44 @@ export const useSavedItineraries = () => {
     setError(null);
 
     const data = await executeQuery<SavedItinerary[]>(async (client) => {
-      return client
+      // Fetch both owned itineraries and collaborative ones
+      const { data: ownedItineraries, error: ownedError } = await client
         .from('saved_itineraries')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
+
+      if (ownedError) throw ownedError;
+
+      // Fetch collaborative itineraries
+      const { data: collaborativeItineraries, error: collabError } = await client
+        .from('saved_itineraries')
+        .select(`
+          *,
+          itinerary_collaborators!inner(
+            permission,
+            status
+          )
+        `)
+        .eq('itinerary_collaborators.user_id', user.id)
+        .eq('itinerary_collaborators.status', 'accepted');
+
+      if (collabError) throw collabError;
+
+      // Combine and deduplicate results
+      const allItineraries = [...(ownedItineraries || [])];
+      
+      if (collaborativeItineraries) {
+        collaborativeItineraries.forEach(iter => {
+          // Only add if not already in owned itineraries
+          if (!allItineraries.find(owned => owned.id === iter.id)) {
+            allItineraries.push(iter);
+          }
+        });
+      }
+
+      return { data: allItineraries.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ), error: null };
     });
 
     if (data) {
@@ -131,6 +164,17 @@ export const useSavedItineraries = () => {
     }
 
     const result = await executeQuery(async (client) => {
+      // Check if user has edit permissions using the database function
+      const { data: permissions } = await client
+        .rpc('get_user_itinerary_permissions', {
+          itinerary_uuid: id,
+          user_uuid: user.id
+        });
+
+      if (!permissions?.can_edit) {
+        throw new Error('You do not have permission to edit this itinerary');
+      }
+
       return client
         .from('saved_itineraries')
         .update({
@@ -144,7 +188,6 @@ export const useSavedItineraries = () => {
           friend_recommendations: itineraryData.friend_recommendations || {}
         })
         .eq('id', id)
-        .eq('user_id', user.id)
         .select()
         .single();
     });

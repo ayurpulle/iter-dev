@@ -22,6 +22,7 @@ import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
 import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
+import { IterEditDialog } from "./IterEditDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TripPlanningProps {
@@ -525,34 +526,25 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <p className="text-muted-foreground">{viewingIter.destination}</p>
             </div>
             {(viewingIter.is_owner || viewingIter.can_edit) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Go to edit mode by restoring form data and switching to planning view
-                  setFormData({
-                    destination: viewingIter.destination,
-                    startDate: viewingIter.start_date ? new Date(viewingIter.start_date) : null,
-                    endDate: viewingIter.end_date ? new Date(viewingIter.end_date) : null,
-                    budget: viewingIter.budget || 0,
-                    holidayTypes: viewingIter.interests || [],
-                    inspirationSource: "none",
-                    inspirationFolder: "",
-                    notes: ""
-                  });
-                  setGeneratedIter(viewingIter.itinerary_content);
-                  setFriendRecommendations(viewingIter.friend_recommendations || {});
-                  setLastGeneratedData({
-                    destination: viewingIter.destination,
-                    itinerary: viewingIter.itinerary_content,
-                    friendRecommendations: viewingIter.friend_recommendations || {},
-                    id: viewingIter.id
-                  });
-                  setCurrentView('planning');
+              <IterEditDialog 
+                iterData={{
+                  id: viewingIter.id,
+                  title: viewingIter.title,
+                  destination: viewingIter.destination,
+                  itinerary_content: viewingIter.itinerary_content,
+                  is_owner: viewingIter.is_owner,
+                  can_edit: viewingIter.can_edit
                 }}
-              >
-                Edit
-              </Button>
+                onIterUpdated={(newContent) => {
+                  // Update the viewing itinerary with new content
+                  setViewingIter(prev => ({
+                    ...prev,
+                    itinerary_content: newContent
+                  }));
+                  // Also refresh the saved itineraries list
+                  refetchSavedItineraries();
+                }}
+              />
             )}
           </div>
 

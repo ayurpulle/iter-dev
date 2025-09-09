@@ -159,6 +159,9 @@ export const useSavedItineraries = () => {
         title: "Iter Deleted",
         description: "Your iter has been deleted successfully.",
       });
+      // Immediately update the local state to remove the deleted itinerary
+      setSavedItineraries(prev => prev.filter(iter => iter.id !== id));
+      // Also refetch to ensure consistency
       fetchSavedItineraries();
       return true;
     }

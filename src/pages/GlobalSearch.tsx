@@ -54,53 +54,55 @@ const GlobalSearchPage = () => {
   const loadExploreContent = async () => {
     setExploreLoading(true);
     try {
-      // Fetch popular public trips - ordered by created_at for now, 
-      // could be enhanced with engagement metrics
-      const { data: publicTrips, error } = await supabase
-        .from('trips')
+      // Fetch posts for explore instead of trips to match other pages
+      const { data: postsData, error } = await supabase
+        .from('posts')
         .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id,
-          created_at
+          *,
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          ),
+          trips (
+            id,
+            title,
+            destination,
+            duration,
+            distance,
+            cost,
+            companions,
+            stops,
+            images
+          )
         `)
-        .eq('is_public', true)
+        .eq('is_private', false)
+        .not('trips', 'is', null) // Only show posts that have trips
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
-      // Manually join with profiles
-      const userIds = [...new Set(publicTrips?.map(trip => trip.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', userIds);
-
-      // Transform the data to match our interface
-      const transformedTrips: Trip[] = (publicTrips || []).map(trip => {
-        const userProfile = profiles?.find(p => p.user_id === trip.user_id);
-        return {
-          id: trip.id,
-          title: trip.title,
-          duration: trip.duration,
-          distance: trip.distance,
-          stops: trip.stops,
-          photo_count: trip.photo_count,
-          hashtags: trip.hashtags || [],
-          user_id: trip.user_id,
-          profiles: userProfile ? {
-            name: userProfile.name,
-            username: userProfile.username,
-            avatar: userProfile.avatar
+      // Convert posts to trip-like format for backwards compatibility
+      const transformedTrips: Trip[] = (postsData || [])
+        .filter(post => post.trips) // Double filter to ensure trips exist
+        .map(post => ({
+          id: post.trips.id,
+          title: post.trips.title || 'Untitled Trip',
+          duration: post.trips.duration || '',
+          distance: post.trips.distance || '',
+          stops: post.trips.stops || [],
+          photo_count: post.trips.images?.length || 0,
+          hashtags: [],
+          user_id: post.user_id,
+          profiles: post.profiles ? {
+            name: post.profiles.name,
+            username: post.profiles.username,
+            avatar: post.profiles.avatar
           } : null
-        };
-      });
+        }));
 
       setExploreTrips(transformedTrips);
     } catch (error) {

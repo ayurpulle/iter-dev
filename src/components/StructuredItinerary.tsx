@@ -178,21 +178,23 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
     
     return parts.map((part, index) => {
       if (urlRegex.test(part)) {
+        const linkText = part.includes('booking.com') ? 'Book Hotel' : 
+                        part.includes('skyscanner') ? 'Find Flights' :
+                        part.includes('getyourguide') ? 'Book Activity' :
+                        part.includes('airbnb') ? 'Book Stay' :
+                        part.includes('expedia') ? 'Book Travel' :
+                        part.includes('hotels.com') ? 'Book Hotel' :
+                        part.includes('tripadvisor') ? 'See Reviews' : 'View Link';
+        
         return (
           <a
             key={index}
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1 break-all"
+            className="inline-flex items-center gap-1 px-2 py-1 mx-1 text-xs font-medium rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors underline decoration-blue-500 decoration-1 underline-offset-2"
           >
-            {part.includes('booking.com') ? 'Book Hotel' : 
-             part.includes('skyscanner') ? 'Find Flights' :
-             part.includes('getyourguide') ? 'Book Activity' :
-             part.includes('airbnb') ? 'Book Stay' :
-             part.includes('expedia') ? 'Book Travel' :
-             part.includes('hotels.com') ? 'Book Hotel' :
-             part.includes('tripadvisor') ? 'See Reviews' : 'View Link'}
+            {linkText}
             <ExternalLink className="h-3 w-3" />
           </a>
         );

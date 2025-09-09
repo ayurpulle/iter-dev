@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { InteractiveItineraryMap } from './InteractiveItineraryMap';
 
 interface FriendRecommendation {
   name: string;
@@ -84,13 +85,37 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
       accommodation: '',
       days: [] as any[],
       bookingLinks: '',
-      practicalTips: ''
+      practicalTips: '',
+      destinations: [] as string[]
+    };
+
+    // Extract destinations from summary or content
+    const extractDestinations = (content: string) => {
+      const destinationPatterns = [
+        /(?:visiting|exploring|traveling to|trip to)\s+([A-Z][a-zA-Z\s,]+?)(?:\s+will|\s+is|\s+offers|\.|\,)/gi,
+        /([A-Z][a-zA-Z\s]+?(?:,\s*[A-Z][a-zA-Z\s]+)*)\s+(?:adventure|experience|journey|trip)/gi,
+        /in\s+([A-Z][a-zA-Z\s,]+?)(?:\s+you'll|\s+offers|\s+is|\.|,)/gi
+      ];
+      
+      const destinations = new Set<string>();
+      destinationPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          const dest = match[1]?.trim();
+          if (dest && dest.length > 2 && dest.length < 50) {
+            destinations.add(dest);
+          }
+        }
+      });
+      
+      return Array.from(destinations).slice(0, 5); // Limit to 5 destinations
     };
 
     sections.forEach(section => {
       const trimmed = section.trim();
       if (trimmed.startsWith('SUMMARY:')) {
         parsed.summary = trimmed.replace('SUMMARY:', '').trim();
+        parsed.destinations = extractDestinations(parsed.summary);
       } else if (trimmed.startsWith('FLIGHTS:')) {
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {
@@ -263,6 +288,22 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
 
   return (
     <div className="space-y-6">
+      {/* Interactive Map */}
+      {parsed.destinations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Trip Overview Map
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
+          </CardHeader>
+          <CardContent>
+            <InteractiveItineraryMap destinations={parsed.destinations} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Section */}
       {parsed.summary && (
         <Card>
@@ -375,13 +416,28 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="h-5 w-5 text-orange-600" />
-                  Travel Tips & Recommendations
+                  <Info className="h-5 w-5 text-orange-600" />
+                  Essential Travel Tips
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm space-y-2 break-words">
-                  {renderContentWithLinks(parsed.practicalTips)}
+                <div className="text-sm space-y-3 break-words">
+                  {parsed.practicalTips.split('\n').filter(tip => tip.trim()).map((tip, index) => {
+                    const cleanTip = tip.trim();
+                    if (cleanTip.startsWith('•') || cleanTip.startsWith('-')) {
+                      return (
+                        <div key={index} className="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded">
+                          <span className="text-orange-600 mt-0.5">💡</span>
+                          <span className="flex-1">{cleanTip.replace(/^[•\-]\s*/, '')}</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p key={index} className="text-muted-foreground leading-relaxed">
+                        {renderContentWithLinks(cleanTip)}
+                      </p>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

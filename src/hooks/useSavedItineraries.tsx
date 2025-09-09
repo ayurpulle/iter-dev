@@ -125,14 +125,15 @@ export const useSavedItineraries = () => {
   const deleteItinerary = async (id: string) => {
     if (!user) return false;
 
+    setLoading(true);
     const result = await executeQuery(async (client) => {
       return client
         .from('saved_itineraries')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
     });
 
+    setLoading(false);
     if (result !== null) {
       toast({
         title: "Iter Deleted",

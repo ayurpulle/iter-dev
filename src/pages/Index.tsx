@@ -30,11 +30,12 @@ interface Profile {
 interface Trip {
   id: string;
   title?: string;
+  destination?: string;
   duration?: string;
   distance?: string;
   cost?: string;
   companions?: string;
-  stops?: any;
+  stops?: any; // JSON field from database
   images?: string[];
 }
 
@@ -65,6 +66,7 @@ const Index = () => {
           trips (
             id,
             title,
+            destination,
             duration,
             distance,
             cost,

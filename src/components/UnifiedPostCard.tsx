@@ -50,11 +50,12 @@ interface Profile {
 interface Trip {
   id: string;
   title?: string;
+  destination?: string;
   duration?: string;
   distance?: string;
   cost?: string;
   companions?: string;
-  stops?: any;
+  stops?: any; // JSON field from database
   images?: string[];
 }
 
@@ -480,15 +481,15 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
             <div className="w-full h-52">
               <Carousel className="w-full h-full">
                 <CarouselContent className="h-full ml-0">
-                  {/* Trip Map - ALWAYS FIRST when trip exists */}
-                   {hasTrip && (
-                     <CarouselItem className="h-full pl-0">
-                       <TripMapVisual 
-                         stops={post.trips?.stops || []} 
-                         className="w-full h-full"
-                       />
-                     </CarouselItem>
-                   )}
+                   {/* Trip Map - ALWAYS FIRST when trip exists */}
+                    {hasTrip && (
+                      <CarouselItem className="h-full pl-0">
+                        <TripMapVisual 
+                          stops={post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : []} 
+                          className="w-full h-full"
+                        />
+                      </CarouselItem>
+                    )}
                   
                   {/* Images - Come after trip map */}
                   {images.map((imageUrl, index) => (
@@ -509,6 +510,23 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                   </>
                 )}
               </Carousel>
+            </div>
+          )}
+
+          {/* Trip Location Header */}
+          {hasTrip && post.trips && (
+            <div className="px-4 pb-2 pt-3">
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">
+                  {(() => {
+                    const stops = post.trips.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
+                    return stops.length > 1 
+                      ? `Trip to ${post.trips.destination || stops[0]?.name} and ${stops.length - 1} more`
+                      : `Trip to ${post.trips.destination || stops[0]?.name || 'destination'}`;
+                  })()}
+                </span>
+              </div>
             </div>
           )}
 
@@ -627,7 +645,12 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
               <ShareToChatDialog
                 itemType="post"
                 itemId={post.id}
-                itemTitle={post.trips?.title || "Post"}
+                itemTitle={hasTrip ? (() => {
+                  const stops = post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
+                  return stops.length > 1 
+                    ? `Trip to ${post.trips?.destination || stops[0]?.name} and ${stops.length - 1} more`
+                    : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
+                })() : "Post"}
                 content={post.content || ""}
                 triggerText="Send"
                 variant="ghost"

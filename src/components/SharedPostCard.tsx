@@ -41,7 +41,7 @@ interface Post {
     destination: string;
     duration?: string;
     distance?: string;
-    stops?: Stop[];
+    stops?: any; // JSON field from database
     images?: string[];
   };
 }
@@ -80,7 +80,7 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
         if (postData.trip_id) {
           const { data } = await supabase
             .from('trips')
-            .select('id, title, destination')
+            .select('id, title, destination, stops')
             .eq('id', postData.trip_id)
             .maybeSingle();
           tripData = data;
@@ -125,7 +125,16 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
 
   const getPostDescription = () => {
     if (post.trips) {
-      return `Check out ${post.profiles.name}'s trip to ${post.trips.destination}`;
+      // Format location text based on trip destination and stops
+      const destination = post.trips.destination;
+      const stops = post.trips.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
+      
+      if (stops.length > 1) {
+        const additionalCount = stops.length - 1;
+        return `Check out ${post.profiles.name}'s trip to ${destination || stops[0]?.name} and ${additionalCount} more`;
+      } else {
+        return `Check out ${post.profiles.name}'s trip to ${destination || stops[0]?.name || 'destination'}`;
+      }
     } else {
       return `Check out ${post.profiles.name}'s post`;
     }

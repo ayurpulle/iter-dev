@@ -329,9 +329,14 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
               </div>
             </div>
 
-            {/* Trip Title and Info */}
+            {/* Trip Title and Location Info */}
             <div className="mb-3">
-              <h3 className="font-semibold text-base mb-1">{trip.title}</h3>
+              <h3 className="font-semibold text-base mb-1">
+                {trip.stops && trip.stops.length > 1 
+                  ? `Trip to ${trip.stops[0]?.name || 'destination'} and ${trip.stops.length - 1} more`
+                  : `Trip to ${trip.stops?.[0]?.name || trip.title}`
+                }
+              </h3>
               <p className="text-sm text-muted-foreground">
                 {trip.duration} • {trip.distance} • {trip.stops.length} stops
               </p>

@@ -62,6 +62,7 @@ export const useShareToChat = () => {
       if (itemType === 'itinerary') {
         shareMessage = `🗺️ I shared an itinerary with you: "${itemTitle}"`;
       } else {
+        // For posts, the itemTitle should already be formatted with location info from the component
         shareMessage = `📸 I shared a post with you`;
         messageData = { type: 'shared_post', post_id: itemId };
       }

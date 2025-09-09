@@ -16,6 +16,9 @@ interface SavedItinerary {
   created_at: string;
   updated_at: string;
   user_id: string;
+  creator_username?: string;
+  creator_name?: string;
+  is_owner?: boolean;
 }
 
 export const useSavedItineraries = () => {
@@ -33,19 +36,23 @@ export const useSavedItineraries = () => {
     setError(null);
 
     const data = await executeQuery<SavedItinerary[]>(async (client) => {
-      // Fetch both owned itineraries and collaborative ones
+      // Fetch both owned itineraries and collaborative ones with creator profile info
       const { data: ownedItineraries, error: ownedError } = await client
         .from('saved_itineraries')
-        .select('*')
+        .select(`
+          *,
+          profiles!saved_itineraries_user_id_fkey(username, name)
+        `)
         .eq('user_id', user.id);
 
       if (ownedError) throw ownedError;
 
-      // Fetch collaborative itineraries
+      // Fetch collaborative itineraries with creator profile info
       const { data: collaborativeItineraries, error: collabError } = await client
         .from('saved_itineraries')
         .select(`
           *,
+          profiles!saved_itineraries_user_id_fkey(username, name),
           itinerary_collaborators!inner(
             permission,
             status
@@ -56,17 +63,31 @@ export const useSavedItineraries = () => {
 
       if (collabError) throw collabError;
 
+      // Process owned itineraries
+      const processedOwned = (ownedItineraries || []).map(iter => ({
+        ...iter,
+        creator_username: iter.profiles?.username || 'Unknown',
+        creator_name: iter.profiles?.name || 'Unknown User',
+        is_owner: true
+      }));
+
+      // Process collaborative itineraries
+      const processedCollaborative = (collaborativeItineraries || []).map(iter => ({
+        ...iter,
+        creator_username: iter.profiles?.username || 'Unknown',
+        creator_name: iter.profiles?.name || 'Unknown User',
+        is_owner: false
+      }));
+
       // Combine and deduplicate results
-      const allItineraries = [...(ownedItineraries || [])];
+      const allItineraries = [...processedOwned];
       
-      if (collaborativeItineraries) {
-        collaborativeItineraries.forEach(iter => {
-          // Only add if not already in owned itineraries
-          if (!allItineraries.find(owned => owned.id === iter.id)) {
-            allItineraries.push(iter);
-          }
-        });
-      }
+      processedCollaborative.forEach(iter => {
+        // Only add if not already in owned itineraries
+        if (!allItineraries.find(owned => owned.id === iter.id)) {
+          allItineraries.push(iter);
+        }
+      });
 
       return { data: allItineraries.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -246,21 +267,7 @@ export const useSavedItineraries = () => {
     return () => {
       window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
     };
-  }, [user, fetchSavedItineraries]);
-
-  // Listen for collaboration acceptance events
-  useEffect(() => {
-    const handleCollaborationAccepted = () => {
-      // Refresh saved itineraries when a collaboration is accepted
-      fetchSavedItineraries();
-    };
-
-    window.addEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
-    
-    return () => {
-      window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
-    };
-  }, [fetchSavedItineraries]);
+  }, [user]);
 
   return {
     savedItineraries,

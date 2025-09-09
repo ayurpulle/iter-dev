@@ -126,15 +126,19 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                       console.log(`Itinerary ${itinerary.title}: is_owner=${itinerary.is_owner}, can_edit=${itinerary.can_edit}, showEdit=${canEdit}`);
                       return canEdit;
                     })() && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEditIter(itinerary)}
-                        className="p-2"
-                        title="Edit itinerary"
-                      >
-                        <Edit size={16} />
-                      </Button>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => {
+                           console.log('Edit button clicked for itinerary:', itinerary.title);
+                           console.log('Calling onEditIter with:', itinerary);
+                           onEditIter(itinerary);
+                         }}
+                         className="p-2"
+                         title="Edit itinerary"
+                       >
+                         <Edit size={16} />
+                       </Button>
                     )}
                     {itinerary.is_owner && (
                       <AlertDialog>

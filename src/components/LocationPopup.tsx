@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { X, Users, Calendar, MapPin, Clock, DollarSign } from "lucide-react";
-import { useLocationData } from "@/hooks/useLocationData";
+import { X, Users, Calendar, MapPin, Clock, DollarSign, Loader2 } from "lucide-react";
+import { LocationDataService, type LocationInfo } from "@/services/LocationDataService";
 
 interface LocationPopupProps {
   location: string;
@@ -11,8 +12,24 @@ interface LocationPopupProps {
 }
 
 const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => {
-  const { getLocationInfo } = useLocationData();
-  const locationInfo = getLocationInfo(location);
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadLocationInfo = async () => {
+      setLoading(true);
+      try {
+        const info = await LocationDataService.getLocationInfo(location);
+        setLocationInfo(info);
+      } catch (error) {
+        console.error('Error loading location info:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLocationInfo();
+  }, [location]);
   const friendsTrips = [
     {
       friend: {
@@ -47,6 +64,23 @@ const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => 
       location.toLowerCase().includes(loc.toLowerCase())
     )
   );
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardContent className="p-6 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-sm text-muted-foreground">Loading location info...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!locationInfo) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">

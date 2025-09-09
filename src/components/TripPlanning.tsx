@@ -459,7 +459,9 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           setCurrentView('viewIter');
         }}
         onEditIter={(iter) => {
+          console.log('onEditIter called with:', iter);
           // Pre-fill form with itinerary data
+          console.log('Setting form data...');
           setFormData({
             destination: iter.destination || "",
             startDate: iter.start_date ? new Date(iter.start_date) : null,
@@ -470,8 +472,11 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             inspirationFolder: "",
             notes: ""
           });
+          console.log('Switching to planning view...');
           setCurrentView('planning');
+          console.log('Setting editing itinerary...');
           setEditingItinerary(iter);
+          console.log('Edit setup complete');
         }}
       />
     );

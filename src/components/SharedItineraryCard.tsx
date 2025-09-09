@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Users, ExternalLink } from 'lucide-react';
+import { MapPin, Calendar, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSavedItineraries } from '@/hooks/useSavedItineraries';
@@ -47,37 +47,37 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
   };
 
   return (
-    <Card className="w-full max-w-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-200 cursor-pointer" onClick={handleViewItinerary}>
-      <CardHeader className="pb-3">
+    <div className="w-full max-w-sm bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all duration-200">
+      <div className="space-y-4">
+        {/* Header with badge */}
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-blue-600" />
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+          <MapPin className="h-5 w-5 text-primary" />
+          <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
             Shared Itinerary
           </Badge>
         </div>
-        <CardTitle className="text-lg text-blue-900 dark:text-blue-100">
+        
+        {/* Title */}
+        <h3 className="text-xl font-semibold text-foreground leading-tight">
           {itineraryTitle}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-            <Calendar className="h-4 w-4" />
-            <span>Tap to view full itinerary</span>
-          </div>
-          <Button 
-            size="sm" 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewItinerary();
-            }}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Iter
-          </Button>
+        </h3>
+        
+        {/* Subtitle */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="h-4 w-4" />
+          <span>Tap to view full itinerary</span>
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* Action button */}
+        <Button 
+          size="lg" 
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          onClick={handleViewItinerary}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Collaborate on
+        </Button>
+      </div>
+    </div>
   );
 };

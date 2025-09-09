@@ -20,12 +20,8 @@ interface StructuredItineraryProps {
 }
 
 export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: StructuredItineraryProps) => {
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
+  const [showFullDetails, setShowFullDetails] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
 
   const toggleDay = (day: string) => {
     setExpandedDays(prev => ({ ...prev, [day]: !prev[day] }));
@@ -80,8 +76,9 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
   };
 
   const parseItinerary = () => {
-    const sections = itinerary.split(/(?=FLIGHTS:|ACCOMMODATION:|DAY-BY-DAY|BOOKING LINKS|PRACTICAL TIPS:)/);
+    const sections = itinerary.split(/(?=FLIGHTS:|ACCOMMODATION:|DAY-BY-DAY|BOOKING LINKS|PRACTICAL TIPS:|SUMMARY:)/);
     const parsed = {
+      summary: '',
       flights: '',
       accommodation: '',
       days: [] as any[],
@@ -91,7 +88,9 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
 
     sections.forEach(section => {
       const trimmed = section.trim();
-      if (trimmed.startsWith('FLIGHTS:')) {
+      if (trimmed.startsWith('SUMMARY:')) {
+        parsed.summary = trimmed.replace('SUMMARY:', '').trim();
+      } else if (trimmed.startsWith('FLIGHTS:')) {
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {
         parsed.accommodation = trimmed.replace('ACCOMMODATION:', '').trim();
@@ -167,150 +166,169 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
   const parsed = parseItinerary();
 
   return (
-    <div className="space-y-4">
-      {/* Flights Section */}
-      {parsed.flights && (
+    <div className="space-y-6">
+      {/* Summary Section */}
+      {parsed.summary && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Plane className="h-5 w-5 text-blue-600" />
-              Flights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-2">
-              {renderContentWithLinks(parsed.flights)}
+          <CardContent className="pt-6">
+            <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
+              {renderContentWithLinks(parsed.summary)}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Accommodation Section */}
-      {parsed.accommodation && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Hotel className="h-5 w-5 text-green-600" />
-              Accommodation
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-2">
-              {renderContentWithLinks(parsed.accommodation)}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Day by Day Itinerary */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Clock className="h-5 w-5 text-purple-600" />
-            Day-by-Day Itinerary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {parsed.days.map((day, index) => (
-            <Collapsible
-              key={index}
-              open={expandedDays[`day-${day.number}`] ?? true}
-              onOpenChange={() => toggleDay(`day-${day.number}`)}
-            >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between p-3 h-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
-                      Day {day.number}
-                    </Badge>
-                    <span className="font-medium text-left">{day.title}</span>
-                  </div>
-                  {expandedDays[`day-${day.number}`] ?? true ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <div className="pl-4 border-l-2 border-purple-200 dark:border-purple-800 space-y-3">
-                  <div className="text-sm space-y-2 whitespace-pre-line">
-                    {renderContentWithLinks(day.content)}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Booking Links */}
-      {parsed.bookingLinks && (
-        <Collapsible
-          open={expandedSections['booking']}
-          onOpenChange={() => toggleSection('booking')}
+      {/* Show Details Button */}
+      <div className="flex justify-center">
+        <Button 
+          onClick={() => setShowFullDetails(!showFullDetails)}
+          variant="outline"
+          className="px-8 py-2"
         >
-          <Card>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardTitle className="flex items-center justify-between text-lg">
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5 text-orange-600" />
-                    Booking Links & Tips
-                  </div>
-                  {expandedSections['booking'] ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
+          {showFullDetails ? 'Hide Full Details' : 'Click to See Full Details'}
+          {showFullDetails ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Full Details - Collapsible */}
+      {showFullDetails && (
+        <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+          {/* Flights Section */}
+          {parsed.flights && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Plane className="h-5 w-5 text-blue-600" />
+                  Flights
                 </CardTitle>
               </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
               <CardContent>
-                <div className="text-sm space-y-2">
-                  {renderContentWithLinks(parsed.bookingLinks)}
+                <div className="text-sm space-y-2 break-words">
+                  {renderContentWithLinks(parsed.flights)}
                 </div>
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
+            </Card>
+          )}
 
-      {/* Practical Tips */}
-      {parsed.practicalTips && (
-        <Collapsible
-          open={expandedSections['practical']}
-          onOpenChange={() => toggleSection('practical')}
-        >
-          <Card>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardTitle className="flex items-center justify-between text-lg">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-red-600" />
-                    Practical Tips
-                  </div>
-                  {expandedSections['practical'] ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
+          {/* Accommodation Section */}
+          {parsed.accommodation && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Hotel className="h-5 w-5 text-green-600" />
+                  Accommodation
                 </CardTitle>
               </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
               <CardContent>
-                <div className="text-sm space-y-2">
+                <div className="text-sm space-y-2 break-words">
+                  {renderContentWithLinks(parsed.accommodation)}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Day by Day Itinerary */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Clock className="h-5 w-5 text-purple-600" />
+                Day-by-Day Itinerary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {parsed.days.map((day, index) => (
+                <Collapsible
+                  key={index}
+                  open={expandedDays[`day-${day.number}`] ?? false}
+                  onOpenChange={() => toggleDay(`day-${day.number}`)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-3 h-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
+                          Day {day.number}
+                        </Badge>
+                        <span className="font-medium text-left truncate">{day.title}</span>
+                      </div>
+                      {expandedDays[`day-${day.number}`] ? (
+                        <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    <div className="pl-4 border-l-2 border-purple-200 dark:border-purple-800 space-y-3">
+                      <div className="text-sm space-y-2 break-words">
+                        {renderContentWithLinks(day.content)}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Practical Tips */}
+          {parsed.practicalTips && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="h-5 w-5 text-red-600" />
+                  Practical Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm space-y-2 break-words">
                   {renderContentWithLinks(parsed.practicalTips)}
                 </div>
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Booking Links - Always Visible at Bottom */}
+      {parsed.bookingLinks && (
+        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg text-orange-800 dark:text-orange-200">
+              <ExternalLink className="h-5 w-5" />
+              Quick Booking Links
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {parsed.bookingLinks.split('\n').filter(line => line.includes('http')).map((link, index) => {
+                const urlMatch = link.match(/(https?:\/\/[^\s]+)/);
+                if (!urlMatch) return null;
+                
+                const url = urlMatch[1];
+                const linkText = link.replace(urlMatch[0], '').replace(/[-:]/g, '').trim();
+                
+                return (
+                  <a
+                    key={index}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700 hover:shadow-md transition-shadow group"
+                  >
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {linkText || (url.includes('booking.com') ? 'Book Hotels' : 
+                                   url.includes('skyscanner') ? 'Find Flights' :
+                                   url.includes('getyourguide') ? 'Book Activities' : 'Book Now')}
+                    </span>
+                    <ExternalLink className="h-4 w-4 text-orange-600 group-hover:text-orange-700 flex-shrink-0" />
+                  </a>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -178,46 +178,52 @@ ${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been the
 
     const prompt = `${ragPrompt}
 
-Create a detailed, structured day-by-day itinerary in the following format:
+Create a travel itinerary that feels personal and conversational. Write like you're a knowledgeable local friend giving advice, not a formal travel guide.
+
+Use this exact format:
+
+SUMMARY:
+Write a warm, engaging 2-3 sentence overview of the trip highlighting the best experiences. Make it sound exciting and personal, like "You're going to absolutely love ${destination}! This itinerary balances must-see sights with hidden gems, plus some amazing food spots your friends recommended."
 
 FLIGHTS:
-- Outbound: [Departure city] to ${destination} - [Suggested booking link or airline recommendation]
-- Return: ${destination} to [Departure city] - [Suggested booking link or airline recommendation]
+- Getting there: Suggest the best routes from ${baseLocation} to ${destination} with actual booking sites
+- Coming home: Return flight suggestions with timing tips
 
 ACCOMMODATION:
-- Hotel recommendation: [Hotel name and booking link]
-- Budget alternative: [Alternative accommodation]
+- Perfect stay: [Specific hotel with booking.com link and why it's great]
+- Budget-friendly: [Alternative with why it's still awesome]
 
 DAY-BY-DAY ITINERARY:
 
-**Day 1: [Theme/Focus]**
-- **Morning (9:00-12:00):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]
-- **Afternoon (12:00-17:00):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]  
-- **Evening (17:00+):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]
-- **Where to stay:** [Hotel recommendation with booking link]
-- **Total daily budget:** [Amount in ${defaultCurrency}]
+**Day 1: [Catchy theme like "First Taste of Magic" or "Getting Your Bearings"]**
+- **Morning:** What to do first - include cost and why it's special
+- **Lunch:** Where to eat with price range and what to order
+- **Afternoon:** Main activity with practical tips
+- **Dinner:** Restaurant recommendation with atmosphere description
+- **Evening:** How to end the day (could be early rest or nightlife)
+- **Daily budget:** Total expected cost
 
-**Day 2: [Theme/Focus]**
-[Same format as Day 1]
+**Day 2: [Another engaging theme]**
+[Continue same personal, detailed format]
 
-[Continue for each day]
+[Continue for all ${duration} days]
 
 BOOKING LINKS & TIPS:
-- Flights: [Skyscanner/Expedia links]
-- Hotels: [Booking.com/Hotels.com links]
-- Activities: [GetYourGuide/Viator links where applicable]
+- Flights: https://www.skyscanner.com/transport/flights/${baseLocation.toLowerCase().replace(/\s+/g, '-')}/${destination.toLowerCase().replace(/\s+/g, '-')}/
+- Hotels: https://www.booking.com/searchresults.html?ss=${destination}
+- Activities: https://www.getyourguide.com/s/?q=${destination}
+- Local transport: [Specific apps or websites for ${destination}]
 
 PRACTICAL TIPS:
-- Transportation: [Local transport options and costs]
-- Currency: [Exchange rate and payment tips]
-- Language: [Key phrases if applicable]
+Write 3-4 conversational tips about money, transport, culture, and communication. Make them personal and specific to ${destination}.
 
-When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name.
-Include realistic pricing in ${defaultCurrency} and local currency conversions.
-Make each day focused on a specific theme or area to minimize travel time.
-Include 2-3 meal recommendations per day with approximate costs.
-
-Create an itinerary for ${duration} days total.`;
+Guidelines:
+- Write like you're texting a friend, not writing a formal guide
+- Include specific prices in ${defaultCurrency} 
+- When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name
+- Focus on experiences, not just sightseeing
+- Give insider tips about timing, crowds, and local customs
+- Make each day feel distinct with its own personality`;
 
     console.log('Calling OpenAI API...');
     

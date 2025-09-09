@@ -173,29 +173,46 @@ ${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been the
 
     const prompt = `${ragPrompt}
 
-Please create a natural, conversational itinerary that feels like it was written by a knowledgeable local friend, not an AI. 
+Create a detailed, structured day-by-day itinerary in the following format:
 
-TONE & STYLE:
-- Write like you're texting a friend travel tips
-- Use natural, casual language 
-- Skip formal headings and robotic structure
-- Make it feel personal and authentic
-- Use "you'll love" instead of "visitors can enjoy"
+FLIGHTS:
+- Outbound: [Departure city] to ${destination} - [Suggested booking link or airline recommendation]
+- Return: ${destination} to [Departure city] - [Suggested booking link or airline recommendation]
 
-FORMAT REQUIREMENTS:
-- Maximum 300 words total
-- Group by days but keep it flowing
-- Show prices in ${defaultCurrency} first, then local currency: ${defaultCurrency}25 (€23)
-- Use exchange rates: USD→EUR=0.92, USD→GBP=0.79, USD→JPY=150, USD→CAD=1.35
-- When mentioning specific places friends visited, add [FRIEND_REC:place_name] immediately after the venue name
-- Focus on 2-3 key things per day maximum
+ACCOMMODATION:
+- Hotel recommendation: [Hotel name and booking link]
+- Budget alternative: [Alternative accommodation]
 
-Example style:
-"Day 1: Land and grab coffee at Blue Bottle (${defaultCurrency}5/€5) - you'll need it! Check into your hotel then wander through Union Square. For dinner, hit up Swan Oyster Depot [FRIEND_REC:Swan Oyster Depot] - the seafood is incredible and locals love it (${defaultCurrency}40/€37).
+DAY-BY-DAY ITINERARY:
 
-Day 2: Golden Gate Bridge in the morning when it's clear, then Alcatraz tour (${defaultCurrency}45/€41). End at Fisherman's Wharf for clam chowder..."
+**Day 1: [Theme/Focus]**
+- **Morning (9:00-12:00):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]
+- **Afternoon (12:00-17:00):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]  
+- **Evening (17:00+):** [Activity] - [Cost in ${defaultCurrency}] - [Brief description]
+- **Where to stay:** [Hotel recommendation with booking link]
+- **Total daily budget:** [Amount in ${defaultCurrency}]
 
-Keep this natural, friendly tone throughout. No bullet points or formal sections - just flowing, helpful advice.`;
+**Day 2: [Theme/Focus]**
+[Same format as Day 1]
+
+[Continue for each day]
+
+BOOKING LINKS & TIPS:
+- Flights: [Skyscanner/Expedia links]
+- Hotels: [Booking.com/Hotels.com links]
+- Activities: [GetYourGuide/Viator links where applicable]
+
+PRACTICAL TIPS:
+- Transportation: [Local transport options and costs]
+- Currency: [Exchange rate and payment tips]
+- Language: [Key phrases if applicable]
+
+When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name.
+Include realistic pricing in ${defaultCurrency} and local currency conversions.
+Make each day focused on a specific theme or area to minimize travel time.
+Include 2-3 meal recommendations per day with approximate costs.
+
+Create an itinerary for ${duration} days total.`;
 
     console.log('Calling OpenAI API...');
     
@@ -211,11 +228,11 @@ Keep this natural, friendly tone throughout. No bullet points or formal sections
           messages: [
             { 
               role: 'system', 
-              content: 'You are a well-traveled friend sharing personal travel advice. Write naturally and conversationally, like you\'re texting recommendations to a close friend. Avoid formal language, bullet points, or obvious AI formatting. Share tips like a local would, with genuine enthusiasm for the places you\'re recommending.' 
+              content: 'You are a professional travel planner creating detailed, structured itineraries. Provide practical, actionable advice with specific costs, booking links, and day-by-day schedules. Focus on efficiency and value while ensuring travelers have memorable experiences.' 
             },
-            { role: 'user', content: basePrompt }
+            { role: 'user', content: prompt }
           ],
-          max_completion_tokens: 2000,
+          max_completion_tokens: 4000,
           temperature: 0.7,
         }),
       });

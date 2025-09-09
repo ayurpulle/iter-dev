@@ -6,7 +6,7 @@ import { ArrowLeft, Calendar, DollarSign, Trash2, Eye, Edit, Share2 } from "luci
 import { format } from "date-fns";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import InteractiveIter from "./InteractiveItinerary";
+import { StructuredItinerary } from "./StructuredItinerary";
 import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
 
 interface SavedTripsViewProps {

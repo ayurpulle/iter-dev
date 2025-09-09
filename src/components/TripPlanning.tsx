@@ -16,7 +16,7 @@ import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
-import InteractiveIter from "./InteractiveItinerary";
+import { StructuredItinerary } from "./StructuredItinerary";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
@@ -605,7 +605,7 @@ const TripPlanning = () => {
           ) : (
             <Card>
               <CardContent className="pt-6">
-                <InteractiveIter 
+                <StructuredItinerary 
                   itinerary={viewingIter.itinerary_content}
                   friendRecommendations={viewingIter.friend_recommendations || {}}
                 />
@@ -733,6 +733,54 @@ const TripPlanning = () => {
                     rows={15}
                     className="w-full font-mono text-sm"
                   />
+                  <div className="flex gap-2 mt-4">
+                    <Button 
+                      onClick={async () => {
+                        if (!lastGeneratedData?.id) return;
+                        
+                        try {
+                          setIsLoading(true);
+                          const result = await updateItinerary(lastGeneratedData.id, {
+                            title: `${lastGeneratedData?.destination || formData.destination} Trip`,
+                            destination: lastGeneratedData?.destination || formData.destination,
+                            start_date: formData.startDate,
+                            end_date: formData.endDate,
+                            budget: formData.budget,
+                            interests: formData.holidayTypes,
+                            itinerary_content: generatedIter,
+                            friend_recommendations: friendRecommendations
+                          });
+                          
+                          if (result) {
+                            toast({
+                              title: "Iter Saved!",
+                              description: "Your iter has been updated successfully.",
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error saving iter:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to save iter. Please try again.",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -763,7 +811,7 @@ const TripPlanning = () => {
                   <h3 className="text-lg font-semibold">Iter:</h3>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <InteractiveIter 
+                  <StructuredItinerary 
                     itinerary={generatedIter}
                     friendRecommendations={friendRecommendations}
                   />

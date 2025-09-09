@@ -194,12 +194,15 @@ export const useItineraryCollaboration = () => {
         itinerary_id: itineraryId,
         user_id: friendId,
         permission: 'view' as const,
-        invited_by: user.id
+        invited_by: user.id,
+        status: 'pending'
       }));
 
       const { error } = await supabase
         .from('itinerary_collaborators')
-        .insert(invites);
+        .upsert(invites, {
+          onConflict: 'itinerary_id,user_id'
+        });
 
       if (error) throw error;
 

@@ -441,6 +441,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         onBack={() => setCurrentView('planning')}
         onViewIter={(iter) => {
           setViewingIter(iter);
+          setEditingIter(false); // Ensure we're in view mode, not edit mode
           setCurrentView('viewIter');
         }}
         onEditIter={(iter) => {

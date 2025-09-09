@@ -233,6 +233,20 @@ export const useSavedItineraries = () => {
     }
   }, [user]);
 
+  // Listen for collaboration acceptance events
+  useEffect(() => {
+    const handleCollaborationAccepted = () => {
+      // Refresh saved itineraries when a collaboration is accepted
+      fetchSavedItineraries();
+    };
+
+    window.addEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    
+    return () => {
+      window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    };
+  }, [fetchSavedItineraries]);
+
   return {
     savedItineraries,
     loading,

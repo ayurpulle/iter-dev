@@ -93,10 +93,10 @@ export const useItineraryCollaboration = () => {
         description: `Collaboration invite ${status}!`
       });
 
-      // If accepted, refresh saved itineraries to show the new shared itinerary
+      // If accepted, emit an event to refresh saved itineraries
       if (status === 'accepted') {
-        // We'll let the parent component handle refreshing the saved itineraries
-        // by listening to this event or refetching
+        // Emit a custom event that the useSavedItineraries hook can listen to
+        window.dispatchEvent(new CustomEvent('itinerary-collaboration-accepted'));
       }
 
       return true;

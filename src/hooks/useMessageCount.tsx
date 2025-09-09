@@ -15,48 +15,20 @@ export const useMessageCount = () => {
     try {
       console.log('Fetching unread count for user:', user.id);
       
-      // Use the RPC function for notifications as fallback pattern
-      try {
-        const { data, error } = await supabase.rpc('get_unread_notification_count', {
-          user_uuid: user.id
-        });
-        
-        if (!error && typeof data === 'number') {
-          // This is just to test RPC functionality - we'll use manual count for messages
-          console.log('RPC works, proceeding with manual message count');
-        }
-      } catch (rpcError) {
-        console.log('RPC failed, using manual count:', rpcError);
+      // Use the new RPC function
+      const { data, error } = await supabase.rpc('get_unread_message_count', {
+        user_uuid: user.id
+      });
+      
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
       }
+      
+      console.log('Got unread count from RPC:', data);
+      setUnreadCount(data || 0);
+      return;
 
-      // Fallback to manual counting
-      const { data: conversations, error: convError } = await supabase
-        .from('conversations')
-        .select('id')
-        .contains('participants', [user.id]);
-
-      if (convError) throw convError;
-
-      if (!conversations || conversations.length === 0) {
-        setUnreadCount(0);
-        return;
-      }
-
-      let totalUnread = 0;
-      for (const conv of conversations) {
-        const { count, error } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .neq('sender_id', user.id)
-          .is('read_at', null);
-
-        if (error) throw error;
-        totalUnread += count || 0;
-      }
-
-      console.log('Total unread messages:', totalUnread);
-      setUnreadCount(totalUnread);
     } catch (error) {
       console.error('Error fetching message count:', error);
       setUnreadCount(0);

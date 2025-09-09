@@ -66,17 +66,27 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
     console.log('SharedPostCard: fetching post with ID:', postId);
     const fetchPost = async () => {
       try {
-        // Fetch mapbox token first
+        // Fetch mapbox token first - this ensures it's available before rendering map
         try {
-          const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
-          if (tokenData?.token) {
+          console.log('SharedPostCard: Fetching mapbox token...');
+          const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-mapbox-token');
+          if (tokenError) {
+            console.error('SharedPostCard: Error from get-mapbox-token:', tokenError);
+          } else if (tokenData?.token) {
             console.log('SharedPostCard: Got mapbox token:', tokenData.token.substring(0, 20) + '...');
             setMapboxToken(tokenData.token);
+          } else {
+            console.log('SharedPostCard: No token in response:', tokenData);
           }
         } catch (error) {
           console.log('SharedPostCard: Failed to get Mapbox token from edge function, checking localStorage');
           const token = localStorage.getItem('mapbox_token');
-          if (token) setMapboxToken(token);
+          if (token) {
+            console.log('SharedPostCard: Using token from localStorage');
+            setMapboxToken(token);
+          } else {
+            console.log('SharedPostCard: No token available');
+          }
         }
 
         const { data: postData, error } = await supabase
@@ -105,6 +115,9 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
             .maybeSingle();
           tripData = data;
           console.log('SharedPostCard: Got trip data:', tripData);
+          if (tripData?.stops) {
+            console.log('SharedPostCard: Trip has stops:', tripData.stops.length);
+          }
         }
 
         const combinedData = {

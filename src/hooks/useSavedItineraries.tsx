@@ -132,9 +132,14 @@ export const useSavedItineraries = () => {
         .from('saved_itineraries')
         .select('user_id')
         .eq('id', id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle missing rows
 
       if (fetchError) throw fetchError;
+      
+      // If itinerary doesn't exist, consider it already deleted
+      if (!itinerary) {
+        return { data: null, error: null }; // Return success since it's already gone
+      }
       
       if (itinerary.user_id !== user.id) {
         throw new Error('You can only delete your own itineraries');

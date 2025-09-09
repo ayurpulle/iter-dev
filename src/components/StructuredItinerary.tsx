@@ -125,20 +125,32 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {
         parsed.accommodation = trimmed.replace('ACCOMMODATION:', '').trim();
-      } else if (trimmed.includes('**Day')) {
-        // Parse individual days
-        const dayMatches = trimmed.match(/\*\*Day \d+:.*?\*\*/g);
+      } else if (trimmed.includes('**Day') || trimmed.includes('Day ')) {
+        // Enhanced day parsing to catch more patterns
+        const content = trimmed;
+        const dayMatches = content.match(/(?:\*\*)?Day \d+:?[^\n]*(?:\*\*)?/gi);
+        console.log('Day matches found:', dayMatches);
+        
         if (dayMatches) {
-          dayMatches.forEach(dayMatch => {
-            const dayContent = trimmed.split(dayMatch)[1]?.split(/\*\*Day \d+:/)[0] || '';
-            const dayNumber = dayMatch.match(/Day (\d+)/)?.[1];
-            const dayTitle = dayMatch.replace(/\*\*Day \d+: /, '').replace(/\*\*/, '');
+          dayMatches.forEach((dayMatch, matchIndex) => {
+            // Find content between this day and the next day (or end of section)
+            const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Day \\d+:|$)', 'i');
+            const match = content.match(regex);
+            const dayContent = match?.[1] || '';
             
-            parsed.days.push({
-              number: dayNumber,
-              title: dayTitle,
-              content: dayContent.trim()
-            });
+            const dayNumber = dayMatch.match(/Day (\d+)/i)?.[1];
+            const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+            
+            console.log(`Parsing Day ${dayNumber}:`, { dayTitle, contentLength: dayContent.length });
+            
+            if (dayNumber) {
+              parsed.days.push({
+                number: dayNumber,
+                title: dayTitle || `Day ${dayNumber}`,
+                content: dayContent.trim()
+              });
+            }
           });
         }
       } else if (trimmed.startsWith('BOOKING LINKS')) {
@@ -311,6 +323,21 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
 
   return (
     <div className="space-y-6">
+      {/* Interactive Map at Top */}
+      {parsed.destinations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Trip Overview Map
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
+          </CardHeader>
+          <CardContent>
+            <InteractiveItineraryMap destinations={parsed.destinations} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Section */}
       {parsed.summary && (
@@ -429,18 +456,28 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {parsed.practicalTips.split('\n').filter(tip => tip.trim()).map((tip, index) => {
+                <div className="space-y-3">
+                  {parsed.practicalTips.split('\n').filter(tip => tip.trim()).reduce((groups: string[][], tip, index) => {
                     const cleanTip = tip.trim().replace(/^[•\-]\s*/, '');
-                    if (!cleanTip) return null;
+                    if (!cleanTip) return groups;
                     
-                    return (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
-                        <span className="text-orange-600 mt-0.5 flex-shrink-0">💡</span>
-                        <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">{cleanTip}</span>
-                      </div>
-                    );
-                  }).filter(Boolean)}
+                    // Group every 2-3 tips together for better organization
+                    if (index % 3 === 0) {
+                      groups.push([cleanTip]);
+                    } else {
+                      groups[groups.length - 1]?.push(cleanTip);
+                    }
+                    return groups;
+                  }, []).map((group, groupIndex) => (
+                    <div key={groupIndex} className="space-y-2">
+                      {group.map((tip, tipIndex) => (
+                        <div key={tipIndex} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
+                          <span className="text-orange-600 mt-0.5 flex-shrink-0">💡</span>
+                          <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -479,22 +516,6 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
             </Card>
           )}
         </div>
-      )}
-
-      {/* Interactive Map at Bottom */}
-      {parsed.destinations.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              Trip Overview Map
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
-          </CardHeader>
-          <CardContent>
-            <InteractiveItineraryMap destinations={parsed.destinations} />
-          </CardContent>
-        </Card>
       )}
     </div>
   );

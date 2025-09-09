@@ -108,18 +108,9 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEditIter(itinerary)}
-                      className="p-2"
-                      title="Continue editing"
-                    >
-                      <Edit size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
                       onClick={() => onViewIter(itinerary)}
                       className="p-2"
-                      title="View only"
+                      title="View itinerary"
                     >
                       <Eye size={16} />
                     </Button>

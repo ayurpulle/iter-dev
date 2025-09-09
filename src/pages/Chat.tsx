@@ -237,26 +237,46 @@ const Chat = () => {
           created_at,
           sender_id,
           metadata,
-          read_at,
-          profiles!messages_sender_id_fkey (
-            name,
-            username,
-            avatar
-          )
+          read_at
         `)
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+
+      // Get profile data separately for each unique sender
+      const senderIds = [...new Set(messages?.map(m => m.sender_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', senderIds);
+
+      // Create a map of profiles by user_id
+      const profileMap = (profiles || []).reduce((acc, profile) => {
+        acc[profile.user_id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+
       console.log('Raw messages:', messages);
       
-      const formattedMessages = (messages || []).map(msg => ({
-        id: msg.id,
-        user_id: msg.sender_id,
-        content: msg.content,
-        created_at: msg.created_at,
-        metadata: msg.metadata as any,
-        profiles: Array.isArray(msg.profiles) ? msg.profiles[0] : msg.profiles
-      }));
+      const formattedMessages = (messages || []).map(msg => {
+        const profile = profileMap[msg.sender_id];
+        return {
+          id: msg.id,
+          user_id: msg.sender_id,
+          content: msg.content,
+          created_at: msg.created_at,
+          metadata: msg.metadata as any,
+          profiles: profile || {
+            name: 'Unknown User',
+            username: 'unknown',
+            avatar: ''
+          }
+        };
+      });
       
       console.log('Formatted messages:', formattedMessages);
       setMessages(formattedMessages as ChatMessage[]);
@@ -492,10 +512,25 @@ const Chat = () => {
             <Button onClick={sendMessage} disabled={!newMessage.trim()}>
               <Send className="h-4 w-4" />
             </Button>
-            {/* Test button to share a post - you can remove this later */}
+            {/* Test button to share a real post */}
             <Button 
               variant="outline" 
-              onClick={() => sendSharedPost('test-post-id')}
+              onClick={async () => {
+                // Get the first available post to share
+                const { data: posts } = await supabase
+                  .from('posts')
+                  .select('id')
+                  .limit(1);
+                if (posts && posts.length > 0) {
+                  sendSharedPost(posts[0].id);
+                } else {
+                  toast({
+                    title: "No posts found",
+                    description: "Create a post first to test sharing.",
+                    variant: "destructive"
+                  });
+                }
+              }}
               className="whitespace-nowrap"
             >
               Share Post

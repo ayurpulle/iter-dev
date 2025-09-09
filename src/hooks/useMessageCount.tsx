@@ -62,7 +62,8 @@ export const useMessageCount = () => {
           table: 'messages'
         },
         () => {
-          fetchUnreadCount();
+          console.log('Messages changed, refetching count');
+          setTimeout(fetchUnreadCount, 100); // Small delay to ensure DB is updated
         }
       )
       .subscribe();

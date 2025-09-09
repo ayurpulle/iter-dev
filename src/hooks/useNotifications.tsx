@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 
 export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'friend_request' | 'follow' | 'trip_like' | 'itinerary_invite';
+  type: 'like' | 'comment' | 'friend_request' | 'follow' | 'trip_like' | 'itinerary_invite' | 'itinerary_share';
   title: string;
   message: string;
   read: boolean;

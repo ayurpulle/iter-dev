@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { Heart, MessageCircle, Users, MapPin, Sparkles, Clock } from "lucide-react";
+import { Heart, MessageCircle, Users, MapPin, Sparkles, Clock, Share2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +107,7 @@ const Notifications = () => {
       case 'friend_post': return <Users size={16} className="text-green-500" />;
       case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
       case 'itinerary_invite': return <MapPin size={16} className="text-blue-500" />;
+      case 'itinerary_share': return <Share2 size={16} className="text-green-500" />;
       default: return <Clock size={16} className="text-muted-foreground" />;
     }
   };
@@ -120,6 +121,7 @@ const Notifications = () => {
       case 'friend_post': return 'bg-green-50 border-green-100';
       case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
       case 'itinerary_invite': return 'bg-blue-50 border-blue-100';
+      case 'itinerary_share': return 'bg-green-50 border-green-100';
       default: return 'bg-muted/50';
     }
   };

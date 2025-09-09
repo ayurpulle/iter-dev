@@ -61,6 +61,11 @@ export const useShareToChat = () => {
       
       if (itemType === 'itinerary') {
         shareMessage = `🗺️ I shared an itinerary with you: "${itemTitle}"`;
+        messageData = { 
+          type: 'shared_itinerary', 
+          itinerary_id: itemId,
+          itinerary_title: itemTitle 
+        };
       } else {
         // For posts, the itemTitle should already be formatted with location info from the component
         shareMessage = `📸 I shared a post with you`;
@@ -71,12 +76,9 @@ export const useShareToChat = () => {
       const messageInsert: any = {
         conversation_id: conversationId,
         sender_id: user.id,
-        content: shareMessage
+        content: shareMessage,
+        metadata: messageData
       };
-      
-      if (messageData) {
-        messageInsert.metadata = messageData;
-      }
 
       const { error: messageError } = await supabase
         .from('messages')

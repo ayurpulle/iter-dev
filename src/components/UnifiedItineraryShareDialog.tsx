@@ -121,9 +121,9 @@ export const UnifiedItineraryShareDialog = ({
             <div className="max-h-60 overflow-y-auto space-y-2">
               {friends.map((friend) => {
                 const friendProfile = friend.profile;
-                const friendId = friend.user_id !== friend.friend_id ? 
-                  (friend.user_id === friend.friend_id ? friend.friend_id : friend.user_id) : 
-                  friend.friend_id;
+                // Get the correct friend ID - the one that's not the current user
+                const currentUserId = friend.user_id; // This should be the authenticated user
+                const friendId = friend.friend_id;
                 
                 return (
                   <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">

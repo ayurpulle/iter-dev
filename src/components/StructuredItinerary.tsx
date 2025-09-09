@@ -124,7 +124,29 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
   const renderContentWithLinks = (content: string) => {
     // Only render actual working links, not placeholder text
     const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com)[^\s]*)/g;
-    const parts = content.split(urlRegex);
+    
+    // Enhanced time-based section formatting
+    const formatTimeBasedContent = (text: string) => {
+      // Match time-based patterns like "Morning", "Afternoon", "Evening", "Lunch", "Dinner", etc.
+      const timePattern = /(?:^|\n)((?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[:\-\s]*)/gmi;
+      
+      return text.replace(timePattern, (match, timeLabel) => {
+        const cleanLabel = timeLabel.replace(/[::\-\s]*$/, '').trim();
+        return `\n**TIME_SECTION:${cleanLabel.toUpperCase()}**\n`;
+      });
+    };
+
+    // Format travel-related content with better headers
+    const formatTravelContent = (text: string) => {
+      return text
+        .replace(/(?:^|\n)(Getting [Tt]here|Getting to|Travel to|Outbound|Departure)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:GETTING_THERE**\n')
+        .replace(/(?:^|\n)(Coming [Hh]ome|Return|Coming back|Homeward|Return Journey)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:COMING_HOME**\n')
+        .replace(/(?:^|\n)(Perfect [Ss]tay|Where to [Ss]tay|Accommodation|Hotels?|Stay)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:PERFECT_STAY**\n')
+        .replace(/(?:^|\n)(Travel [Tt]ips|Tips|Recommendations|Getting Around)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:TRAVEL_RECOMMENDATIONS**\n');
+    };
+
+    const processedContent = formatTravelContent(formatTimeBasedContent(content));
+    const parts = processedContent.split(urlRegex);
     
     return parts.map((part, index) => {
       if (urlRegex.test(part)) {
@@ -158,12 +180,81 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
           const venueName = recPart;
           return (
             <span key={`${index}-${recIndex}`}>
-              <span className="font-medium text-blue-600">{venueName}</span>
+              <span className="font-medium text-blue-700 dark:text-blue-300">{venueName}</span>
               {renderFriendRecommendations(venueName)}
             </span>
           );
+        } else {
+          // Process the text content for better formatting
+          return (
+            <span key={`${index}-${recIndex}`} className="whitespace-pre-wrap">
+              {recPart.split(/(\*\*[^*]+\*\*)/g).map((textPart, textIndex) => {
+                if (textPart.startsWith('**') && textPart.endsWith('**')) {
+                  const headerText = textPart.slice(2, -2);
+                  
+                  // Different styling for different types of headers
+                  if (headerText.startsWith('TRAVEL_SECTION:')) {
+                    const section = headerText.replace('TRAVEL_SECTION:', '');
+                    if (section === 'GETTING_THERE') {
+                      return (
+                        <h3 key={textIndex} className="font-bold text-lg text-blue-700 dark:text-blue-300 mt-4 mb-2 flex items-center gap-2 bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg border-l-4 border-blue-500">
+                          ✈️ Getting There
+                        </h3>
+                      );
+                    } else if (section === 'COMING_HOME') {
+                      return (
+                        <h3 key={textIndex} className="font-bold text-lg text-green-700 dark:text-green-300 mt-4 mb-2 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg border-l-4 border-green-500">
+                          🏠 Coming Home
+                        </h3>
+                      );
+                    } else if (section === 'PERFECT_STAY') {
+                      return (
+                        <h3 key={textIndex} className="font-bold text-lg text-purple-700 dark:text-purple-300 mt-4 mb-2 flex items-center gap-2 bg-purple-50 dark:bg-purple-950/30 px-4 py-2 rounded-lg border-l-4 border-purple-500">
+                          🏨 Perfect Stay
+                        </h3>
+                      );
+                    } else if (section === 'TRAVEL_RECOMMENDATIONS') {
+                      return (
+                        <h3 key={textIndex} className="font-bold text-lg text-orange-700 dark:text-orange-300 mt-4 mb-2 flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 px-4 py-2 rounded-lg border-l-4 border-orange-500">
+                          💡 Travel Recommendations
+                        </h3>
+                      );
+                    }
+                  } else if (headerText.startsWith('TIME_SECTION:')) {
+                    const timeLabel = headerText.replace('TIME_SECTION:', '');
+                    const timeEmoji = {
+                      'MORNING': '🌅',
+                      'LATE MORNING': '🌤️',
+                      'MIDDAY': '☀️',
+                      'NOON': '☀️',
+                      'AFTERNOON': '🌞',
+                      'EARLY EVENING': '🌆',
+                      'EVENING': '🌇',
+                      'NIGHT': '🌙',
+                      'BREAKFAST': '🥐',
+                      'LUNCH': '🍽️',
+                      'DINNER': '🍷'
+                    }[timeLabel] || '⏰';
+                    
+                    return (
+                      <h4 key={textIndex} className="font-semibold text-base text-indigo-700 dark:text-indigo-300 mt-4 mb-2 flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-2 rounded-lg border-l-3 border-indigo-400">
+                        {timeEmoji} {timeLabel.charAt(0) + timeLabel.slice(1).toLowerCase()}
+                      </h4>
+                    );
+                  } else {
+                    return (
+                      <strong key={textIndex} className="font-semibold text-gray-900 dark:text-gray-100">
+                        {headerText}
+                      </strong>
+                    );
+                  }
+                } else {
+                  return <span key={textIndex}>{textPart}</span>;
+                }
+              })}
+            </span>
+          );
         }
-        return <span key={`${index}-${recIndex}`}>{recPart}</span>;
       });
     });
   };
@@ -206,7 +297,7 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Plane className="h-5 w-5 text-blue-600" />
-                  Flights
+                  Getting There & Coming Home
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -223,7 +314,7 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Hotel className="h-5 w-5 text-green-600" />
-                  Accommodation
+                  Perfect Stay
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -279,13 +370,13 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
             </CardContent>
           </Card>
 
-          {/* Practical Tips */}
+          {/* Practical Tips Section */}
           {parsed.practicalTips && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="h-5 w-5 text-red-600" />
-                  Practical Tips
+                  <MapPin className="h-5 w-5 text-orange-600" />
+                  Travel Tips & Recommendations
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -298,33 +389,37 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
         </div>
       )}
 
-      {/* Booking Links - Toggle Button */}
-      <div className="flex justify-center">
-        <Button 
-          onClick={() => setShowBookingLinks(!showBookingLinks)}
-          variant="outline"
-          className="px-8 py-2"
-        >
-          {showBookingLinks ? 'Hide Booking Links' : 'Show Booking Links'}
-          {showBookingLinks ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-        </Button>
-      </div>
-
-      {/* Booking Links - Collapsible */}
-      {showBookingLinks && parsed.bookingLinks && (
-        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800 animate-in slide-in-from-top-2 duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg text-orange-800 dark:text-orange-200">
-              <ExternalLink className="h-5 w-5" />
-              Quick Booking Links
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-3 break-words">
-              {renderContentWithLinks(parsed.bookingLinks)}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Quick Booking Links - Toggleable */}
+      {parsed.bookingLinks && (
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <Button 
+              onClick={() => setShowBookingLinks(!showBookingLinks)}
+              variant="outline"
+              size="sm"
+              className="text-sm"
+            >
+              {showBookingLinks ? 'Hide Booking Links' : 'Show Quick Booking Links'}
+              <DollarSign className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+          
+          {showBookingLinks && (
+            <Card className="animate-in slide-in-from-top-2 duration-300">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Quick Booking Links
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm space-y-2 break-words">
+                  {renderContentWithLinks(parsed.bookingLinks)}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );

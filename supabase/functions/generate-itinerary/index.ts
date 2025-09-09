@@ -156,6 +156,11 @@ serve(async (req) => {
     const defaultCurrency = userProfile?.default_currency || 'USD';
     const baseLocation = userProfile?.base_location || 'United States';
 
+    // Calculate trip duration in days
+    const duration = startDate && endDate 
+      ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
+      : 7; // Default to 7 days if dates not provided
+
     // Create a natural, user-friendly prompt for travel recommendations with RAG context
     const basePrompt = `I'm planning a trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
 

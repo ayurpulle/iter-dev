@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import InteractiveIter from "./InteractiveItinerary";
-import { ItineraryShareDialog } from "./ItineraryShareDialog";
+import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
 
 interface SavedTripsViewProps {
   onBack: () => void;
@@ -101,7 +101,7 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     </p>
                   </div>
                   <div className="flex gap-2 ml-2">
-                    <ItineraryShareDialog 
+                    <UnifiedItineraryShareDialog 
                       itineraryId={itinerary.id}
                       itineraryTitle={itinerary.title}
                     />

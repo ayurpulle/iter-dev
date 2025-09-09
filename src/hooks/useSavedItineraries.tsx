@@ -55,7 +55,7 @@ export const useSavedItineraries = () => {
     interests?: string[];
     itinerary_content: string;
     friend_recommendations?: { [key: string]: any[] };
-  }) => {
+  }, showToast: boolean = true) => {
     setLoading(true);
     setError(null);
 
@@ -76,10 +76,12 @@ export const useSavedItineraries = () => {
     setLoading(false);
     
     if (result) {
-      toast({
-        title: "Iter Saved!",
-        description: "Your iter has been saved successfully.",
-      });
+      if (showToast) {
+        toast({
+          title: "Iter Saved!",
+          description: "Your iter has been saved successfully.",
+        });
+      }
       fetchSavedItineraries();
       return { id: result };
     }

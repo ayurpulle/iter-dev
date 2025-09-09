@@ -20,7 +20,7 @@ import InteractiveIter from "./InteractiveItinerary";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
-import { ItineraryShareDialog } from "./ItineraryShareDialog";
+import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 const TripPlanning = () => {
@@ -80,14 +80,10 @@ const TripPlanning = () => {
             interests: formData.holidayTypes,
             itinerary_content: generatedIter,
             friend_recommendations: friendRecommendations
-          });
+          }, false); // Don't show toast for auto-save
           
           if (result) {
             setLastGeneratedData(prev => ({ ...prev, id: result.id }));
-            toast({
-              title: "Itinerary Saved!",
-              description: "Your itinerary has been automatically saved."
-            });
           }
         } catch (error) {
           console.error('Auto-save failed:', error);
@@ -787,7 +783,7 @@ const TripPlanning = () => {
             )}
             
             {lastGeneratedData?.id && (
-              <ItineraryShareDialog
+              <UnifiedItineraryShareDialog
                 itineraryId={lastGeneratedData.id}
                 itineraryTitle={`${lastGeneratedData?.destination || formData.destination} Trip`}
               />

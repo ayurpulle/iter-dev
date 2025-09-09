@@ -14,8 +14,8 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle }: SharedItine
   const navigate = useNavigate();
 
   const handleViewItinerary = () => {
-    // Navigate to the trip planning page with the shared itinerary
-    navigate(`/?viewIter=${itineraryId}`);
+    // Navigate to the create trip page to view the itinerary
+    navigate(`/create-trip?viewIter=${itineraryId}`);
   };
 
   return (
@@ -46,7 +46,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle }: SharedItine
             }}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            View Itinerary
+            View Iter
           </Button>
         </div>
       </CardContent>

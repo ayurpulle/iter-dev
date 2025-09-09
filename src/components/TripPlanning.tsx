@@ -300,7 +300,9 @@ const TripPlanning = () => {
         formData.holidayTypes,
         formData.startDate || undefined,
         formData.endDate || undefined,
-        formData.budget > 0 ? formData.budget : undefined
+        formData.budget > 0 ? formData.budget : undefined,
+        formData.inspirationSource,
+        formData.inspirationFolder
       );
 
       const { data, error } = await supabase.functions.invoke('generate-itinerary', {

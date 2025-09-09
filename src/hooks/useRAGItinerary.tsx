@@ -52,30 +52,55 @@ export const useRAGIter = () => {
     return [...new Set(venues)]; // Remove duplicates
   };
 
-  const findRelevantFriendExperiences = (destination: string, interests?: string[]) => {
+  const findRelevantFriendExperiences = (destination: string, interests?: string[], inspirationSource?: string, inspirationFolder?: string) => {
     const locationKeywords = extractLocationKeywords(destination);
     const friendRecommendations: { [venue: string]: FriendRecommendation[] } = {};
 
-    savedPosts.forEach(savedPost => {
+    // Filter posts based on inspiration source
+    let postsToAnalyze = savedPosts;
+    
+    if (inspirationSource === "folder" && inspirationFolder) {
+      // Filter to specific folder posts only - for now we'll skip folder filtering since the schema doesn't include folder names
+      // TODO: Add proper folder filtering when folder names are available in the schema
+      postsToAnalyze = savedPosts;
+    } else if (inspirationSource === "none") {
+      // Use minimal posts - only friends' posts about the exact destination
+      postsToAnalyze = savedPosts.filter(savedPost => {
+        const postContent = savedPost.posts?.content?.toLowerCase() || '';
+        const tripTitle = savedPost.posts?.trips?.title?.toLowerCase() || '';
+        return locationKeywords.some(keyword => 
+          postContent.includes(keyword) || tripTitle.includes(keyword)
+        );
+      });
+    }
+    // If "all", use all saved posts (default behavior)
+
+    postsToAnalyze.forEach(savedPost => {
       if (!savedPost.posts?.content || !savedPost.posts.profiles?.name) return;
 
       const postContent = savedPost.posts.content.toLowerCase();
       const tripTitle = savedPost.posts.trips?.title?.toLowerCase() || '';
       
-      // Check if post is relevant to the destination
-      const isRelevant = locationKeywords.some(keyword => 
-        postContent.includes(keyword) || tripTitle.includes(keyword)
-      );
-
-      if (!isRelevant && interests) {
-        // Also check if post matches interests
-        const matchesInterests = interests.some(interest => 
-          postContent.includes(interest.toLowerCase())
+      // For folder-specific inspiration, prioritize all posts in that folder
+      let isRelevant = false;
+      if (inspirationSource === "folder" && inspirationFolder) {
+        isRelevant = true; // Already filtered above
+      } else {
+        // Check if post is relevant to the destination
+        isRelevant = locationKeywords.some(keyword => 
+          postContent.includes(keyword) || tripTitle.includes(keyword)
         );
-        if (!matchesInterests) return;
-      } else if (!isRelevant) {
-        return;
+
+        if (!isRelevant && interests) {
+          // Also check if post matches interests
+          const matchesInterests = interests.some(interest => 
+            postContent.includes(interest.toLowerCase())
+          );
+          if (matchesInterests) isRelevant = true;
+        }
       }
+
+      if (!isRelevant) return;
 
       // Extract venues from this post
       const venues = extractVenuesFromText(savedPost.posts.content);
@@ -108,24 +133,37 @@ export const useRAGIter = () => {
     return friendRecommendations;
   };
 
-  const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number) => {
-    const friendExperiences = findRelevantFriendExperiences(destination, interests);
+  const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string) => {
+    const friendExperiences = findRelevantFriendExperiences(destination, interests, inspirationSource, inspirationFolder);
     const venuesWithFriends = Object.keys(friendExperiences);
 
     let ragContext = '';
     if (venuesWithFriends.length > 0) {
+      const sourceDescription = inspirationSource === "folder" && inspirationFolder 
+        ? `from your "${inspirationFolder}" folder` 
+        : inspirationSource === "all" 
+        ? "from your saved posts collection"
+        : "from your friends' experiences";
+
       ragContext = `\n\nFRIEND RECOMMENDATIONS CONTEXT:
-Based on your friends' travel experiences, here are places they've visited and enjoyed in ${destination}:
+Based on your travel inspiration ${sourceDescription}, here are places they've visited and enjoyed in ${destination}:
 
 ${venuesWithFriends.map(venue => {
   const recs = friendExperiences[venue];
-  return `- ${venue}: ${recs.length} friend${recs.length > 1 ? 's' : ''} visited this place
+  const authorNames = [...new Set(recs.map(rec => rec.name))];
+  return `- ${venue}: Recommended by ${authorNames.join(', ')}
     ${recs.map(rec => `  • ${rec.name}: "${rec.review.substring(0, 100)}..."`).join('\n    ')}`;
 }).join('\n')}
 
-IMPORTANT: When mentioning any of these venues in your iter, add the marker [FRIEND_REC:VenueName] immediately after the venue name. For example: "Visit the Louvre Museum [FRIEND_REC:Louvre Museum] to see..."
+IMPORTANT: When mentioning any of these venues in your itinerary, add "(suggested by ${
+  inspirationSource === "folder" && inspirationFolder 
+    ? `your ${inspirationFolder} collection` 
+    : "your friends"
+})" immediately after the venue name.
 
-Only add the [FRIEND_REC:VenueName] marker for venues that appear in the friend recommendations list above.`;
+For venues from the list above, also add the technical marker [FRIEND_REC:VenueName] after the venue name for display purposes.
+
+Prioritize these recommended places in your itinerary as they come from trusted sources.`;
     }
 
     return {

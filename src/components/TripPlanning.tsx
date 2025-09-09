@@ -74,6 +74,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   // View state management
   const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewIter'>('planning');
   const [viewingIter, setViewingIter] = useState<any>(null);
+  const [editingItinerary, setEditingItinerary] = useState<any>(null);
   const [iterChangeRequest, setIterChangeRequest] = useState("");
   
   const { savedPosts } = useSavedPosts();
@@ -458,8 +459,19 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           setCurrentView('viewIter');
         }}
         onEditIter={(iter) => {
-          setViewingIter(iter);
-          setCurrentView('viewIter');
+          // Pre-fill form with itinerary data
+          setFormData({
+            destination: iter.destination || "",
+            startDate: iter.start_date ? new Date(iter.start_date) : null,
+            endDate: iter.end_date ? new Date(iter.end_date) : null,
+            holidayTypes: iter.interests || [],
+            budget: iter.budget || 0,
+            inspirationSource: "none",
+            inspirationFolder: "",
+            notes: ""
+          });
+          setCurrentView('planning');
+          setEditingItinerary(iter);
         }}
       />
     );
@@ -965,6 +977,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Generating...
             </>
+          ) : editingItinerary ? (
+            'Update Iter'
           ) : (
             'Generate Iter'
           )}

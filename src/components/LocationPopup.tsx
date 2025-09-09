@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { X, Users, Calendar } from "lucide-react";
+import { X, Users, Calendar, MapPin, Clock, DollarSign } from "lucide-react";
+import { useLocationData } from "@/hooks/useLocationData";
 
 interface LocationPopupProps {
   location: string;
@@ -10,6 +11,8 @@ interface LocationPopupProps {
 }
 
 const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => {
+  const { getLocationInfo } = useLocationData();
+  const locationInfo = getLocationInfo(location);
   const friendsTrips = [
     {
       friend: {
@@ -48,13 +51,14 @@ const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-lg">{location}</h3>
-              <p className="text-sm text-muted-foreground">
-                {locationTrips.length} friend{locationTrips.length !== 1 ? 's' : ''} visited
-              </p>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="font-semibold text-lg">{locationInfo.name}</h3>
+                <p className="text-sm text-muted-foreground">{locationInfo.country}</p>
+              </div>
             </div>
             <Button
               variant="ghost"
@@ -66,31 +70,36 @@ const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => 
             </Button>
           </div>
 
-          <div className="space-y-3 mb-4">
-            {locationTrips.slice(0, 2).map((item, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {item.friend.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.friend.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar size={10} />
-                    <span>{item.trip.date}</span>
-                    <Users size={10} />
-                    <span>{item.trip.companions}</span>
-                  </div>
-                </div>
+          <div className="space-y-4 mb-6">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {locationInfo.description}
+            </p>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="font-medium text-sm">Things to Do</span>
               </div>
-            ))}
-            
-            {locationTrips.length > 2 && (
-              <p className="text-xs text-muted-foreground text-center">
-                +{locationTrips.length - 2} more trip{locationTrips.length - 2 !== 1 ? 's' : ''}
-              </p>
-            )}
+              <ul className="space-y-1">
+                {locationInfo.thingsToDo.map((activity, index) => (
+                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                    <span className="w-1 h-1 bg-primary rounded-full mt-2 flex-shrink-0" />
+                    {activity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className="text-sm">{locationInfo.bestSeason}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <span className="text-sm">{locationInfo.priceRange}</span>
+              </div>
+            </div>
           </div>
 
           <Button 
@@ -98,7 +107,7 @@ const LocationPopup = ({ location, onClose, onViewAll }: LocationPopupProps) => 
             className="w-full"
             size="sm"
           >
-            View All Trips
+            Plan Trip Here
           </Button>
         </CardContent>
       </Card>

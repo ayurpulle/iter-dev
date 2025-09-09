@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,7 @@ interface TripPlanningProps {
 
 const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   console.log('TripPlanning component loaded');
+  const location = useLocation();
   const [formData, setFormData] = useState({
     destination: "",
     startDate: null as Date | null,
@@ -48,6 +50,19 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   const [generatedIter, setGeneratedIter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+  // Handle pre-filled destination from globe navigation
+  useEffect(() => {
+    if (location.state?.prefilledDestination) {
+      setFormData(prev => ({
+        ...prev,
+        destination: location.state.prefilledDestination
+      }));
+      
+      // Clear the state so it doesn't persist on refresh
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [location.state]);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [friendRecommendations, setFriendRecommendations] = useState<{ [key: string]: any[] }>({});
   const [mapboxToken, setMapboxToken] = useState<string>("");

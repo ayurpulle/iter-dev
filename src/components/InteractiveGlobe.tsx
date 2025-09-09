@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Globe, MapPin, X, Camera, Clock, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface Pin {
   location: string;
@@ -116,6 +117,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<LocationDetails | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch Mapbox token from secure edge function
@@ -163,7 +165,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/satellite-v9', // Changed to satellite style for better sea/land contrast
+        style: 'mapbox://styles/mapbox/streets-v12', // Changed to streets style to show place names
         projection: { name: 'globe' },
         zoom: 1.2,
         center: [-98, 39], // Center on North America to show both SF and NYC
@@ -194,37 +196,20 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             'star-intensity': 0.8,
           });
 
-          // Add distinctive country borders
-          map.current.addLayer({
-            id: 'country-borders',
-            type: 'line',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
-            },
-            'source-layer': 'country_boundaries',
-            paint: {
-              'line-color': '#60a5fa',
-              'line-width': 1.5,
-              'line-opacity': 0.8
-            }
-          });
-
-          // Add admin boundaries for states/provinces
-          map.current.addLayer({
-            id: 'admin-borders',
-            type: 'line',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.boundaries-adm1-v3'
-            },
-            'source-layer': 'boundaries_admin_1',
-            paint: {
-              'line-color': '#3b82f6',
-              'line-width': 0.8,
-              'line-opacity': 0.6
-            }
-          });
+          // Enhance place name labels
+          map.current.setLayoutProperty('country-label', 'text-size', 14);
+          map.current.setLayoutProperty('state-label', 'text-size', 12);
+          map.current.setLayoutProperty('settlement-major-label', 'text-size', 12);
+          map.current.setLayoutProperty('settlement-minor-label', 'text-size', 10);
+          
+          // Make labels more visible
+          map.current.setPaintProperty('country-label', 'text-color', '#2563eb');
+          map.current.setPaintProperty('country-label', 'text-halo-color', '#ffffff');
+          map.current.setPaintProperty('country-label', 'text-halo-width', 2);
+          
+          map.current.setPaintProperty('settlement-major-label', 'text-color', '#1d4ed8');
+          map.current.setPaintProperty('settlement-major-label', 'text-halo-color', '#ffffff');
+          map.current.setPaintProperty('settlement-major-label', 'text-halo-width', 1.5);
         }
       });
 
@@ -522,7 +507,20 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
               </div>
             </div>
 
-            <Button size="sm" className="w-full">
+            <Button 
+              size="sm" 
+              className="w-full"
+              onClick={() => {
+                // Navigate to trip planning with pre-filled destination
+                navigate('/create', { 
+                  state: { 
+                    prefilledDestination: `${selectedLocation.name}, ${selectedLocation.country}`,
+                    coordinates: selectedLocation.coordinates 
+                  } 
+                });
+                setSelectedLocation(null);
+              }}
+            >
               Plan Trip Here
             </Button>
           </CardContent>

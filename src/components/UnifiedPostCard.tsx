@@ -65,11 +65,30 @@ interface PostWithProfile extends Post {
 }
 
 interface UnifiedPostCardProps {
-  post: PostWithProfile;
-  onDelete: (postId: string) => void;
+  post: PostWithProfile | {
+    id: string;
+    user_id: string;
+    content: string;
+    image_url?: string;
+    trip_id?: string;
+    is_private: boolean;
+    likes_count: number;
+    comments_count: number;
+    created_at: string;
+    trips?: {
+      id: string;
+      title: string;
+      destination: string;
+      stops?: any[];
+    };
+  };
+  profile?: Profile;
+  onDelete?: (postId: string) => void;
+  onPostUpdate?: (updatedPost: any) => void;
+  onPostDelete?: () => void;
 }
 
-const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
+const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }: UnifiedPostCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
@@ -308,16 +327,16 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
 
       if (error) throw error;
 
-      const newCommentFormatted = {
-        id: data.id,
-        content: data.content,
-        user: {
-          name: userName,
-          avatar: post.profiles?.avatar || null
-        },
-        created_at: "now",
-        user_id: data.user_id
-      };
+        const newCommentFormatted = {
+          id: data.id,
+          content: data.content,
+          user: {
+            name: userName,
+            avatar: (post as PostWithProfile).profiles?.avatar || profile?.avatar || null
+          },
+          created_at: "now",
+          user_id: data.user_id
+        };
       
       setComments(prev => [newCommentFormatted, ...prev]);
       setNewComment("");
@@ -404,9 +423,27 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
     setShowDeleteDialog(false);
   };
 
-  const userName = post.profiles?.name || 'User';
-  const username = post.profiles?.username || 'user';
+  const userName = (post as PostWithProfile).profiles?.name || profile?.name || 'User';
+  const username = (post as PostWithProfile).profiles?.username || profile?.username || 'user';
   const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  const getLocationText = () => {
+    const tripData = (post as any).trips;
+    if (!tripData) return null;
+    
+    const { destination, stops } = tripData;
+    if (!destination) return null;
+    
+    const additionalStops = stops?.length ? stops.length : 0;
+    
+    if (additionalStops > 0) {
+      return `Trip to ${destination} and ${additionalStops} more`;
+    }
+    
+    return `Trip to ${destination}`;
+  };
+
+  const locationText = getLocationText();
 
   // Parse image URLs - could be single URL or JSON array
   const getImageUrls = () => {
@@ -424,7 +461,7 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
 
   const images = getImageUrls();
   const hasImages = images.length > 0;
-  const hasTrip = !!post.trips && !!post.trip_id; // Simply check if trip exists
+  const hasTrip = !!(post as any).trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
 
   // Caption logic
@@ -449,7 +486,7 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
           {/* Header */}
           <div className="flex items-center gap-3 p-4 pb-2">
             <Avatar className="w-8 h-8">
-              <AvatarImage src={post.profiles?.avatar} />
+              <AvatarImage src={(post as PostWithProfile).profiles?.avatar || profile?.avatar} />
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 {userInitials}
               </AvatarFallback>
@@ -459,6 +496,9 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
               <p className="text-xs text-muted-foreground">
                 @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
+              {locationText && (
+                <p className="text-xs text-blue-600 font-medium">{locationText}</p>
+              )}
             </div>
             
           {/* Unified action dropdown */}
@@ -468,8 +508,11 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
               postUserId={post.user_id}
               content={post.content || ''}
               isPrivate={post.is_private}
-              onPostDeleted={() => onDelete?.(post.id)}
-              onPostUpdated={() => {}}
+              onPostDeleted={() => {
+                onDelete?.(post.id);
+                onPostDelete?.();
+              }}
+              onPostUpdated={onPostUpdate}
             />
           </div>
           </div>
@@ -484,10 +527,10 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                    {/* Trip Map - ALWAYS FIRST when trip exists */}
                     {hasTrip && (
                       <CarouselItem className="h-full pl-0">
-                        <TripMapVisual 
-                          stops={post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : []} 
-                          className="w-full h-full"
-                        />
+                         <TripMapVisual 
+                           stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
+                           className="w-full h-full"
+                         />
                       </CarouselItem>
                     )}
                   
@@ -575,28 +618,28 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="mt-2 space-y-1">
-                    {post.trips?.duration && (
+                    {(post as PostWithProfile).trips?.duration && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock size={14} />
-                        <span>{post.trips.duration}</span>
+                        <span>{(post as PostWithProfile).trips.duration}</span>
                       </div>
                     )}
-                    {post.trips?.distance && (
+                    {(post as PostWithProfile).trips?.distance && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <MapPin size={14} />
-                        <span>{post.trips.distance}</span>
+                        <span>{(post as PostWithProfile).trips.distance}</span>
                       </div>
                     )}
-                    {post.trips?.companions && (
+                    {(post as PostWithProfile).trips?.companions && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Users size={14} />
-                        <span>{post.trips.companions}</span>
+                        <span>{(post as PostWithProfile).trips.companions}</span>
                       </div>
                     )}
-                    {post.trips?.cost && (
+                    {(post as PostWithProfile).trips?.cost && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <DollarSign size={14} />
-                        <span>{post.trips.cost}</span>
+                        <span>{(post as PostWithProfile).trips.cost}</span>
                       </div>
                     )}
                   </div>

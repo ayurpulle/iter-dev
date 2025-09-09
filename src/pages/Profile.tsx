@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFriends } from '@/hooks/useFriends';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import UnifiedPostCard from '@/components/UnifiedPostCard';
 
 const Profile = () => {
   const { state } = useLocation();
@@ -89,7 +90,12 @@ const Profile = () => {
     try {
       const { data: posts, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          trips:trip_id (
+            id, title, destination, stops
+          )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -371,52 +377,19 @@ const Profile = () => {
           ) : (
             <div className="space-y-4">
               {userPosts.map((post) => (
-                <Card key={post.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={profileData.avatar} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {(profileData.name || profileData.username || 'U')[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{profileData.name || 'Unknown User'}</p>
-                            <p className="text-xs text-muted-foreground">@{profileData.username || 'unknown'}</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm mb-4">{post.content}</p>
-                    
-                    {post.image_url && (
-                      <div className="mb-4 rounded-lg overflow-hidden">
-                        <img
-                          src={post.image_url}
-                          alt="Post image"
-                          className="w-full h-auto max-h-80 object-cover"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Heart size={16} />
-                        <span className="text-sm">{post.likes_count || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MessageCircle size={16} />
-                        <span className="text-sm">{post.comments_count || 0}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <UnifiedPostCard
+                  key={post.id}
+                  post={post}
+                  profile={profileData}
+                  onPostUpdate={() => {
+                    // Reload posts when one is updated
+                    loadUserPosts(profileData.user_id);
+                  }}
+                  onPostDelete={() => {
+                    // Remove deleted post from local state
+                    setUserPosts(prev => prev.filter(p => p.id !== post.id));
+                  }}
+                />
               ))}
             </div>
           )}

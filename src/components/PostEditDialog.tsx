@@ -40,7 +40,8 @@ export const PostEditDialog = ({ postId, currentContent, onContentUpdated }: Pos
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
-          <Edit2 className="h-4 w-4" />
+          <Edit2 className="h-4 w-4 mr-2" />
+          Edit
         </Button>
       </DialogTrigger>
       <DialogContent>

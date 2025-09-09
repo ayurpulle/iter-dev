@@ -76,8 +76,27 @@ export const useSavedItineraries = () => {
       // Process collaborative itineraries
       const processedCollaborative = (collaborativeItineraries || []).map(iter => {
         console.log('Processing collaborative itinerary:', iter.title, 'collaborators:', iter.itinerary_collaborators);
-        const collaboratorData = Array.isArray(iter.itinerary_collaborators) ? iter.itinerary_collaborators[0] : iter.itinerary_collaborators;
-        const hasEditPermission = collaboratorData?.permission === 'edit' || collaboratorData?.permission === 'admin';
+        
+        let collaboratorData = null;
+        let hasEditPermission = false;
+        
+        if (iter.itinerary_collaborators) {
+          if (Array.isArray(iter.itinerary_collaborators)) {
+            // If it's an array, find the current user's collaboration
+            collaboratorData = iter.itinerary_collaborators.find(collab => collab.user_id === user.id);
+            if (!collaboratorData && iter.itinerary_collaborators.length > 0) {
+              // Fallback to first if current user not found
+              collaboratorData = iter.itinerary_collaborators[0];
+            }
+          } else {
+            // If it's a single object
+            collaboratorData = iter.itinerary_collaborators;
+          }
+        }
+        
+        hasEditPermission = collaboratorData?.permission === 'edit' || collaboratorData?.permission === 'admin';
+        
+        console.log(`Collaborative iter ${iter.title}: collaboratorData=`, collaboratorData, 'hasEditPermission=', hasEditPermission);
         
         return {
           ...iter,

@@ -320,6 +320,31 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     setIsLoading(true);
     
     try {
+      // If editing, update existing itinerary
+      if (editingItinerary) {
+        console.log('Updating existing itinerary:', editingItinerary.id);
+        const result = await updateItinerary(editingItinerary.id, {
+          title: formData.destination,
+          destination: formData.destination,
+          start_date: formData.startDate || null,
+          end_date: formData.endDate || null,
+          budget: formData.budget > 0 ? formData.budget : undefined,
+          interests: formData.holidayTypes,
+          itinerary_content: editingItinerary.itinerary_content,
+          friend_recommendations: editingItinerary.friend_recommendations || {}
+        });
+        
+        if (result) {
+          toast({
+            title: "Iter Updated!",
+            description: "Your iter has been updated successfully.",
+          });
+          setEditingItinerary(null);
+          setCurrentView('savedTrips');
+        }
+        return;
+      }
+
       // Generate RAG context from friend experiences
       const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
         formData.destination,

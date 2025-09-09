@@ -121,7 +121,11 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     >
                       <Eye size={16} />
                     </Button>
-                    {(itinerary.is_owner || itinerary.can_edit) && (
+                    {(() => {
+                      const canEdit = itinerary.is_owner || itinerary.can_edit;
+                      console.log(`Itinerary ${itinerary.title}: is_owner=${itinerary.is_owner}, can_edit=${itinerary.can_edit}, showEdit=${canEdit}`);
+                      return canEdit;
+                    })() && (
                       <Button
                         variant="ghost"
                         size="sm"

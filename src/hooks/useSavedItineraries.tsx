@@ -74,13 +74,19 @@ export const useSavedItineraries = () => {
       }));
 
       // Process collaborative itineraries
-      const processedCollaborative = (collaborativeItineraries || []).map(iter => ({
-        ...iter,
-        creator_username: iter.profiles?.username || 'Unknown',
-        creator_name: iter.profiles?.name || 'Unknown User',
-        is_owner: false,
-        can_edit: iter.itinerary_collaborators?.[0]?.permission === 'edit' || iter.itinerary_collaborators?.[0]?.permission === 'admin'
-      }));
+      const processedCollaborative = (collaborativeItineraries || []).map(iter => {
+        console.log('Processing collaborative itinerary:', iter.title, 'collaborators:', iter.itinerary_collaborators);
+        const collaboratorData = Array.isArray(iter.itinerary_collaborators) ? iter.itinerary_collaborators[0] : iter.itinerary_collaborators;
+        const hasEditPermission = collaboratorData?.permission === 'edit' || collaboratorData?.permission === 'admin';
+        
+        return {
+          ...iter,
+          creator_username: iter.profiles?.username || 'Unknown',
+          creator_name: iter.profiles?.name || 'Unknown User',
+          is_owner: false,
+          can_edit: hasEditPermission
+        };
+      });
 
       // Combine and deduplicate results
       const allItineraries = [...processedOwned];

@@ -125,39 +125,65 @@ export const InteractiveItineraryMap = ({ destinations = [], className }: Intera
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+        // Function to determine continent color based on coordinates
+        const getContinentColor = (lng: number, lat: number) => {
+          // North America: roughly -170 to -50 longitude, 15 to 75 latitude
+          if (lng >= -170 && lng <= -50 && lat >= 15 && lat <= 75) {
+            return '#ef4444'; // Red for North America
+          }
+          // Europe: roughly -25 to 60 longitude, 35 to 75 latitude
+          if (lng >= -25 && lng <= 60 && lat >= 35 && lat <= 75) {
+            return '#3b82f6'; // Blue for Europe
+          }
+          // Asia: roughly 60 to 180 longitude, 5 to 75 latitude
+          if (lng >= 60 && lng <= 180 && lat >= 5 && lat <= 75) {
+            return '#10b981'; // Green for Asia
+          }
+          // Africa: roughly -20 to 55 longitude, -35 to 40 latitude
+          if (lng >= -20 && lng <= 55 && lat >= -35 && lat <= 40) {
+            return '#f59e0b'; // Yellow for Africa
+          }
+          // South America: roughly -85 to -30 longitude, -60 to 15 latitude
+          if (lng >= -85 && lng <= -30 && lat >= -60 && lat <= 15) {
+            return '#8b5cf6'; // Purple for South America
+          }
+          // Oceania: roughly 110 to 180 longitude, -50 to -5 latitude
+          if (lng >= 110 && lng <= 180 && lat >= -50 && lat <= -5) {
+            return '#ec4899'; // Pink for Oceania
+          }
+          // Default fallback
+          return '#fb923c'; // Orange for unknown
+        };
+
         // Add markers
         const newMarkers: mapboxgl.Marker[] = [];
         locations.forEach((location, index) => {
-          // Create custom marker element
+          // Get continent-based color
+          const pinColor = getContinentColor(location.coordinates[0], location.coordinates[1]);
+          
+          // Create custom marker element with pin icon
           const markerElement = document.createElement('div');
           markerElement.className = 'custom-marker';
+          markerElement.style.cssText = `
+            cursor: pointer;
+            transform: translate(-50%, -100%);
+            transition: transform 0.2s ease;
+          `;
+          
+          // Create pin SVG matching the globe style
           markerElement.innerHTML = `
-            <div style="
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              color: white;
-              border-radius: 50%;
-              width: 40px;
-              height: 40px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: bold;
-              border: 3px solid white;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-              cursor: pointer;
-              font-size: 14px;
-              transition: transform 0.2s ease;
-            ">
-              ${index + 1}
-            </div>
+            <svg width="32" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${pinColor}; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3" fill="${pinColor}" stroke="white" stroke-width="1"/>
+            </svg>
           `;
 
           // Add hover effect
           markerElement.addEventListener('mouseenter', () => {
-            markerElement.style.transform = 'scale(1.1)';
+            markerElement.style.transform = 'translate(-50%, -100%) scale(1.1)';
           });
           markerElement.addEventListener('mouseleave', () => {
-            markerElement.style.transform = 'scale(1)';
+            markerElement.style.transform = 'translate(-50%, -100%) scale(1)';
           });
 
           // Add click handler

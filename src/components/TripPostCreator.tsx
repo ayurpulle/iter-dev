@@ -54,7 +54,15 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     // Try to fetch Mapbox token from Supabase
     const fetchMapboxToken = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        // Get current session for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+          headers: session ? {
+            Authorization: `Bearer ${session.access_token}`,
+          } : {}
+        });
+        
         if (data?.token) {
           setMapboxToken(data.token);
         } else {

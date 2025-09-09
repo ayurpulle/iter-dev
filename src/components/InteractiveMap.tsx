@@ -34,7 +34,14 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   useEffect(() => {
     const fetchMapboxToken = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        // Get current session for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+          headers: session ? {
+            Authorization: `Bearer ${session.access_token}`,
+          } : {}
+        });
         
         if (error) throw error;
         

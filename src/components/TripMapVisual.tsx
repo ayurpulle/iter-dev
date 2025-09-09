@@ -88,7 +88,19 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
     const fetchMapboxToken = async () => {
       console.log('=== DEBUG: Fetching Mapbox token ===');
       try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        // Get current session for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.log('=== DEBUG: No session, trying without auth ===');
+        }
+
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+          headers: session ? {
+            Authorization: `Bearer ${session.access_token}`,
+          } : {}
+        });
+        
         console.log('=== DEBUG: Token response ===', { data, error });
         if (error) {
           setError(`Token fetch error: ${error.message}`);

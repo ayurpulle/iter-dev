@@ -81,11 +81,11 @@ const Chat = () => {
     if (selectedConversation) {
       fetchMessages(selectedConversation);
       markMessagesAsRead(selectedConversation);
-      // Also trigger a global message count update
+      
+      // Trigger immediate message count update after a short delay to ensure DB is updated
       setTimeout(() => {
-        // This will trigger the useMessageCount hook to refetch
         window.dispatchEvent(new CustomEvent('messageCountUpdate'));
-      }, 100);
+      }, 300);
     } else {
       fetchConversations();
     }

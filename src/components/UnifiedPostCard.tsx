@@ -124,7 +124,15 @@ const UnifiedPostCard = ({ post, onDelete }: UnifiedPostCardProps) => {
 
     const getMapboxToken = async () => {
       try {
-        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        // Get current session for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const { data } = await supabase.functions.invoke('get-mapbox-token', {
+          headers: session ? {
+            Authorization: `Bearer ${session.access_token}`,
+          } : {}
+        });
+        
         if (data?.token) {
           setMapboxToken(data.token);
         }

@@ -69,7 +69,16 @@ const SharedPostCard = ({ postId, className }: SharedPostCardProps) => {
         // Fetch mapbox token first - this ensures it's available before rendering map
         try {
           console.log('SharedPostCard: Fetching mapbox token...');
-          const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-mapbox-token');
+          
+          // Get current session for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-mapbox-token', {
+            headers: session ? {
+              Authorization: `Bearer ${session.access_token}`,
+            } : {}
+          });
+          
           if (tokenError) {
             console.error('SharedPostCard: Error from get-mapbox-token:', tokenError);
           } else if (tokenData?.token) {

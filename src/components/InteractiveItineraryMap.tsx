@@ -49,7 +49,20 @@ export const InteractiveItineraryMap = ({ destinations = [], className }: Intera
 
   // Initialize map and markers
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || destinations.length === 0) return;
+    if (!mapContainer.current || !mapboxToken || destinations.length === 0) {
+      console.log('Map initialization skipped:', { 
+        hasContainer: !!mapContainer.current, 
+        hasToken: !!mapboxToken, 
+        hasDestinations: destinations.length > 0 
+      });
+      return;
+    }
+
+    // Prevent multiple map instances
+    if (map.current) {
+      console.log('Map already exists, skipping initialization');
+      return;
+    }
 
     mapboxgl.accessToken = mapboxToken;
 
@@ -86,91 +99,144 @@ export const InteractiveItineraryMap = ({ destinations = [], className }: Intera
         }
       }
 
-      if (locations.length === 0) return;
+      if (locations.length === 0) {
+        console.log('No valid locations found');
+        return;
+      }
+
+      // Double-check container is still available
+      if (!mapContainer.current) {
+        console.log('Container disappeared during geocoding');
+        return;
+      }
 
       // Calculate center point
       const avgLng = locations.reduce((sum, loc) => sum + loc.coordinates[0], 0) / locations.length;
       const avgLat = locations.reduce((sum, loc) => sum + loc.coordinates[1], 0) / locations.length;
 
-      // Initialize map
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current!,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [avgLng, avgLat],
-        zoom: locations.length > 1 ? 5 : 10,
-      });
-
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      // Add markers
-      const newMarkers: mapboxgl.Marker[] = [];
-      locations.forEach((location, index) => {
-        // Create custom marker element
-        const markerElement = document.createElement('div');
-        markerElement.className = 'custom-marker';
-        markerElement.innerHTML = `
-          <div style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            cursor: pointer;
-            font-size: 14px;
-            transition: transform 0.2s ease;
-          ">
-            ${index + 1}
-          </div>
-        `;
-
-        // Add hover effect
-        markerElement.addEventListener('mouseenter', () => {
-          markerElement.style.transform = 'scale(1.1)';
-        });
-        markerElement.addEventListener('mouseleave', () => {
-          markerElement.style.transform = 'scale(1)';
+      try {
+        // Initialize map
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [avgLng, avgLat],
+          zoom: locations.length > 1 ? 5 : 10,
         });
 
-        // Add click handler
-        markerElement.addEventListener('click', () => {
-          setSelectedLocation(location);
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Add markers
+        const newMarkers: mapboxgl.Marker[] = [];
+        locations.forEach((location, index) => {
+          // Create custom marker element
+          const markerElement = document.createElement('div');
+          markerElement.className = 'custom-marker';
+          markerElement.innerHTML = `
+            <div style="
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              border-radius: 50%;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              border: 3px solid white;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+              cursor: pointer;
+              font-size: 14px;
+              transition: transform 0.2s ease;
+            ">
+              ${index + 1}
+            </div>
+          `;
+
+          // Add hover effect
+          markerElement.addEventListener('mouseenter', () => {
+            markerElement.style.transform = 'scale(1.1)';
+          });
+          markerElement.addEventListener('mouseleave', () => {
+            markerElement.style.transform = 'scale(1)';
+          });
+
+          // Add click handler
+          markerElement.addEventListener('click', () => {
+            setSelectedLocation(location);
+          });
+
+          const marker = new mapboxgl.Marker({ element: markerElement })
+            .setLngLat(location.coordinates)
+            .addTo(map.current!);
+
+          newMarkers.push(marker);
         });
 
-        const marker = new mapboxgl.Marker({ element: markerElement })
-          .setLngLat(location.coordinates)
-          .addTo(map.current!);
+        setMarkers(newMarkers);
 
-        newMarkers.push(marker);
-      });
+        // Fit bounds to show all markers
+        if (locations.length > 1) {
+          const bounds = new mapboxgl.LngLatBounds();
+          locations.forEach(location => bounds.extend(location.coordinates));
+          map.current.fitBounds(bounds, { padding: 50 });
+        }
 
-      setMarkers(newMarkers);
+        console.log('Map initialized successfully with', locations.length, 'locations');
 
-      // Fit bounds to show all markers
-      if (locations.length > 1) {
-        const bounds = new mapboxgl.LngLatBounds();
-        locations.forEach(location => bounds.extend(location.coordinates));
-        map.current.fitBounds(bounds, { padding: 50 });
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        map.current = null;
       }
     };
 
     geocodeDestinations();
 
+    // Cleanup function with proper safety checks
     return () => {
-      markers.forEach(marker => marker.remove());
-      map.current?.remove();
+      console.log('Cleaning up InteractiveItineraryMap');
+      
+      // Clean up markers first
+      if (markers.length > 0) {
+        markers.forEach(marker => {
+          try {
+            marker.remove();
+          } catch (error) {
+            console.warn('Error removing marker:', error);
+          }
+        });
+        setMarkers([]);
+      }
+      
+      // Clean up map with safety checks
+      if (map.current) {
+        try {
+          // Check if map is still valid before removal
+          if (map.current.getContainer()) {
+            map.current.remove();
+          }
+        } catch (error) {
+          console.warn('Error removing map:', error);
+        } finally {
+          map.current = null;
+        }
+      }
     };
-  }, [mapboxToken, destinations]);
+  }, [mapboxToken, destinations.join(',')]); // Use join to create stable dependency
 
+  // Early return with loading state if no token
   if (!mapboxToken) {
     return (
       <div className={`h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center ${className}`}>
         <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
+
+  // Early return if no destinations
+  if (!destinations || destinations.length === 0) {
+    return (
+      <div className={`h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center ${className}`}>
+        <p className="text-muted-foreground">No destinations to display</p>
       </div>
     );
   }

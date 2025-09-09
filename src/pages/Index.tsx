@@ -140,8 +140,9 @@ const Index = () => {
   // Show trip planning component when view=savedTrips
   if (shouldShowTripPlanning) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-20">
         <TripPlanning openIterId={openIterId} />
+        <BottomTabBar />
       </div>
     );
   }

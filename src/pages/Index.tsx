@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
-import TestNotifications from "@/components/TestNotifications";
 import TripPlanning from "@/components/TripPlanning";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -151,7 +150,6 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopBar />
       <main className="flex-1 overflow-y-auto pb-20">
-        <TestNotifications />
         <div className="space-y-4 px-4 py-4 max-w-2xl mx-auto">
           {posts.length === 0 ? (
             <div className="text-center py-12">

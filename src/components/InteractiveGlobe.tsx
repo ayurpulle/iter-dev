@@ -512,7 +512,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
               className="w-full"
               onClick={() => {
                 // Navigate to trip planning with pre-filled destination
-                navigate('/create', { 
+                navigate('/search', { 
                   state: { 
                     prefilledDestination: `${selectedLocation.name}, ${selectedLocation.country}`,
                     coordinates: selectedLocation.coordinates 

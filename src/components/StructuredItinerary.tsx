@@ -89,33 +89,64 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {} }: S
       destinations: [] as string[]
     };
 
-    // Extract destinations from summary or content
+    // Extract destinations from summary or content - focus on main destination
     const extractDestinations = (content: string) => {
-      const destinationPatterns = [
-        /(?:visiting|exploring|traveling to|trip to)\s+([A-Z][a-zA-Z\s,]+?)(?:\s+will|\s+is|\s+offers|\.|\,)/gi,
-        /([A-Z][a-zA-Z\s]+?(?:,\s*[A-Z][a-zA-Z\s]+)*)\s+(?:adventure|experience|journey|trip)/gi,
-        /in\s+([A-Z][a-zA-Z\s,]+?)(?:\s+you'll|\s+offers|\s+is|\.|,)/gi
+      const destinations = new Set<string>();
+      
+      // Primary patterns that typically indicate the main destination
+      const primaryPatterns = [
+        /(?:trip to|visiting|journey to|traveling to|explore|discover)\s+([A-Z][a-zA-Z\s]+?)(?:\s+(?:is|will|offers|features|,|\.|!))/gi,
+        /([A-Z][a-zA-Z\s]+?)\s+(?:adventure|experience|getaway|vacation|holiday|trip)/gi,
+        /(?:in|to)\s+([A-Z][a-zA-Z\s]+?)(?:\s+(?:you'll|offers|is|features|,|\.))/gi
       ];
       
-      const destinations = new Set<string>();
-      destinationPatterns.forEach(pattern => {
+      // Look for the main destination first
+      primaryPatterns.forEach(pattern => {
         let match;
-        while ((match = pattern.exec(content)) !== null) {
+        pattern.lastIndex = 0; // Reset regex state
+        while ((match = pattern.exec(content)) !== null && destinations.size < 2) {
           const dest = match[1]?.trim();
-          if (dest && dest.length > 2 && dest.length < 50) {
+          if (dest && dest.length > 2 && dest.length < 30 && 
+              !dest.toLowerCase().includes('day') && 
+              !dest.toLowerCase().includes('night') &&
+              !dest.toLowerCase().includes('budget') &&
+              !dest.toLowerCase().includes('perfect') &&
+              !dest.toLowerCase().includes('ultimate') &&
+              !/\d/.test(dest)) { // Exclude strings with numbers
             destinations.add(dest);
           }
         }
       });
       
-      return Array.from(destinations).slice(0, 5); // Limit to 5 destinations
+      // If we didn't find good destinations, try simpler patterns
+      if (destinations.size === 0) {
+        const simplePatterns = [
+          /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/g // Simple proper nouns
+        ];
+        
+        simplePatterns.forEach(pattern => {
+          let match;
+          pattern.lastIndex = 0;
+          while ((match = pattern.exec(content)) !== null && destinations.size < 3) {
+            const dest = match[1]?.trim();
+            if (dest && dest.length > 3 && dest.length < 20 &&
+                !['Day', 'Night', 'Budget', 'Perfect', 'Ultimate', 'This', 'Your', 'The'].includes(dest)) {
+              destinations.add(dest);
+            }
+          }
+        });
+      }
+      
+      return Array.from(destinations).slice(0, 3); // Limit to 3 destinations max
     };
 
     sections.forEach(section => {
       const trimmed = section.trim();
       if (trimmed.startsWith('SUMMARY:')) {
         parsed.summary = trimmed.replace('SUMMARY:', '').trim();
-        parsed.destinations = extractDestinations(parsed.summary);
+        // Extract destinations from both summary and the first few lines
+        const combinedContent = parsed.summary;
+        parsed.destinations = extractDestinations(combinedContent);
       } else if (trimmed.startsWith('FLIGHTS:')) {
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {

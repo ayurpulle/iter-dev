@@ -15,7 +15,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle }: SharedItine
 
   const handleViewItinerary = () => {
     // Navigate to the create trip page to view the itinerary
-    navigate(`/create-trip?viewIter=${itineraryId}`);
+    navigate(`/create?viewIter=${itineraryId}`);
   };
 
   return (

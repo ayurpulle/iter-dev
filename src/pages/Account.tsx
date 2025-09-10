@@ -206,16 +206,26 @@ const Account = () => {
         return;
       }
 
+      console.log('Loaded posts:', posts);
+      console.log('Posts length:', posts?.length);
+      
       setUserPosts(posts || []);
       
       // Update post count in profile
-      setUserProfile(prev => ({
-        ...prev,
-        stats: {
-          ...prev.stats,
-          posts: posts?.length || 0,
-        },
-      }));
+      const postCount = posts?.length || 0;
+      console.log('Setting post count to:', postCount);
+      
+      setUserProfile(prev => {
+        const updatedProfile = {
+          ...prev,
+          stats: {
+            ...prev.stats,
+            posts: postCount,
+          },
+        };
+        console.log('Updated profile stats:', updatedProfile.stats);
+        return updatedProfile;
+      });
       
       // Calculate travel statistics from posts
       calculateTravelStats(posts || []);

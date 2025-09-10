@@ -62,9 +62,15 @@ export const usePostManagement = () => {
 
     setLoading(true);
     try {
+      // Create update object without touching created_at or updated_at
+      const updateData = {
+        ...updates,
+        // Only include fields we want to update, preserving original timestamps
+      };
+      
       const { data, error } = await supabase
         .from('posts')
-        .update(updates)
+        .update(updateData)
         .eq('id', postId)
         .eq('user_id', user.id)
         .select()

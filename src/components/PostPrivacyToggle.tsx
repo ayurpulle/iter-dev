@@ -16,11 +16,17 @@ export const PostPrivacyToggle = ({ postId, isPrivate, onPrivacyChanged }: PostP
 
   const handlePrivacyToggle = async (checked: boolean) => {
     const newPrivacy = checked;
+    
+    // Update UI immediately for responsive feedback
+    setCurrentPrivacy(newPrivacy);
+    onPrivacyChanged?.(newPrivacy);
+    
     const result = await togglePostPrivacy(postId, newPrivacy);
     
-    if (result) {
-      setCurrentPrivacy(newPrivacy);
-      onPrivacyChanged?.(newPrivacy);
+    if (!result) {
+      // Revert on failure
+      setCurrentPrivacy(isPrivate);
+      onPrivacyChanged?.(isPrivate);
     }
   };
 

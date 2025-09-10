@@ -94,19 +94,19 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
       <div className="space-y-4">
         {/* Header with badge */}
         <div className="flex items-center gap-2">
-          {collaboration?.permission === 'edit' ? (
-            <Edit className="h-5 w-5 text-primary" />
-          ) : (
+          {collaboration?.permission === 'view' ? (
             <Eye className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <Edit className="h-5 w-5 text-primary" />
           )}
           <Badge 
             variant="secondary" 
-            className={collaboration?.permission === 'edit' 
-              ? "bg-primary/10 text-primary hover:bg-primary/20" 
-              : "bg-muted text-muted-foreground"
+            className={collaboration?.permission === 'view' 
+              ? "bg-muted text-muted-foreground"
+              : "bg-primary/10 text-primary hover:bg-primary/20" 
             }
           >
-            {collaboration?.permission === 'edit' ? 'Collaboration Invite' : 'View Invite'}
+            {collaboration?.permission === 'view' ? 'View Invite' : 'Collaboration Invite'}
           </Badge>
         </div>
         
@@ -119,9 +119,9 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
           <span>
-            {collaboration?.permission === 'edit' 
-              ? 'You can view and edit this itinerary' 
-              : 'You can view this itinerary'
+            {collaboration?.permission === 'view' 
+              ? 'You can view this itinerary'
+              : 'You can view and edit this itinerary' 
             }
           </span>
         </div>
@@ -135,15 +135,15 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
               onClick={handleAcceptInvite}
               disabled={loading}
             >
-              {collaboration.permission === 'edit' ? (
-                <>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Accept & Edit
-                </>
-              ) : (
+              {collaboration.permission === 'view' ? (
                 <>
                   <Eye className="h-4 w-4 mr-2" />
                   Accept & View
+                </>
+              ) : (
+                <>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Accept & Edit
                 </>
               )}
             </Button>
@@ -162,15 +162,15 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => navigate(`/?view=savedTrips&openIter=${itineraryId}`)}
           >
-            {collaboration?.permission === 'edit' ? (
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                View & Edit
-              </>
-            ) : (
+            {collaboration?.permission === 'view' ? (
               <>
                 <Eye className="h-4 w-4 mr-2" />
                 View Only
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                View & Edit
               </>
             )}
           </Button>

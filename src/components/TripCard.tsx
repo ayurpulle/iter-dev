@@ -305,10 +305,6 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <ItineraryShareDialog 
-                  itineraryId={trip.id}
-                  itineraryTitle={trip.title}
-                />
                 {!isSaved ? (
                   <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
                     <Button 
@@ -329,6 +325,10 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                     <Plus size={16} className="fill-current" />
                   </Button>
                 )}
+                <ItineraryShareDialog 
+                  itineraryId={trip.id}
+                  itineraryTitle={trip.title}
+                />
               </div>
             </div>
 

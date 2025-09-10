@@ -101,6 +101,29 @@ export const useSavedPosts = () => {
 
   useEffect(() => {
     fetchSavedPosts();
+
+    // Set up real-time subscription for saved_items changes
+    const channel = supabase
+      .channel('saved-items-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_items',
+          filter: `user_id=eq.${user?.id}`
+        },
+        (payload) => {
+          console.log('Saved items changed:', payload);
+          // Refetch saved posts when saved_items changes
+          fetchSavedPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

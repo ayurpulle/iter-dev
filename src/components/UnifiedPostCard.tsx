@@ -264,8 +264,20 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     
     getMapboxToken();
     checkLikeStatus();
+    checkSavedStatus();
     loadComments();
   }, [post.id, user?.id]);
+
+  // Watch for changes in saved posts state
+  useEffect(() => {
+    const checkSavedStatus = () => {
+      if (!user?.id) return;
+      const isPostSaved = yourSavedPosts.some(savedPost => savedPost.item_id === post.id);
+      setIsSaved(isPostSaved);
+    };
+    
+    checkSavedStatus();
+  }, [yourSavedPosts, post.id, user?.id]);
 
   const handleLike = async () => {
     if (!user?.id || isLiking) return;

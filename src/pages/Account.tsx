@@ -103,6 +103,29 @@ const Account = () => {
     if (activeSection === 'saved' && user) {
       loadFolders();
       loadSavedPosts();
+
+      // Set up real-time subscription for saved_items changes
+      const channel = supabase
+        .channel('account-saved-items-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'saved_items',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Account saved items changed:', payload);
+            // Reload saved posts when changes occur
+            loadSavedPosts();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [activeSection, user]);
 

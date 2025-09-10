@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
+import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send, Crop } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
@@ -58,6 +58,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const [isSaved, setIsSaved] = useState(false);
   const [showUnsaveConfirm, setShowUnsaveConfirm] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
+  const [photoFitMode, setPhotoFitMode] = useState<'cover' | 'contain' | 'fill'>('cover');
   const [newComment, setNewComment] = useState("");
   const [likesCount, setLikesCount] = useState(stats.likes);
   const [commentsCount, setCommentsCount] = useState(stats.comments);
@@ -298,20 +299,41 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                         <img 
                           src={photo} 
                           alt={`Trip photo ${index + 1}`} 
-                          className="max-w-full max-h-full object-contain"
+                          className={`w-full h-full ${photoFitMode === 'contain' ? 'object-contain' : photoFitMode === 'cover' ? 'object-cover' : 'object-fill'}`}
+                          style={{
+                            objectPosition: 'center center'
+                          }}
                         />
+                        
+                        {/* Photo Fit Mode Toggle */}
+                        <div className="absolute top-3 right-3">
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-white"
+                            onClick={() => {
+                              const modes: ('cover' | 'contain' | 'fill')[] = ['cover', 'contain', 'fill'];
+                              const currentIndex = modes.indexOf(photoFitMode);
+                              const nextIndex = (currentIndex + 1) % modes.length;
+                              setPhotoFitMode(modes[nextIndex]);
+                            }}
+                            title={`Photo fit: ${photoFitMode} (click to change)`}
+                          >
+                            <Crop size={14} />
+                          </Button>
+                        </div>
                         
                         {/* Floating Action Buttons */}
                         <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                          {/* Share Button (Triangle - left) */}
-                        <ShareToChatDialog
-                          itemType="itinerary"
-                          itemId={trip.id}
-                          itemTitle={trip.title}
-                          triggerText=""
-                          variant="ghost"
-                          size="sm"
-                        />
+                          {/* Share Button (Send icon - left) */}
+                          <ShareToChatDialog
+                            itemType="itinerary"
+                            itemId={trip.id}
+                            itemTitle={trip.title}
+                            triggerText=""
+                            variant="ghost"
+                            size="sm"
+                          />
                           
                           {/* Save Button (Plus - right) */}
                           {!isSaved ? (

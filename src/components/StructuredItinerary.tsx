@@ -402,14 +402,14 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
           )}
 
           {/* Day by Day Itinerary */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
+          <div>
+            <div className="pb-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
                 <Clock className="h-5 w-5 text-purple-600" />
                 Day-by-Day Itinerary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+              </h3>
+            </div>
+            <div className="space-y-3">
               {parsed.days.map((day, index) => (
                 <Collapsible
                   key={index}
@@ -419,7 +419,7 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                   <CollapsibleTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full justify-between p-3 h-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30"
+                      className="w-full justify-between p-4 h-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 rounded-lg border border-gray-200 dark:border-gray-800"
                     >
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
@@ -440,15 +440,15 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                       )}
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
+                  <CollapsibleContent className="pt-4 px-4 pb-2">
                     <div className="text-sm space-y-2 break-words">
                       {renderContentWithLinks(day.content)}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Practical Tips Section */}
           {parsed.practicalTips && (

@@ -118,8 +118,6 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     }>;
   }>>([]);
   const [loadingComments, setLoadingComments] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState("");
 
   const isOwnPost = user?.id === post.user_id;
 
@@ -173,36 +171,75 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     const loadComments = async () => {
       setLoadingComments(true);
       try {
-        const { data, error } = await supabase
+        // Load parent comments
+        const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
             id,
             content,
             created_at,
-            user_id
+            user_id,
+            parent_id
           `)
           .eq('post_id', post.id)
+          .is('parent_id', null) // Only parent comments
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (commentsError) throw commentsError;
 
-        // Get user profiles for comments
-        const userIds = [...new Set((data || []).map(comment => comment.user_id))];
-        let profiles = [];
+        // Load replies for all comments
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id,
+            parent_id
+          `)
+          .eq('post_id', post.id)
+          .not('parent_id', 'is', null) // Only replies
+          .order('created_at', { ascending: true });
+
+        if (repliesError) throw repliesError;
+
+        // Get user profiles for all comments and replies
+        const allUserIds = [...new Set([
+          ...(commentsData || []).map(comment => comment.user_id),
+          ...(repliesData || []).map(reply => reply.user_id)
+        ])];
         
-        if (userIds.length > 0) {
+        let profiles = [];
+        if (allUserIds.length > 0) {
           const { data: profilesData, error: profilesError } = await supabase
             .from('profiles')
             .select('user_id, name, avatar')
-            .in('user_id', userIds);
+            .in('user_id', allUserIds);
           
           if (!profilesError) {
             profiles = profilesData || [];
           }
         }
 
-        const formattedComments = (data || []).map(comment => {
+        // Format comments with replies
+        const formattedComments = (commentsData || []).map(comment => {
           const userProfile = profiles.find(p => p.user_id === comment.user_id);
+          const commentReplies = (repliesData || [])
+            .filter(reply => reply.parent_id === comment.id)
+            .map(reply => {
+              const replyProfile = profiles.find(p => p.user_id === reply.user_id);
+              return {
+                id: reply.id,
+                content: reply.content,
+                user: {
+                  name: replyProfile?.name || 'Unknown User',
+                  avatar: replyProfile?.avatar || null
+                },
+                created_at: formatDistanceToNow(new Date(reply.created_at), { addSuffix: true }),
+                user_id: reply.user_id
+              };
+            });
+
           return {
             id: comment.id,
             content: comment.content,
@@ -211,7 +248,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
               avatar: userProfile?.avatar || null
             },
             created_at: formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }),
-            user_id: comment.user_id
+            user_id: comment.user_id,
+            replies: commentReplies
           };
         });
 
@@ -445,6 +483,14 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
         duration: 3000,
       });
     }
+  };
+
+  const handleRepliesUpdate = (commentId: string, updatedReplies: any[]) => {
+    setComments(prev => prev.map(comment => 
+      comment.id === commentId 
+        ? { ...comment, replies: updatedReplies }
+        : comment
+    ));
   };
 
   const handleDeleteComment = async (commentId: string) => {
@@ -852,7 +898,14 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                             </Button>
                           )}
                         </div>
-                        <p className="text-sm break-words">{comment.content}</p>
+                         <p className="text-sm break-words">{comment.content}</p>
+                         <CommentReplies
+                           commentId={comment.id}
+                           postId={post.id}
+                           postUserId={post.user_id}
+                           replies={comment.replies || []}
+                           onRepliesUpdate={handleRepliesUpdate}
+                         />
                       </div>
                     </div>
                   ))

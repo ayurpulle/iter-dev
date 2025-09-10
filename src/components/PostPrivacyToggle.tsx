@@ -14,8 +14,8 @@ export const PostPrivacyToggle = ({ postId, isPrivate, onPrivacyChanged }: PostP
   const [currentPrivacy, setCurrentPrivacy] = useState(isPrivate);
   const { togglePostPrivacy, loading } = usePostManagement();
 
-  const handlePrivacyToggle = async () => {
-    const newPrivacy = !currentPrivacy;
+  const handlePrivacyToggle = async (checked: boolean) => {
+    const newPrivacy = checked;
     const result = await togglePostPrivacy(postId, newPrivacy);
     
     if (result) {

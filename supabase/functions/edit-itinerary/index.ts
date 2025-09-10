@@ -191,7 +191,6 @@ Guidelines:
         }
       } else {
         console.log('Successfully updated saved itinerary');
-        }
       }
 
       console.log('Itinerary regeneration completed successfully');

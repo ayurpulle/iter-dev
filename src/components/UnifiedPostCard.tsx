@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply, Bookmark, BookmarkCheck } from "lucide-react";
+import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -743,8 +743,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   className="text-blue-500 p-2 hover:text-blue-600"
                   onClick={() => handleSavePost()}
                 >
-                  <BookmarkCheck className="w-5 h-5" />
-                  <span className="ml-1 text-sm">Saved</span>
+                  <Plus className="w-5 h-5" />
+                  <span className="ml-1 text-sm">Save</span>
                 </Button>
               ) : (
                 <ItemFolderSelector
@@ -753,7 +753,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   onSave={handleSavePost}
                 >
                   <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
-                    <Bookmark className="w-5 h-5" />
+                    <Plus className="w-5 h-5" />
                     <span className="ml-1 text-sm">Save</span>
                   </Button>
                 </ItemFolderSelector>

@@ -147,25 +147,10 @@ Guidelines:
 
       console.log('Generated content length:', generatedContent.length);
 
-      // Update the itinerary in the database
-      const { data: updateResult, error: updateError } = await supabaseClient
-        .rpc('save_user_itinerary', {
-          p_title: destination,
-          p_destination: destination,
-          p_start_date: startDate ? startDate.split('T')[0] : null,
-          p_end_date: endDate ? endDate.split('T')[0] : null,
-          p_budget: budget,
-          p_interests: interests ? interests.split(', ') : [],
-          p_itinerary_content: generatedContent,
-          p_friend_recommendations: friendRecommendations || {}
-        });
+      // Update the existing itinerary directly (don't create a new one)
+      console.log('Updating existing itinerary:', itineraryId);
 
-      if (updateError) {
-        console.error('Error updating itinerary:', updateError);
-        throw updateError;
-      }
-
-      // Also update the specific itinerary record if it exists
+      // Update the specific itinerary record
       const { error: directUpdateError } = await supabaseClient
         .from('saved_itineraries')
         .update({
@@ -176,12 +161,13 @@ Guidelines:
           end_date: endDate ? endDate.split('T')[0] : null,
           budget: budget,
           interests: interests ? interests.split(', ') : [],
-          friend_recommendations: friendRecommendations || {}
+          friend_recommendations: friendRecommendations || {},
+          updated_at: new Date().toISOString()
         })
         .eq('id', itineraryId);
 
       if (directUpdateError) {
-        console.log('Direct update failed, trying trips table:', directUpdateError);
+        console.log('Saved itineraries update failed, trying trips table:', directUpdateError);
         
         // Try updating in trips table for background-generated itineraries
         const { error: tripUpdateError } = await supabaseClient
@@ -192,12 +178,19 @@ Guidelines:
             destination: destination,
             start_date: startDate ? startDate.split('T')[0] : null,
             end_date: endDate ? endDate.split('T')[0] : null,
-            cost: budget ? `Budget Level ${budget}` : null
+            cost: budget ? `Budget Level ${budget}` : null,
+            updated_at: new Date().toISOString()
           })
           .eq('id', itineraryId);
 
         if (tripUpdateError) {
           console.error('Error updating trip record:', tripUpdateError);
+          throw tripUpdateError;
+        } else {
+          console.log('Successfully updated trip record');
+        }
+      } else {
+        console.log('Successfully updated saved itinerary');
         }
       }
 

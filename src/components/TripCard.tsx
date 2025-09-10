@@ -242,14 +242,14 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
           {/* Image/Map */}
           <div className="w-full">
             <div className="h-64 bg-muted overflow-hidden">
-              <Carousel className="w-full h-full">
-                <CarouselContent className="h-full">
+              <Carousel className="w-full h-64">
+                <CarouselContent className="h-64">
                   {/* Country Map with Route - Always First */}
-                  <CarouselItem className="h-full">
-                    <div className="h-full">
+                  <CarouselItem className="h-64">
+                    <div className="h-64 w-full overflow-hidden">
                       <CountryMap 
                         stops={trip.stops} 
-                        className="h-full w-full" 
+                        className="h-64 w-full" 
                         mapboxToken={mapboxToken}
                       />
                     </div>
@@ -257,13 +257,13 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                   
                   {/* Photos */}
                   {hasPhotos && photos.map((photo, index) => (
-                    <CarouselItem key={index} className="h-full">
-                      <div className="h-full">
-                          <img 
-                           src={photo} 
-                           alt={`Trip photo ${index + 1}`} 
-                           className="w-full h-64 object-cover object-center"
-                         />
+                    <CarouselItem key={index} className="h-64">
+                      <div className="h-64 w-full overflow-hidden">
+                        <img 
+                          src={photo} 
+                          alt={`Trip photo ${index + 1}`} 
+                          className="w-full h-64 object-cover object-center"
+                        />
                       </div>
                     </CarouselItem>
                   ))}

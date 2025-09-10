@@ -197,10 +197,39 @@ export const useTrips = () => {
     }
   };
 
+  const getAllVisibleTrips = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data: trips, error } = await supabase
+        .from('trips')
+        .select(`
+          *,
+          profiles:user_id (
+            name,
+            username,
+            avatar
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return trips;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch trips';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     createTrip,
     getUserTrips,
     getPublicTrips,
+    getAllVisibleTrips,
     loading,
     error
   };

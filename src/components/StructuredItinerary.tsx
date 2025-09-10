@@ -441,10 +441,8 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
-                    <div className="pl-4 border-l-2 border-purple-200 dark:border-purple-800 space-y-3">
-                      <div className="text-sm space-y-2 break-words">
-                        {renderContentWithLinks(day.content)}
-                      </div>
+                    <div className="text-sm space-y-2 break-words">
+                      {renderContentWithLinks(day.content)}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>

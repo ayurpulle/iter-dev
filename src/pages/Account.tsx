@@ -665,15 +665,6 @@ const Account = () => {
                 <span className="text-xs">All Posts</span>
               </Button>
               
-              <Button
-                variant={selectedFolder === "none" ? "default" : "outline"}
-                className="h-20 flex-col gap-2 p-3"
-                onClick={() => setSelectedFolder("none")}
-              >
-                <Folder size={24} />
-                <span className="text-xs">Unsorted</span>
-              </Button>
-              
               {folders.map((folder) => (
                 <div key={folder.id} className="relative group">
                   <Button

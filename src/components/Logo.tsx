@@ -1,6 +1,3 @@
-import { useState, useEffect } from "react";
-import { removeBackground, loadImage } from "@/utils/backgroundRemoval";
-
 interface LogoProps {
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -8,67 +5,55 @@ interface LogoProps {
 }
 
 export const Logo = ({ size = "md", className = "", onClick }: LogoProps) => {
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const sizeClasses = {
     sm: "h-10",
     md: "h-14", 
     lg: "h-20"
   };
 
-  useEffect(() => {
-    const processLogo = async () => {
-      setIsProcessing(true);
-      try {
-        // Fetch the original logo
-        const response = await fetch("/lovable-uploads/56b60369-8802-491e-94b0-4a1141bcc5a6.png");
-        const blob = await response.blob();
-        
-        // Load as image element
-        const imageElement = await loadImage(blob);
-        
-        // Remove background
-        const processedBlob = await removeBackground(imageElement);
-        
-        // Create URL for the processed image
-        const url = URL.createObjectURL(processedBlob);
-        setProcessedImageUrl(url);
-      } catch (error) {
-        console.error("Failed to process logo:", error);
-        // Fallback to original image
-        setProcessedImageUrl("/lovable-uploads/56b60369-8802-491e-94b0-4a1141bcc5a6.png");
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    processLogo();
-
-    // Cleanup function to revoke object URL
-    return () => {
-      if (processedImageUrl) {
-        URL.revokeObjectURL(processedImageUrl);
-      }
-    };
-  }, []);
-
   return (
     <div 
       className={`cursor-pointer hover:opacity-80 transition-opacity duration-200 ${className}`}
       onClick={onClick}
     >
-      {isProcessing ? (
-        <div className={`${sizeClasses[size]} w-auto flex items-center justify-center`}>
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <img 
-          src={processedImageUrl || "/lovable-uploads/56b60369-8802-491e-94b0-4a1141bcc5a6.png"}
-          alt="Iter Logo"
-          className={`${sizeClasses[size]} w-auto object-contain`}
+      <svg 
+        viewBox="0 0 200 60" 
+        className={`${sizeClasses[size]} w-auto`}
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Paper Airplane */}
+        <path 
+          d="M20 30L35 20L40 30L35 40L20 30Z" 
+          fill="hsl(var(--primary))" 
+          stroke="hsl(var(--primary))" 
+          strokeWidth="1"
         />
-      )}
+        <path 
+          d="M35 20L45 30L35 40" 
+          fill="hsl(var(--primary-glow))" 
+          stroke="hsl(var(--primary))" 
+          strokeWidth="1"
+        />
+        
+        {/* Dotted Trail */}
+        <circle cx="55" cy="30" r="2" fill="hsl(var(--primary))" className="animate-pulse" />
+        <circle cx="65" cy="28" r="1.5" fill="hsl(var(--primary))" className="animate-pulse" style={{animationDelay: '0.2s'}} />
+        <circle cx="75" cy="32" r="1" fill="hsl(var(--primary))" className="animate-pulse" style={{animationDelay: '0.4s'}} />
+        <circle cx="85" cy="30" r="0.8" fill="hsl(var(--primary))" className="animate-pulse" style={{animationDelay: '0.6s'}} />
+        
+        {/* Text "iter" */}
+        <text 
+          x="100" 
+          y="40" 
+          fontSize="24" 
+          fontWeight="bold" 
+          fill="hsl(var(--foreground))"
+          fontFamily="system-ui, -apple-system, sans-serif"
+        >
+          iter
+        </text>
+      </svg>
     </div>
   );
 };

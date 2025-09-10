@@ -49,13 +49,79 @@ export const ItineraryShareDialog = ({ itineraryId, itineraryTitle }: ItineraryS
   };
 
   return (
-    <ShareToChatDialog
-      itemType="itinerary"
-      itemId={itineraryId}
-      itemTitle={itineraryTitle}
-      triggerText=""
-      variant="ghost"
-      size="sm"
-    />
+    <div className="flex gap-2">
+      <ShareToChatDialog
+        itemType="itinerary"
+        itemId={itineraryId}
+        itemTitle={itineraryTitle}
+        triggerText=""
+        variant="outline"
+        size="sm"
+      />
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Users className="h-4 w-4 mr-2" />
+            Collaborate
+          </Button>
+        </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Collaborate on Itinerary</DialogTitle>
+          <DialogDescription>
+            Invite friends to collaborate on "{itineraryTitle}"
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {friends.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              No friends to share with
+            </p>
+          ) : (
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {friends.map((friend) => {
+                const friendProfile = friend.profile;
+                const friendId = friend.user_id === friend.friend_id ? friend.friend_id : friend.user_id;
+                
+                return (
+                  <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                    <Checkbox
+                      checked={selectedFriends.includes(friendId)}
+                      onCheckedChange={() => handleFriendToggle(friendId)}
+                    />
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={friendProfile?.avatar || ''} />
+                      <AvatarFallback>
+                        {friendProfile?.name?.charAt(0) || friendProfile?.username?.charAt(0) || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {friendProfile?.name || friendProfile?.username || 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleShare} 
+              disabled={selectedFriends.length === 0 || loading}
+            >
+              {loading ? 'Inviting...' : `Invite ${selectedFriends.length} friend${selectedFriends.length !== 1 ? 's' : ''}`}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </div>
   );
 };

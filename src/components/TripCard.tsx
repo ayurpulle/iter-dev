@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send, Crop } from "lucide-react";
+import { Heart, MessageCircle, Plus, MoreHorizontal, Share, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ItemFolderSelector } from "./ItemFolderSelector";
 import CountryMap from "./CountryMap";
 import { ItineraryShareDialog } from "./ItineraryShareDialog";
-import { ShareToChatDialog } from "./ShareToChatDialog";
 
 interface Stop {
   name: string;
@@ -58,7 +57,6 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const [isSaved, setIsSaved] = useState(false);
   const [showUnsaveConfirm, setShowUnsaveConfirm] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
-  const [photoFitMode, setPhotoFitMode] = useState<'cover' | 'contain' | 'fill'>('cover');
   const [newComment, setNewComment] = useState("");
   const [likesCount, setLikesCount] = useState(stats.likes);
   const [commentsCount, setCommentsCount] = useState(stats.comments);
@@ -248,115 +246,24 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                 <CarouselContent className="h-full">
                   {/* Country Map with Route - Always First */}
                   <CarouselItem className="h-full">
-                    <div className="h-full relative">
+                    <div className="h-full">
                       <CountryMap 
                         stops={trip.stops} 
                         className="h-full w-full" 
                         mapboxToken={mapboxToken}
                       />
-                      
-                      {/* Floating Action Buttons for Map */}
-                      <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                        {/* Share Button (Triangle - left) */}
-                          <ShareToChatDialog
-                            itemType="itinerary"
-                            itemId={trip.id}
-                            itemTitle={trip.title}
-                            triggerText=""
-                            variant="ghost"
-                            size="sm"
-                          />
-                        
-                        {/* Save Button (Plus - right) */}
-                        {!isSaved ? (
-                          <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-white hover:text-blue-400"
-                            >
-                              <Plus size={14} />
-                            </Button>
-                          </ItemFolderSelector>
-                        ) : (
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-blue-400"
-                            onClick={() => handleSave()}
-                          >
-                            <Plus size={14} className="fill-current" />
-                          </Button>
-                        )}
-                      </div>
                     </div>
                   </CarouselItem>
                   
                   {/* Photos */}
                   {hasPhotos && photos.map((photo, index) => (
                     <CarouselItem key={index} className="h-full">
-                      <div className="h-full relative flex items-center justify-center bg-black">
+                      <div className="h-full">
                         <img 
                           src={photo} 
                           alt={`Trip photo ${index + 1}`} 
-                          className={`w-full h-full ${photoFitMode === 'contain' ? 'object-contain' : photoFitMode === 'cover' ? 'object-cover' : 'object-fill'}`}
-                          style={{
-                            objectPosition: 'center center'
-                          }}
+                          className="w-full h-full object-cover"
                         />
-                        
-                        {/* Photo Fit Mode Toggle */}
-                        <div className="absolute top-3 right-3">
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-white"
-                            onClick={() => {
-                              const modes: ('cover' | 'contain' | 'fill')[] = ['cover', 'contain', 'fill'];
-                              const currentIndex = modes.indexOf(photoFitMode);
-                              const nextIndex = (currentIndex + 1) % modes.length;
-                              setPhotoFitMode(modes[nextIndex]);
-                            }}
-                            title={`Photo fit: ${photoFitMode} (click to change)`}
-                          >
-                            <Crop size={14} />
-                          </Button>
-                        </div>
-                        
-                        {/* Floating Action Buttons - Fixed Order & Functionality */}
-                        <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                          {/* Save Button (Plus - left) */}
-                          {!isSaved ? (
-                            <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
-                              <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-white hover:text-blue-400"
-                              >
-                                <Plus size={14} />
-                              </Button>
-                            </ItemFolderSelector>
-                          ) : (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-blue-400"
-                              onClick={() => handleSave()}
-                            >
-                              <Plus size={14} className="fill-current" />
-                            </Button>
-                          )}
-                          
-                          {/* Share Button (Send icon - right) */}
-                          <ShareToChatDialog
-                            itemType="itinerary"
-                            itemId={trip.id}
-                            itemTitle={trip.title}
-                            triggerText=""
-                            variant="ghost"
-                            size="sm"
-                          />
-                        </div>
                       </div>
                     </CarouselItem>
                   ))}
@@ -393,6 +300,32 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                   <MessageCircle size={18} />
                   <span className="text-sm">{commentsCount}</span>
                 </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {!isSaved ? (
+                  <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 hover:text-blue-500"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </ItemFolderSelector>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0 text-blue-500"
+                    onClick={() => handleSave()}
+                  >
+                    <Plus size={16} className="fill-current" />
+                  </Button>
+                )}
+                <ItineraryShareDialog 
+                  itineraryId={trip.id}
+                  itineraryTitle={trip.title}
+                />
               </div>
             </div>
 

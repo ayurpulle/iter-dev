@@ -21,7 +21,7 @@ interface ShareToChatDialogProps {
   itemTitle: string;
   content?: string;
   triggerText?: string;
-  variant?: "default" | "outline" | "ghost";
+  variant?: "default" | "outline" | "ghost" | "secondary";
   size?: "default" | "sm" | "lg";
 }
 
@@ -52,8 +52,8 @@ export const ShareToChatDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} className="h-8 w-8 p-0">
-          <Share2 className="h-4 w-4" />
+        <Button variant={variant} size={size} className="h-8 w-8 p-0 rounded-full bg-black/50 hover:bg-black/70 border-0 text-white">
+          <Send className="h-4 w-4" />
           {triggerText && <span className="ml-2">{triggerText}</span>}
         </Button>
       </DialogTrigger>

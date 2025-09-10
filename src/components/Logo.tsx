@@ -31,6 +31,21 @@ export const Logo = ({ size = "md", className = "", onClick }: LogoProps) => {
       onClick={onClick}
     >
       <div className="relative">
+        {/* Loopy dotted tail */}
+        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2">
+          <div className="flex items-center space-x-1">
+            <div className="w-1 h-1 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }} />
+            <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+            <div className="w-1 h-1 bg-primary/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+          </div>
+          <div className="flex items-center space-x-1 mt-1 ml-1">
+            <div className="w-1 h-1 bg-primary/30 rounded-full animate-pulse" style={{ animationDelay: '0.8s' }} />
+            <div className="w-1 h-1 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+          </div>
+          <div className="flex items-center space-x-1 -mt-1 ml-2">
+            <div className="w-1 h-1 bg-primary/20 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+        </div>
         <Send 
           size={iconSizes[size]} 
           className="text-primary transform -rotate-45" 

@@ -29,13 +29,10 @@ const TopBar = () => {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
-      <div className="flex items-center justify-between max-w-md mx-auto">
-        <div className="flex items-center gap-3">
-        </div>
-        
+    <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-6 py-4 rounded-b-xl shadow-sm">
+      <div className="flex items-center justify-between max-w-6xl mx-auto">
         <h1 
-          className="text-lg font-semibold text-foreground cursor-pointer hover:opacity-80 transition-opacity" 
+          className="text-2xl font-bold text-primary cursor-pointer hover:text-primary-glow transition-all duration-200" 
           onClick={() => navigate('/')}
         >
           ITER
@@ -46,29 +43,37 @@ const TopBar = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200"
               onClick={() => navigate('/notifications')}
             >
-              <Bell size={18} className="text-muted-foreground" />
+              <Bell size={20} className="text-primary" />
             </Button>
           </NotificationBadge>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200"
             onClick={() => navigate('/messages')}
           >
-            <MessageCircle size={18} className="text-muted-foreground" />
+            <MessageCircle size={20} className="text-primary" />
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:scale-105 transition-all duration-200"
             onClick={() => navigate('/global-search')}
           >
-            <Search size={18} className="text-muted-foreground" />
+            <Search size={20} className="text-primary" />
+          </Button>
+          
+          <Button 
+            onClick={handleSignOut} 
+            variant="outline" 
+            className="rounded-xl hover:scale-105 transition-all duration-200 shadow-sm border-primary/20 hover:border-primary/40"
+          >
+            Sign Out
           </Button>
         </div>
       </div>

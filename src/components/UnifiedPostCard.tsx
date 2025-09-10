@@ -17,6 +17,7 @@ import { CommentReplies } from "@/components/CommentReplies";
 import { ShareToChatDialog } from "@/components/ShareToChatDialog";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
+import { useProcessedImages } from "@/utils/imageProcessor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -588,6 +589,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const hasImages = images.length > 0;
   const hasTrip = !!(post as any).trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
+  const { processedImages, isProcessing } = useProcessedImages(images);
 
   // Caption logic
   const maxCaptionLength = 150;
@@ -646,32 +648,39 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
 
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
-            <div className="w-full h-52">
+            <div 
+              className="w-full bg-muted overflow-hidden"
+              style={{ height: "208px" }}
+            >
               <Carousel className="w-full h-full">
                 <CarouselContent className="h-full ml-0">
                    {/* Trip Map - ALWAYS FIRST when trip exists */}
                     {hasTrip && (
                       <CarouselItem className="h-full pl-0">
-                         <TripMapVisual 
-                           stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
-                           className="w-full h-full"
-                         />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <TripMapVisual 
+                            stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
+                            className="w-full h-full"
+                          />
+                        </div>
                       </CarouselItem>
                     )}
                   
                   {/* Images - Come after trip map */}
-                  {images.map((imageUrl, index) => (
+                  {processedImages.map((imageUrl, index) => (
                     <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                      <img 
-                        src={imageUrl} 
-                        alt={`Post image ${index + 1}`} 
-                        className="w-full h-full object-cover object-center"
-                      />
+                      <div className="w-full h-full bg-muted overflow-hidden">
+                        <img 
+                          src={imageUrl} 
+                          alt={`Post image ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
                 {/* Show navigation if there's a trip map + images, or multiple images */}
-                {((hasTrip && hasImages) || images.length > 1) && (
+                {((hasTrip && hasImages) || processedImages.length > 1) && (
                   <>
                     <CarouselPrevious className="left-2" />
                     <CarouselNext className="right-2" />

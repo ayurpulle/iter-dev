@@ -17,14 +17,9 @@ export const Logo = ({ size = "md", className = "", onClick }: LogoProps) => {
       onClick={onClick}
     >
       <img 
-        src="/lovable-uploads/56b60369-8802-491e-94b0-4a1141bcc5a6.png"
+        src="/lovable-uploads/a30a53bf-9348-456b-9b7f-0ca6caf51858.png"
         alt="Iter Logo"
         className={`${sizeClasses[size]} w-auto object-contain`}
-        style={{
-          mixBlendMode: 'multiply',
-          filter: 'contrast(2) brightness(1.2)',
-          background: 'transparent'
-        }}
       />
     </div>
   );

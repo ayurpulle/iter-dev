@@ -62,18 +62,17 @@ const Account = () => {
   // User posts
   const [userPosts, setUserPosts] = useState([]);
 
-  // Real visited countries from user data
-  const visitedCountries: string[] = [];
-
-  // Real travel statistics
-  const travelStats = {
-    countriesVisited: visitedCountries.length,
+  // Calculate travel stats from user posts
+  const [travelStats, setTravelStats] = useState({
+    countriesVisited: 0,
     totalCountries: 195,
     citiesVisited: 0,
     totalCities: 10000,
     totalDistance: 0,
     totalDays: 0,
-  };
+  });
+  
+  const [visitedCountries, setVisitedCountries] = useState<string[]>([]);
 
   // Load user profile and posts on mount
   useEffect(() => {
@@ -217,6 +216,9 @@ const Account = () => {
           posts: posts?.length || 0,
         },
       }));
+      
+      // Calculate travel statistics from posts
+      calculateTravelStats(posts || []);
 
       // Set up real-time subscription for posts
       const channel = supabase
@@ -341,6 +343,85 @@ const Account = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateTravelStats = (posts: any[]) => {
+    const countries = new Set<string>();
+    const cities = new Set<string>();
+    let totalDistance = 0;
+    let totalDays = 0;
+    
+    posts.forEach(post => {
+      // Extract location data from trips
+      if (post.trips?.stops) {
+        try {
+          const stops = Array.isArray(post.trips.stops) ? post.trips.stops : JSON.parse(post.trips.stops);
+          stops.forEach((stop: any) => {
+            if (stop.country) countries.add(stop.country);
+            if (stop.city) cities.add(stop.city);
+          });
+        } catch (e) {
+          console.log('Error parsing stops:', e);
+        }
+      }
+      
+      // Add trip distance and duration
+      if (post.trips?.distance) {
+        const distance = parseFloat(post.trips.distance.toString().replace(/[^\d.]/g, ''));
+        if (!isNaN(distance)) totalDistance += distance;
+      }
+      
+      if (post.trips?.duration) {
+        const duration = parseFloat(post.trips.duration.toString().replace(/[^\d.]/g, ''));
+        if (!isNaN(duration)) totalDays += duration;
+      }
+    });
+    
+    const countriesArray = Array.from(countries);
+    setVisitedCountries(countriesArray);
+    setTravelStats({
+      countriesVisited: countries.size,
+      totalCountries: 195,
+      citiesVisited: cities.size,
+      totalCities: 10000,
+      totalDistance: Math.round(totalDistance),
+      totalDays: Math.round(totalDays),
+    });
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!user) return;
+
+    try {
+      // Delete the folder (posts will remain in 'all posts')
+      const { error } = await supabase
+        .from('item_folders')
+        .delete()
+        .eq('id', folderId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setFolders(prev => prev.filter(f => f.id !== folderId));
+      
+      // If currently viewing the deleted folder, switch to 'all'
+      if (selectedFolder === folderId) {
+        setSelectedFolder('all');
+      }
+
+      toast({
+        title: "Folder deleted",
+        description: "The folder has been deleted. All posts remain in your collection.",
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder",
+        variant: "destructive",
+      });
     }
   };
 
@@ -547,15 +628,27 @@ const Account = () => {
               </Button>
               
               {folders.map((folder) => (
-                <Button
-                  key={folder.id}
-                  variant={selectedFolder === folder.id ? "default" : "outline"}
-                  className="h-20 flex-col gap-2 p-3"
-                  onClick={() => setSelectedFolder(folder.id)}
-                >
-                  <Folder size={24} />
-                  <span className="text-xs text-center leading-tight">{folder.name}</span>
-                </Button>
+                <div key={folder.id} className="relative group">
+                  <Button
+                    variant={selectedFolder === folder.id ? "default" : "outline"}
+                    className="h-20 flex-col gap-2 p-3 w-full"
+                    onClick={() => setSelectedFolder(folder.id)}
+                  >
+                    <Folder size={24} />
+                    <span className="text-xs text-center leading-tight">{folder.name}</span>
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFolder(folder.id);
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
               ))}
             </div>
             
@@ -637,19 +730,6 @@ const Account = () => {
               travelStats={travelStats}
             />
 
-            {/* Visited Countries List */}
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-3">Countries Visited ({visitedCountries.length})</h3>
-                <div className="flex flex-wrap gap-2">
-                  {visitedCountries.map((country) => (
-                    <Badge key={country} variant="secondary" className="text-xs">
-                      {country}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
       </main>

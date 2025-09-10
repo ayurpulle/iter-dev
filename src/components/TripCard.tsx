@@ -64,6 +64,12 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   const { user: currentUser } = useAuth();
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
   
+  // Define consistent height for all media content
+  const getConsistentMediaHeight = () => {
+    const STANDARD_HEIGHT = 256; // 16rem = 256px (h-64 equivalent)
+    return `${STANDARD_HEIGHT}px`;
+  };
+  
   // Try to get mapbox token from localStorage for enhanced map view
   useEffect(() => {
     const token = localStorage.getItem('mapbox_token');
@@ -241,15 +247,18 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
 
           {/* Image/Map */}
           <div className="w-full">
-            <div className="h-64 bg-muted overflow-hidden">
-              <Carousel className="w-full h-64">
-                <CarouselContent className="h-64">
+            <div 
+              className="w-full bg-muted overflow-hidden"
+              style={{ height: getConsistentMediaHeight() }}
+            >
+              <Carousel className="w-full h-full">
+                <CarouselContent className="h-full ml-0">
                   {/* Country Map with Route - Always First */}
-                  <CarouselItem className="h-64">
-                    <div className="h-64 w-full overflow-hidden">
+                  <CarouselItem className="h-full pl-0">
+                    <div className="w-full h-full flex items-center justify-center">
                       <CountryMap 
                         stops={trip.stops} 
-                        className="h-64 w-full" 
+                        className="w-full h-full" 
                         mapboxToken={mapboxToken}
                       />
                     </div>
@@ -257,12 +266,18 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                   
                   {/* Photos */}
                   {hasPhotos && photos.map((photo, index) => (
-                    <CarouselItem key={index} className="h-64">
-                      <div className="h-64 w-full overflow-hidden">
+                    <CarouselItem key={`photo-${index}`} className="h-full pl-0">
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
                         <img 
                           src={photo} 
                           alt={`Trip photo ${index + 1}`} 
-                          className="w-full h-64 object-cover object-center"
+                          className="max-w-full max-h-full object-contain"
+                          style={{ 
+                            width: 'auto',
+                            height: 'auto',
+                            maxWidth: '100%',
+                            maxHeight: '100%'
+                          }}
                         />
                       </div>
                     </CarouselItem>

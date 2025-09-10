@@ -323,7 +323,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     if (!user?.id) return;
 
     try {
-      // Check current saved status from database
+      // Check current saved status from database to avoid duplicate key errors
       const existingSavedItem = yourSavedPosts.find(sp => sp.item_id === post.id);
       
       if (existingSavedItem) {
@@ -331,9 +331,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
         const { error } = await supabase
           .from('saved_items')
           .delete()
-          .eq('item_id', post.id)
-          .eq('user_id', user.id)
-          .eq('item_type', 'post');
+          .eq('id', existingSavedItem.id);
 
         if (error) throw error;
 
@@ -345,7 +343,23 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
           duration: 3000,
         });
       } else {
-        // Save the post
+        // Save the post - first check if it already exists to avoid duplicates
+        const { data: existingCheck } = await supabase
+          .from('saved_items')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('item_id', post.id)
+          .eq('item_type', 'post')
+          .single();
+
+        if (existingCheck) {
+          // Already exists, just update UI
+          setIsSaved(true);
+          refetch();
+          return;
+        }
+
+        // Insert new saved item
         const { error } = await supabase
           .from('saved_items')
           .insert({
@@ -743,7 +757,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-blue-500 p-2 hover:text-blue-600"
+                  className="text-sky-400 p-2 hover:text-sky-500"
                   onClick={() => handleSavePost()}
                 >
                   <Plus className="w-5 h-5" />

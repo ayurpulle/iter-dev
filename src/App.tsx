@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import GlobalNotifications from "@/components/GlobalNotifications";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import OnboardingWrapper from "@/components/OnboardingWrapper";
 
 // Page imports
 import Index from "./pages/Index";
@@ -31,12 +32,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <GlobalNotifications />
-            <Routes>
+        <OnboardingWrapper>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <GlobalNotifications />
+              <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={
                 <ProtectedRoute>
@@ -108,6 +110,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </OnboardingWrapper>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

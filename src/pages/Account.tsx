@@ -352,18 +352,46 @@ const Account = () => {
     let totalDistance = 0;
     let totalDays = 0;
     
+    console.log('Calculating travel stats from posts:', posts);
+    
     posts.forEach(post => {
+      console.log('Processing post:', post);
+      
       // Extract location data from trips
       if (post.trips?.stops) {
+        console.log('Trip stops found:', post.trips.stops);
         try {
           const stops = Array.isArray(post.trips.stops) ? post.trips.stops : JSON.parse(post.trips.stops);
+          console.log('Parsed stops:', stops);
           stops.forEach((stop: any) => {
-            if (stop.country) countries.add(stop.country);
-            if (stop.city) cities.add(stop.city);
+            console.log('Processing stop:', stop);
+            if (stop.country) {
+              countries.add(stop.country);
+              console.log('Added country:', stop.country);
+            }
+            if (stop.city) {
+              cities.add(stop.city);
+              console.log('Added city:', stop.city);
+            }
+            // Also check for alternative field names
+            if (stop.country_code) {
+              countries.add(stop.country_code);
+              console.log('Added country_code:', stop.country_code);
+            }
+            if (stop.location) {
+              cities.add(stop.location);
+              console.log('Added location as city:', stop.location);
+            }
           });
         } catch (e) {
           console.log('Error parsing stops:', e);
         }
+      }
+      
+      // Also check trip destination and other location fields
+      if (post.trips?.destination) {
+        console.log('Trip destination:', post.trips.destination);
+        cities.add(post.trips.destination);
       }
       
       // Add trip distance and duration
@@ -379,6 +407,15 @@ const Account = () => {
     });
     
     const countriesArray = Array.from(countries);
+    console.log('Final countries:', countriesArray);
+    console.log('Final cities:', Array.from(cities));
+    console.log('Final stats:', {
+      countries: countries.size,
+      cities: cities.size,
+      distance: totalDistance,
+      days: totalDays
+    });
+    
     setVisitedCountries(countriesArray);
     setTravelStats({
       countriesVisited: countries.size,

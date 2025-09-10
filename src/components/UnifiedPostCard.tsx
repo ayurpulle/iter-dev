@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply } from "lucide-react";
+import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply, Bookmark, BookmarkCheck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -91,6 +92,7 @@ interface UnifiedPostCardProps {
 const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }: UnifiedPostCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { yourSavedPosts, refetch } = useSavedPosts();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -121,7 +123,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
 
   const isOwnPost = user?.id === post.user_id;
 
-  // Check if user has liked this post and get mapbox token + load comments
+  // Check if user has liked this post and if post is saved
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!user?.id) return;
@@ -140,6 +142,13 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
       } catch (error) {
         console.log('No existing like found');
       }
+    };
+
+    // Check if post is saved
+    const checkSavedStatus = () => {
+      if (!user?.id) return;
+      const isPostSaved = yourSavedPosts.some(savedPost => savedPost.item_id === post.id);
+      setIsSaved(isPostSaved);
     };
 
     const getMapboxToken = async () => {
@@ -311,19 +320,53 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   };
   
   const handleSavePost = async (folderId?: string) => {
+    if (!user?.id) return;
+
     try {
-      setIsSaved(true);
-      toast({
-        title: "Post saved",
-        description: "Post added to your collection",
-        duration: 3000,
-      });
+      if (isSaved) {
+        // Unsave the post
+        const { error } = await supabase
+          .from('saved_items')
+          .delete()
+          .eq('item_id', post.id)
+          .eq('user_id', user.id)
+          .eq('item_type', 'post');
+
+        if (error) throw error;
+
+        setIsSaved(false);
+        refetch();
+        toast({
+          title: "Post unsaved",
+          description: "Post removed from your collection",
+          duration: 3000,
+        });
+      } else {
+        // Save the post
+        const { error } = await supabase
+          .from('saved_items')
+          .insert({
+            user_id: user.id,
+            item_id: post.id,
+            item_type: 'post',
+            folder_id: folderId || null
+          });
+
+        if (error) throw error;
+
+        setIsSaved(true);
+        refetch();
+        toast({
+          title: "Post saved",
+          description: "Post added to your collection",
+          duration: 3000,
+        });
+      }
     } catch (error) {
-      setIsSaved(false);
-      console.error('Error saving post:', error);
+      console.error('Error saving/unsaving post:', error);
       toast({
         title: "Error",
-        description: "Failed to save post",
+        description: isSaved ? "Failed to unsave post" : "Failed to save post",
         variant: "destructive",
         duration: 3000,
       });
@@ -693,16 +736,28 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 <span className="ml-1 text-sm">{comments.length}</span>
               </Button>
               
-              <ItemFolderSelector
-                itemId={post.id}
-                itemType="post"
-                onSave={handleSavePost}
-              >
-                <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
-                  <Plus className="w-5 h-5" />
-                  <span className="ml-1 text-sm">Save</span>
+              {isSaved ? (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-blue-500 p-2 hover:text-blue-600"
+                  onClick={() => handleSavePost()}
+                >
+                  <BookmarkCheck className="w-5 h-5" />
+                  <span className="ml-1 text-sm">Saved</span>
                 </Button>
-              </ItemFolderSelector>
+              ) : (
+                <ItemFolderSelector
+                  itemId={post.id}
+                  itemType="post"
+                  onSave={handleSavePost}
+                >
+                  <Button variant="ghost" size="sm" className="text-muted-foreground p-2">
+                    <Bookmark className="w-5 h-5" />
+                    <span className="ml-1 text-sm">Save</span>
+                  </Button>
+                </ItemFolderSelector>
+              )}
               
               <ShareToChatDialog
                 itemType="post"

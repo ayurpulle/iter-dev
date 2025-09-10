@@ -48,14 +48,16 @@ serve(async (req) => {
         ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
         : 7; // Default to 7 days if dates not provided
 
-      // Create regeneration prompt
-      const basePrompt = `I'm updating my trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+      // Create regeneration prompt with emphasis on changes
+      const basePrompt = `I'm completely restructuring my trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
 
-My updated details:
+IMPORTANT: This is a NEW itinerary with updated preferences that must be reflected throughout:
 - Base location: ${baseLocation}
-- Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}  
-- Interests: ${interests || 'General exploration'}
-${travelStyle ? `- Travel style: ${travelStyle}` : ''}`;
+- Budget level: ${budget ? '$'.repeat(budget) + ' budget level (incorporate appropriate price ranges for this budget tier)' : 'Flexible budget'}  
+- Key interests: ${interests || 'General exploration'} (focus activities and recommendations around these specific interests)
+${travelStyle ? `- Travel style: ${travelStyle} (adjust recommendations to match this travel approach)` : ''}
+
+Please create a completely fresh itinerary that reflects these updated preferences and budget constraints.`;
 
       const ragPrompt = ragContext ? `${basePrompt}
 
@@ -105,11 +107,13 @@ Write 3-4 conversational paragraphs covering money matters, getting around, cult
 Guidelines:
 - Write in complete sentences and paragraphs, never use bullet points or asterisks
 - Sound like a knowledgeable friend, not a travel guide
-- Include specific prices naturally in conversation
+- Include specific prices naturally in conversation that match the ${budget ? '$'.repeat(budget) : 'flexible'} budget level
+- Tailor ALL recommendations to the specific interests: ${interests || 'general exploration'}
 - When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name
 - Only include links if they're from major, trusted booking sites
 - Make each day's personality shine through the writing style
-- Focus on the experience and feelings, not just logistics`;
+- Focus on the experience and feelings, not just logistics
+- Ensure budget-appropriate suggestions throughout (activities, dining, accommodation)`;
 
       console.log('Calling OpenAI API for regeneration...');
       

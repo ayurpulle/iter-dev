@@ -5,11 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, MapPin, Users, Hash, Lock, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Hash, Lock, Globe, Shield, Loader2 } from 'lucide-react';
 import PhotoSelector from './PhotoSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useContentModeration } from '@/hooks/useContentModeration';
 
 interface UploadPostProps {
   onBack?: () => void;
@@ -18,6 +19,7 @@ interface UploadPostProps {
 const UploadPost = ({ onBack }: UploadPostProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { moderateContent } = useContentModeration();
   const [currentStep, setCurrentStep] = useState<'photos' | 'details'>('photos');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
@@ -25,6 +27,7 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
   const [tags, setTags] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [isModerating, setIsModerating] = useState(false);
 
   const handlePhotosSelected = (photos: string[]) => {
     setSelectedPhotos(photos);
@@ -40,6 +43,15 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
     if (!user || !caption.trim()) return;
 
     try {
+      // Content moderation check
+      setIsModerating(true);
+      const moderationResult = await moderateContent(caption, 'post');
+      setIsModerating(false);
+      
+      if (!moderationResult.isAppropriate) {
+        return; // Toast is already shown by the hook
+      }
+
       setIsPosting(true);
 
       // For now, just take the first photo as the main image
@@ -78,6 +90,7 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
       });
     } finally {
       setIsPosting(false);
+      setIsModerating(false);
     }
   };
 
@@ -110,9 +123,21 @@ const UploadPost = ({ onBack }: UploadPostProps) => {
           <Button
             size="sm"
             onClick={handlePost}
-            disabled={!caption.trim() || isPosting}
+            disabled={!caption.trim() || isPosting || isModerating}
           >
-            {isPosting ? 'Sharing...' : 'Share'}
+            {isModerating ? (
+              <>
+                <Shield className="h-4 w-4 mr-2" />
+                Checking...
+              </>
+            ) : isPosting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sharing...
+              </>
+            ) : (
+              'Share'
+            )}
           </Button>
         )}
       </div>

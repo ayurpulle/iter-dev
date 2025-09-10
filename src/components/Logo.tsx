@@ -17,7 +17,7 @@ export const Logo = ({ size = "md", className = "", onClick }: LogoProps) => {
       onClick={onClick}
     >
       <img 
-        src="/lovable-uploads/a30a53bf-9348-456b-9b7f-0ca6caf51858.png"
+        src="/lovable-uploads/7dbc7fa3-6806-408a-8afe-e0f3f239b9d4.png"
         alt="Iter Logo"
         className={`${sizeClasses[size]} w-auto object-contain`}
       />

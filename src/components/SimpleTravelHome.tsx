@@ -64,11 +64,11 @@ const SimpleTravelHome = () => {
       <CardContent className="p-0">
         {/* Trip Images */}
         {trip.images && trip.images.length > 0 && (
-          <div className="relative h-64 overflow-hidden">
+          <div className="relative overflow-hidden" style={{ height: "256px" }}>
             <img
               src={trip.images[0]}
               alt={trip.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
             />
             {trip.images.length > 1 && (
               <Badge className="absolute top-2 right-2 bg-black/70 text-white">

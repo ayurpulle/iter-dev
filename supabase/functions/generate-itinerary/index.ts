@@ -162,13 +162,23 @@ Write conversational recommendations about where to stay. Describe 2-3 options i
 
 DAY-BY-DAY ITINERARY:
 
-Day 1: [Engaging theme]
+${duration > 14 ? 
+  `For this ${duration}-day trip, group days by 2-3 day periods for better readability:
+
+Days 1-2: [Engaging theme for arrival and orientation]
+Write in natural paragraphs covering the first 2-3 days. Start with "Your first morning should begin with..." Make it flow like a conversation. Include approximate costs in ${defaultCurrency} naturally in the text. Mention meal suggestions organically.
+
+Days 3-5: [Different theme for main exploration]
+Continue the same conversational style. Each grouping should feel distinct and build on previous experiences.
+
+[Continue grouping every 2-3 days for all ${duration} days]` :
+  `Day 1: [Engaging theme]
 Write in natural paragraphs what to do each part of the day. Start with "Your first morning should begin with..." or "Wake up and head to..." Make it flow like a conversation. Include approximate costs in ${defaultCurrency} naturally in the text. Mention meal suggestions organically. End with evening plans.
 
 Day 2: [Different theme]
 Continue the same conversational style. Each day should feel distinct and build on the previous day's experiences.
 
-[Continue for all ${duration} days]
+[Continue for all ${duration} days]`}
 
 BOOKING LINKS & TIPS:
 Only include actual working links from major sites like skyscanner.com, booking.com, or getyourguide.com. Write this as friendly advice paragraphs, not bullet points. Include practical tips about local transport, payment methods, and cultural notes.

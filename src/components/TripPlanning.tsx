@@ -321,25 +321,53 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     setIsLoading(true);
     
     try {
-      // If editing, update existing itinerary
+      // If editing, regenerate itinerary with new parameters
       if (editingItinerary) {
-        console.log('Updating existing itinerary:', editingItinerary.id);
-        const result = await updateItinerary(editingItinerary.id, {
-          title: formData.destination,
-          destination: formData.destination,
-          start_date: formData.startDate || null,
-          end_date: formData.endDate || null,
-          budget: formData.budget > 0 ? formData.budget : undefined,
-          interests: formData.holidayTypes,
-          itinerary_content: editingItinerary.itinerary_content,
-          friend_recommendations: editingItinerary.friend_recommendations || {}
-        });
+        console.log('Regenerating itinerary with new parameters:', editingItinerary.id);
         
-        if (result) {
+        // Generate RAG context from friend experiences for the edited itinerary
+        const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
+          formData.destination,
+          formData.holidayTypes,
+          formData.startDate || undefined,
+          formData.endDate || undefined,
+          formData.budget > 0 ? formData.budget : undefined,
+          formData.inspirationSource,
+          formData.inspirationFolder
+        );
+
+        const { data, error } = await supabase.functions.invoke('edit-itinerary', {
+          body: {
+            itineraryId: editingItinerary.id,
+            destination: formData.destination,
+            startDate: formData.startDate?.toISOString(),
+            endDate: formData.endDate?.toISOString(),
+            budget: formData.budget > 0 ? formData.budget : null,
+            interests: formData.holidayTypes.join(', '),
+            travelStyle: formData.notes,
+            ragContext: ragContext,
+            friendRecommendations: ragFriendRecs,
+            currentContent: editingItinerary.itinerary_content
+          }
+        });
+
+        if (error) {
+          console.error('Error editing iter:', error);
           toast({
-            title: "Iter Updated!",
-            description: "Your iter has been updated successfully.",
+            title: "Update Failed",
+            description: error.message || "Failed to update itinerary. Please try again.",
+            variant: "destructive"
           });
+          return;
+        }
+
+        if (data.status === 'processing') {
+          toast({
+            title: "Itinerary Update Started",
+            description: `Your ${data.destination} itinerary is being updated. You'll receive a notification when it's ready!`,
+            duration: 5000,
+          });
+          
           setEditingItinerary(null);
           setCurrentView('savedTrips');
         }

@@ -120,7 +120,7 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
           <Calendar className="h-4 w-4" />
           <span>
             {collaboration?.permission === 'edit' 
-              ? 'You can edit and collaborate on this itinerary' 
+              ? 'You can view and edit this itinerary' 
               : 'You can view this itinerary'
             }
           </span>
@@ -138,7 +138,7 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
               {collaboration.permission === 'edit' ? (
                 <>
                   <Edit className="h-4 w-4 mr-2" />
-                  Accept & Collaborate
+                  Accept & Edit
                 </>
               ) : (
                 <>
@@ -165,12 +165,12 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
             {collaboration?.permission === 'edit' ? (
               <>
                 <Edit className="h-4 w-4 mr-2" />
-                Open & Edit
+                View & Edit
               </>
             ) : (
               <>
                 <Eye className="h-4 w-4 mr-2" />
-                Open & View
+                View Only
               </>
             )}
           </Button>

@@ -549,29 +549,6 @@ const Chat = () => {
             <Button onClick={sendMessage} disabled={!newMessage.trim()}>
               <Send className="h-4 w-4" />
             </Button>
-            {/* Test button to share a real post */}
-            <Button 
-              variant="outline" 
-              onClick={async () => {
-                // Get the first available post to share
-                const { data: posts } = await supabase
-                  .from('posts')
-                  .select('id')
-                  .limit(1);
-                if (posts && posts.length > 0) {
-                  sendSharedPost(posts[0].id);
-                } else {
-                  toast({
-                    title: "No posts found",
-                    description: "Create a post first to test sharing.",
-                    variant: "destructive"
-                  });
-                }
-              }}
-              className="whitespace-nowrap"
-            >
-              Share Post
-            </Button>
           </div>
         </div>
       </div>

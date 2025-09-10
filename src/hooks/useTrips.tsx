@@ -111,24 +111,23 @@ export const useTrips = () => {
         }
       }
 
-      // Create a post for the trip if it's public
-      if (tripData.is_public) {
-        console.log('Creating public post for trip');
-        const { error: postError } = await supabase
-          .from('posts')
-          .insert({
-            user_id: user.id,
-            trip_id: trip.id,
-            content: tripData.description,
-            image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null // Save all images as JSON
-          });
+      // Always create a post for the trip
+      console.log('Creating post for trip');
+      const { error: postError } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          trip_id: trip.id,
+          content: tripData.description,
+          image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null, // Save all images as JSON
+          is_private: !tripData.is_public // Private post if trip is not public
+        });
 
-        if (postError) {
-          console.error('Error creating post:', postError);
-          // Don't throw here as trip creation succeeded
-        } else {
-          console.log('Post created successfully');
-        }
+      if (postError) {
+        console.error('Error creating post:', postError);
+        // Don't throw here as trip creation succeeded
+      } else {
+        console.log('Post created successfully');
       }
 
       console.log('Returning trip:', { ...trip, images: imageUrls });

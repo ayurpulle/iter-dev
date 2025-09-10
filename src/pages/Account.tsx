@@ -22,10 +22,26 @@ interface SavedPost {
   likes_count: number;
   comments_count: number;
   user_id: string;
+  image_url?: string;
+  trip_id?: string;
+  is_private?: boolean;
   profiles?: {
+    id: string;
+    user_id: string;
     name: string;
     username: string;
     avatar: string;
+  };
+  trips?: {
+    id: string;
+    title?: string;
+    destination?: string;
+    duration?: string;
+    distance?: string;
+    cost?: string;
+    companions?: string;
+    stops?: any;
+    images?: string[];
   };
 }
 
@@ -313,10 +329,30 @@ const Account = () => {
       if (savedPostsData && savedPostsData.length > 0) {
         const postIds = savedPostsData.map(sp => sp.item_id);
         
-        // Fetch the actual posts
+        // Fetch the actual posts with trip information
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
-          .select('*')
+          .select(`
+            *,
+            profiles (
+              id,
+              user_id,
+              name,
+              username,
+              avatar
+            ),
+            trips (
+              id,
+              title,
+              destination,
+              duration,
+              distance,
+              cost,
+              companions,
+              stops,
+              images
+            )
+          `)
           .in('id', postIds);
 
         if (postsError) {
@@ -325,21 +361,7 @@ const Account = () => {
         }
 
         if (postsData) {
-          // Fetch profiles for post authors
-          const userIds = postsData.map(p => p.user_id);
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('user_id, name, username, avatar')
-            .in('user_id', userIds);
-
-          const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
-
-          const enrichedPosts = postsData.map(post => ({
-            ...post,
-            profiles: profilesMap.get(post.user_id)
-          }));
-
-          setSavedPosts(enrichedPosts);
+          setSavedPosts(postsData);
         }
       } else {
         setSavedPosts([]);
@@ -704,52 +726,11 @@ const Account = () => {
             ) : (
               <div className="space-y-4">
                 {savedPosts.map((post) => (
-                  <Card key={post.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={post.profiles?.avatar} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                            {post.profiles?.name?.[0]?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
-                              <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm mb-4">{post.content}</p>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Heart size={16} />
-                            <span className="text-sm">{post.likes_count}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MessageCircle size={16} />
-                            <span className="text-sm">{post.comments_count}</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-primary"
-                          onClick={() => handleUnsavePost(post.id)}
-                        >
-                          <Plus size={16} />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <UnifiedPostCard
+                    key={post.id}
+                    post={post}
+                    onDelete={() => handleUnsavePost(post.id)}
+                  />
                 ))}
               </div>
             )}

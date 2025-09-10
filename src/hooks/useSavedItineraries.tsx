@@ -238,36 +238,66 @@ export const useSavedItineraries = () => {
 
     const result = await executeQuery(async (client) => {
       // Check if user has edit permissions using the database function
-      console.log('Checking permissions for itinerary:', id, 'user:', user.id);
-      
       const { data: permissions, error: permError } = await client
         .rpc('get_user_itinerary_permissions', {
           itinerary_uuid: id,
           user_uuid: user.id
         });
 
-      console.log('Permission result:', permissions, 'error:', permError);
-
       if (!permissions?.can_edit) {
-        console.error('Permission denied - can_edit:', permissions?.can_edit);
         throw new Error('You do not have permission to edit this itinerary');
       }
 
-      return client
+      // First check which table contains this itinerary
+      const { data: savedItinerary } = await client
         .from('saved_itineraries')
-        .update({
-          title: itineraryData.title,
-          destination: itineraryData.destination,
-          start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
-          end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
-          budget: itineraryData.budget || null,
-          interests: itineraryData.interests || [],
-          itinerary_content: itineraryData.itinerary_content,
-          friend_recommendations: itineraryData.friend_recommendations || {}
-        })
+        .select('id')
         .eq('id', id)
-        .select()
         .single();
+
+      const { data: tripItinerary } = await client
+        .from('trips')
+        .select('id')
+        .eq('id', id)
+        .single();
+
+      
+
+      if (savedItinerary) {
+        // Update in saved_itineraries table
+        return client
+          .from('saved_itineraries')
+          .update({
+            title: itineraryData.title,
+            destination: itineraryData.destination,
+            start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+            end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+            budget: itineraryData.budget || null,
+            interests: itineraryData.interests || [],
+            itinerary_content: itineraryData.itinerary_content,
+            friend_recommendations: itineraryData.friend_recommendations || {}
+          })
+          .eq('id', id)
+          .select()
+          .single();
+      } else if (tripItinerary) {
+        // Update in trips table (background generated itineraries)
+        return client
+          .from('trips')
+          .update({
+            title: itineraryData.title,
+            destination: itineraryData.destination,
+            start_date: itineraryData.start_date?.toISOString().split('T')[0] || null,
+            end_date: itineraryData.end_date?.toISOString().split('T')[0] || null,
+            cost: itineraryData.budget ? `Budget Level ${itineraryData.budget}` : null,
+            description: itineraryData.itinerary_content
+          })
+          .eq('id', id)
+          .select()
+          .single();
+      } else {
+        throw new Error('Itinerary not found in either table');
+      }
     });
 
     if (result) {

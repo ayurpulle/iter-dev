@@ -31,11 +31,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
-        <GlobalNotifications />
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <GlobalNotifications />
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={

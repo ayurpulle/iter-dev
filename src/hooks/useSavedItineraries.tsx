@@ -238,14 +238,57 @@ export const useSavedItineraries = () => {
 
     const result = await executeQuery(async (client) => {
       // Check if user has edit permissions using the database function
+      console.log('Checking permissions for itinerary:', id, 'user:', user.id);
       const { data: permissions, error: permError } = await client
         .rpc('get_user_itinerary_permissions', {
           itinerary_uuid: id,
           user_uuid: user.id
         });
 
+      console.log('Permission check result:', permissions, 'error:', permError);
+
+      if (permError) {
+        console.error('Permission check error:', permError);
+        throw permError;
+      }
+
+      // Check permissions result, but don't fail immediately
+      console.log('Permission check - can_edit:', permissions?.can_edit, 'full permissions:', permissions);
+
+      // If permissions check fails, do a direct ownership check
       if (!permissions?.can_edit) {
-        throw new Error('You do not have permission to edit this itinerary');
+        console.log('Permissions check failed, doing direct ownership check...');
+        
+        // Check if user owns this in saved_itineraries table
+        const { data: savedItinerary, error: savedError } = await client
+          .from('saved_itineraries')
+          .select('user_id')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (savedError) {
+          console.error('Error checking saved itinerary ownership:', savedError);
+        }
+
+        // Check if user owns this in trips table
+        const { data: tripItinerary, error: tripError } = await client
+          .from('trips')
+          .select('user_id')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (tripError) {
+          console.error('Error checking trip ownership:', tripError);
+        }
+
+        console.log('Direct ownership check - saved:', savedItinerary, 'trip:', tripItinerary);
+
+        const isOwnerOfSaved = savedItinerary?.user_id === user.id;
+        const isOwnerOfTrip = tripItinerary?.user_id === user.id;
+
+        if (!isOwnerOfSaved && !isOwnerOfTrip) {
+          throw new Error('You do not have permission to edit this itinerary');
+        }
       }
 
       // First check which table contains this itinerary
@@ -253,13 +296,13 @@ export const useSavedItineraries = () => {
         .from('saved_itineraries')
         .select('id')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       const { data: tripItinerary } = await client
         .from('trips')
         .select('id')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       
 

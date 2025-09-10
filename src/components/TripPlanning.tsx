@@ -374,16 +374,27 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         console.error('Error generating iter:', error);
         toast({
           title: "Generation Failed",
-          description: error.message || "Failed to generate iter. Please try again.",
+          description: error.message || "Failed to start itinerary generation. Please try again.",
           variant: "destructive"
         });
         return;
       }
 
-      // Store the generated data and show success dialog
-      setLastGeneratedData(data);
-      setFriendRecommendations(data.friendRecommendations || {});
-      setShowSuccessDialog(true);
+      // Show success message for background processing
+      if (data.status === 'processing') {
+        toast({
+          title: "Itinerary Generation Started",
+          description: `Your ${data.destination} itinerary is being generated in the background. You'll receive a notification when it's ready!`,
+          duration: 5000,
+        });
+        
+        // Clear the form and show a processing state
+        setLastGeneratedData({ 
+          destination: data.destination, 
+          message: data.message,
+          status: 'processing'
+        });
+      }
 
     } catch (error) {
       console.error('Error:', error);

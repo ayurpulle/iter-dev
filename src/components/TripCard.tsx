@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ItemFolderSelector } from "./ItemFolderSelector";
 import CountryMap from "./CountryMap";
 import { ItineraryShareDialog } from "./ItineraryShareDialog";
+import { useProcessedImages } from "@/utils/imageProcessor";
 
 interface Stop {
   name: string;
@@ -78,6 +79,7 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
   
   const photos = trip.photos || [];
   const hasPhotos = photos.length > 0;
+  const { processedImages, isProcessing } = useProcessedImages(photos);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -265,25 +267,19 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                   </CarouselItem>
                   
                   {/* Photos */}
-                  {hasPhotos && photos.map((photo, index) => (
+                  {hasPhotos && processedImages.map((photo, index) => (
                     <CarouselItem key={`photo-${index}`} className="h-full pl-0">
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <div className="w-full h-full bg-muted overflow-hidden">
                         <img 
                           src={photo} 
                           alt={`Trip photo ${index + 1}`} 
-                          className="max-w-full max-h-full object-contain"
-                          style={{ 
-                            width: 'auto',
-                            height: 'auto',
-                            maxWidth: '100%',
-                            maxHeight: '100%'
-                          }}
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                {(hasPhotos || photos.length > 0) && (
+                {(hasPhotos || processedImages.length > 0) && (
                   <>
                     <CarouselPrevious className="left-2" />
                     <CarouselNext className="right-2" />

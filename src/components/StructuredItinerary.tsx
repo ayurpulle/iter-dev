@@ -325,15 +325,15 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
     <div className="space-y-6">
       {/* Interactive Map at Top */}
       {parsed.destinations.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="pb-2 px-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <MapPin className="h-5 w-5 text-blue-600" />
               Trip Overview Map
             </CardTitle>
             <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0">
             <InteractiveItineraryMap destinations={parsed.destinations} />
           </CardContent>
         </Card>
@@ -341,8 +341,8 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
 
       {/* Summary Section */}
       {parsed.summary && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardContent className="pt-6 px-0">
             <div className="space-y-2">
               {parsed.summary.split('\n').filter(line => line.trim()).slice(0, 3).map((line, index) => (
                 <p key={index} className="text-muted-foreground leading-relaxed">{line.trim()}</p>

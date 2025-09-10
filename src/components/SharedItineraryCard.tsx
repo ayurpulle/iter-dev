@@ -1,11 +1,13 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, ExternalLink } from 'lucide-react';
+import { MapPin, Calendar, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSavedItineraries } from '@/hooks/useSavedItineraries';
+import { useItineraryCollaboration } from '@/hooks/useItineraryCollaboration';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SharedItineraryCardProps {
   itineraryId: string;
@@ -17,24 +19,26 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
   const navigate = useNavigate();
   const { savedItineraries, saveItinerary } = useSavedItineraries();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleViewItinerary = async () => {
     try {
-      // Check if itinerary already exists in saved itineraries
-      const existingIter = savedItineraries.find(iter => iter.id === itineraryId);
-      
-      if (!existingIter) {
-        // If it doesn't exist, save it first
-        if (itineraryContent) {
-          await saveItinerary({
-            title: itineraryTitle,
-            destination: "Shared Location", // Will be updated when viewed
-            itinerary_content: itineraryContent
-          }, false); // Don't show toast for automatic save
-        }
+      // Create a view-only collaboration record so the user can access the itinerary
+      if (user) {
+        await supabase
+          .from('itinerary_collaborators')
+          .upsert({
+            itinerary_id: itineraryId,
+            user_id: user.id,
+            permission: 'view',
+            invited_by: user.id, // For shared items, mark them as self-invited
+            status: 'accepted' // Auto-accept for shared items
+          }, {
+            onConflict: 'itinerary_id,user_id'
+          });
       }
       
-      // Navigate to home with parameters to show saved trips and open this itinerary
+      // Navigate to view the itinerary
       navigate(`/?view=savedTrips&openIter=${itineraryId}`);
     } catch (error) {
       console.error('Error handling shared itinerary:', error);
@@ -51,8 +55,8 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       <div className="space-y-4">
         {/* Header with badge */}
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-primary" />
-          <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+          <Eye className="h-5 w-5 text-muted-foreground" />
+          <Badge variant="secondary" className="bg-muted text-muted-foreground">
             Shared Itinerary
           </Badge>
         </div>
@@ -71,11 +75,11 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
         {/* Action button */}
         <Button 
           size="lg" 
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full bg-muted hover:bg-muted/80 text-muted-foreground"
           onClick={handleViewItinerary}
         >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          View Iter
+          <Eye className="h-4 w-4 mr-2" />
+          View Itinerary
         </Button>
       </div>
     </div>

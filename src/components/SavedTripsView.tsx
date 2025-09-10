@@ -111,6 +111,7 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     <UnifiedItineraryShareDialog 
                       itineraryId={itinerary.id}
                       itineraryTitle={itinerary.title}
+                      isOwner={itinerary.is_owner}
                     />
                     <Button
                       variant="ghost"

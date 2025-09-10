@@ -21,12 +21,14 @@ interface UnifiedItineraryShareDialogProps {
   itineraryId: string;
   itineraryTitle: string;
   triggerButton?: React.ReactNode;
+  isOwner?: boolean; // Add isOwner prop to control access
 }
 
 export const UnifiedItineraryShareDialog = ({ 
   itineraryId, 
   itineraryTitle, 
-  triggerButton 
+  triggerButton,
+  isOwner = false
 }: UnifiedItineraryShareDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
@@ -60,14 +62,106 @@ export const UnifiedItineraryShareDialog = ({
         );
       }
     } else {
-      // Send collaboration invites
-      const success = await shareItinerary(itineraryId, selectedFriends, itineraryTitle);
+      // Send collaboration invites - only owners can give edit permission
+      const permission = isOwner ? 'edit' : 'view'; 
+      const success = await shareItinerary(itineraryId, selectedFriends, itineraryTitle, permission);
       if (!success) return;
     }
     
     setSelectedFriends([]);
     setIsOpen(false);
   };
+
+  // Show different message for non-owners
+  if (!isOwner) {
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          {triggerButton || (
+            <Button variant="outline" size="sm">
+              <Send className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          )}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Itinerary</DialogTitle>
+            <DialogDescription>
+              Share "{itineraryTitle}" with your friends (view-only)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {friends.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                No friends to share with
+              </p>
+            ) : (
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {friends.map((friend) => {
+                  const friendProfile = friend.profile;
+                  const friendId = friend.user_id === user?.id ? friend.friend_id : friend.user_id;
+                  
+                  return (
+                    <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                      <Checkbox
+                        checked={selectedFriends.includes(friendId)}
+                        onCheckedChange={() => handleFriendToggle(friendId)}
+                      />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={friendProfile?.avatar || ''} />
+                        <AvatarFallback>
+                          {friendProfile?.name?.charAt(0) || friendProfile?.username?.charAt(0) || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {friendProfile?.name || friendProfile?.username || 'Unknown'}
+                        </p>
+                        {friendProfile?.username && friendProfile?.name && (
+                          <p className="text-xs text-muted-foreground">@{friendProfile.username}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  // For non-owners, always share as view-only
+                  if (selectedFriends.length > 0) {
+                    selectedFriends.forEach(friendId => {
+                      shareToChat(
+                        friendId, 
+                        'itinerary', 
+                        itineraryId, 
+                        itineraryTitle,
+                        'Check out this itinerary!'
+                      );
+                    });
+                    setSelectedFriends([]);
+                    setIsOpen(false);
+                  }
+                }} 
+                disabled={selectedFriends.length === 0 || shareLoading}
+              >
+                {shareLoading ? 'Sharing...' : 
+                  `Share with ${selectedFriends.length} friend${selectedFriends.length !== 1 ? 's' : ''}`
+                }
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const defaultTrigger = (
     <Button variant="outline" size="sm">

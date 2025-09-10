@@ -282,17 +282,17 @@ export const useItineraryCollaboration = () => {
     }
   }, [user]);
 
-  const shareItinerary = useCallback(async (itineraryId: string, friendIds: string[], itineraryTitle?: string) => {
+  const shareItinerary = useCallback(async (itineraryId: string, friendIds: string[], itineraryTitle?: string, permission: 'view' | 'edit' = 'edit') => {
     if (!user) return false;
 
     setLoading(true);
     try {
-      console.log('Sharing itinerary with friends:', friendIds, 'title:', itineraryTitle);
+      console.log('Sharing itinerary with friends:', friendIds, 'title:', itineraryTitle, 'permission:', permission);
       
       const invites = friendIds.map(friendId => ({
         itinerary_id: itineraryId,
         user_id: friendId,
-        permission: 'edit' as const, // Collaboration invites should have edit permission
+        permission: permission, // Use the provided permission
         invited_by: user.id,
         status: 'pending'
       }));
@@ -313,7 +313,7 @@ export const useItineraryCollaboration = () => {
 
       toast({
         title: "Success",
-        description: `Collaboration invites sent to ${friendIds.length} friend${friendIds.length > 1 ? 's' : ''}!`
+        description: `${permission === 'edit' ? 'Collaboration' : 'Sharing'} invites sent to ${friendIds.length} friend${friendIds.length > 1 ? 's' : ''}!`
       });
 
       return true;

@@ -238,13 +238,18 @@ export const useSavedItineraries = () => {
 
     const result = await executeQuery(async (client) => {
       // Check if user has edit permissions using the database function
-      const { data: permissions } = await client
+      console.log('Checking permissions for itinerary:', id, 'user:', user.id);
+      
+      const { data: permissions, error: permError } = await client
         .rpc('get_user_itinerary_permissions', {
           itinerary_uuid: id,
           user_uuid: user.id
         });
 
+      console.log('Permission result:', permissions, 'error:', permError);
+
       if (!permissions?.can_edit) {
+        console.error('Permission denied - can_edit:', permissions?.can_edit);
         throw new Error('You do not have permission to edit this itinerary');
       }
 

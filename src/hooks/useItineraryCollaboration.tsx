@@ -292,7 +292,7 @@ export const useItineraryCollaboration = () => {
       const invites = friendIds.map(friendId => ({
         itinerary_id: itineraryId,
         user_id: friendId,
-        permission: 'view' as const,
+        permission: 'edit' as const, // Collaboration invites should have edit permission
         invited_by: user.id,
         status: 'pending'
       }));

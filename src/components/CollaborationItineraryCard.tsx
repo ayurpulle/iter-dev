@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Users } from 'lucide-react';
+import { MapPin, Calendar, Users, Eye, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSavedItineraries } from '@/hooks/useSavedItineraries';
 import { useToast } from '@/hooks/use-toast';
+import { useItineraryCollaboration } from '@/hooks/useItineraryCollaboration';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CollaborationItineraryCardProps {
   itineraryId: string;
@@ -16,32 +19,73 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
   const navigate = useNavigate();
   const { savedItineraries, saveItinerary } = useSavedItineraries();
   const { toast } = useToast();
+  const { respondToInvite } = useItineraryCollaboration();
+  const { user } = useAuth();
+  const [collaboration, setCollaboration] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleCollaborate = async () => {
-    try {
-      // Check if itinerary already exists in saved itineraries
-      const existingIter = savedItineraries.find(iter => iter.id === itineraryId);
+  // Fetch collaboration details on mount
+  useEffect(() => {
+    const fetchCollaboration = async () => {
+      if (!user) return;
       
-      if (!existingIter) {
-        // If it doesn't exist, save it first
-        if (itineraryContent) {
-          await saveItinerary({
-            title: itineraryTitle,
-            destination: "Shared Location", // Will be updated when viewed
-            itinerary_content: itineraryContent
-          }, false); // Don't show toast for automatic save
-        }
+      try {
+        const { data, error } = await supabase
+          .from('itinerary_collaborators')
+          .select('*')
+          .eq('itinerary_id', itineraryId)
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (error) throw error;
+        setCollaboration(data);
+      } catch (error) {
+        console.error('Error fetching collaboration:', error);
       }
+    };
+
+    fetchCollaboration();
+  }, [itineraryId, user]);
+
+  const handleAcceptInvite = async () => {
+    if (!collaboration) return;
+    
+    setLoading(true);
+    try {
+      // Accept the collaboration invite
+      const success = await respondToInvite(collaboration.id, 'accepted');
       
-      // Navigate to home with parameters to show saved trips and open this itinerary
-      navigate(`/?view=savedTrips&openIter=${itineraryId}`);
+      if (success) {
+        // Navigate to view the itinerary
+        navigate(`/?view=savedTrips&openIter=${itineraryId}`);
+      }
     } catch (error) {
-      console.error('Error handling collaboration itinerary:', error);
+      console.error('Error accepting invite:', error);
       toast({
         title: "Error",
-        description: "Failed to open collaboration itinerary",
+        description: "Failed to accept collaboration invite",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!collaboration) return;
+    
+    setLoading(true);
+    try {
+      await respondToInvite(collaboration.id, 'declined');
+      toast({
+        title: "Declined",
+        description: "Collaboration invite declined",
+      });
+    } catch (error) {
+      console.error('Error declining invite:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,9 +94,19 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
       <div className="space-y-4">
         {/* Header with badge */}
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-            Collaboration Invite
+          {collaboration?.permission === 'edit' ? (
+            <Edit className="h-5 w-5 text-primary" />
+          ) : (
+            <Eye className="h-5 w-5 text-muted-foreground" />
+          )}
+          <Badge 
+            variant="secondary" 
+            className={collaboration?.permission === 'edit' 
+              ? "bg-primary/10 text-primary hover:bg-primary/20" 
+              : "bg-muted text-muted-foreground"
+            }
+          >
+            {collaboration?.permission === 'edit' ? 'Collaboration Invite' : 'View Invite'}
           </Badge>
         </div>
         
@@ -64,18 +118,63 @@ export const CollaborationItineraryCard = ({ itineraryId, itineraryTitle, itiner
         {/* Subtitle */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          <span>Tap to collaborate on this itinerary</span>
+          <span>
+            {collaboration?.permission === 'edit' 
+              ? 'You can edit and collaborate on this itinerary' 
+              : 'You can view this itinerary'
+            }
+          </span>
         </div>
         
-        {/* Action button */}
-        <Button 
-          size="lg" 
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={handleCollaborate}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          Collaborate on
-        </Button>
+        {/* Action buttons */}
+        {collaboration && collaboration.status === 'pending' ? (
+          <div className="flex gap-2">
+            <Button 
+              size="lg" 
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={handleAcceptInvite}
+              disabled={loading}
+            >
+              {collaboration.permission === 'edit' ? (
+                <>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Accept & Collaborate
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Accept & View
+                </>
+              )}
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={handleDeclineInvite}
+              disabled={loading}
+            >
+              Decline
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            size="lg" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={() => navigate(`/?view=savedTrips&openIter=${itineraryId}`)}
+          >
+            {collaboration?.permission === 'edit' ? (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Open & Edit
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Open & View
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

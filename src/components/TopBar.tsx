@@ -32,7 +32,7 @@ const TopBar = () => {
   return (
     <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-6 py-4 rounded-b-xl shadow-sm">
       <div className="flex items-center justify-between max-w-6xl mx-auto">
-        <Logo size="md" onClick={() => navigate('/')} />
+        <Logo size="lg" onClick={() => navigate('/')} />
         
         <div className="flex items-center gap-3">
           <NotificationBadge>
@@ -62,14 +62,6 @@ const TopBar = () => {
             onClick={() => navigate('/global-search')}
           >
             <Search size={20} className="text-primary" />
-          </Button>
-          
-          <Button 
-            onClick={handleSignOut} 
-            variant="outline" 
-            className="rounded-xl hover:scale-105 transition-all duration-200 shadow-sm border-primary/20 hover:border-primary/40"
-          >
-            Sign Out
           </Button>
         </div>
       </div>

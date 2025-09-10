@@ -30,38 +30,38 @@ const TopBar = () => {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-6 py-2 rounded-b-xl shadow-sm">
+    <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-1 rounded-b-xl shadow-sm">
       <div className="flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="lg" onClick={() => navigate('/')} />
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <NotificationBadge>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:scale-105 transition-all duration-200"
+              className="h-7 w-7 p-0 rounded hover:bg-primary/10 hover:scale-105 transition-all duration-200"
               onClick={() => navigate('/notifications')}
             >
-              <Bell size={20} className="text-primary" />
+              <Bell size={18} className="text-primary" />
             </Button>
           </NotificationBadge>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:scale-105 transition-all duration-200"
+            className="h-7 w-7 p-0 rounded hover:bg-primary/10 hover:scale-105 transition-all duration-200"
             onClick={() => navigate('/messages')}
           >
-            <MessageCircle size={20} className="text-primary" />
+            <MessageCircle size={18} className="text-primary" />
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:scale-105 transition-all duration-200"
+            className="h-7 w-7 p-0 rounded hover:bg-primary/10 hover:scale-105 transition-all duration-200"
             onClick={() => navigate('/global-search')}
           >
-            <Search size={20} className="text-primary" />
+            <Search size={18} className="text-primary" />
           </Button>
         </div>
       </div>

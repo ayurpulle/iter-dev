@@ -31,12 +31,12 @@ const TopBar = () => {
   return (
     <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-6 py-4 rounded-b-xl shadow-sm">
       <div className="flex items-center justify-between max-w-6xl mx-auto">
-        <h1 
-          className="text-2xl font-bold text-primary cursor-pointer hover:text-primary-glow transition-all duration-200" 
+        <img 
+          src="/lovable-uploads/e11a33e6-40b9-478a-80f7-91e9ca151575.png"
+          alt="ITER Logo"
+          className="h-10 cursor-pointer hover:opacity-80 transition-opacity duration-200" 
           onClick={() => navigate('/')}
-        >
-          ITER
-        </h1>
+        />
         
         <div className="flex items-center gap-3">
           <NotificationBadge>

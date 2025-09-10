@@ -125,29 +125,50 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
         parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
       } else if (trimmed.startsWith('ACCOMMODATION:')) {
         parsed.accommodation = trimmed.replace('ACCOMMODATION:', '').trim();
-      } else if (trimmed.includes('**Day') || trimmed.includes('Day ')) {
-        // Enhanced day parsing to catch more patterns
+      } else if (trimmed.includes('**Day') || trimmed.includes('Day ') || trimmed.includes('Days ')) {
+        // Enhanced day parsing to catch both single days and grouped days
         const content = trimmed;
-        const dayMatches = content.match(/(?:\*\*)?Day \d+:?[^\n]*(?:\*\*)?/gi);
+        
+        // Match both "Day X:" and "Days X-Y:" patterns
+        const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?:?[^\n]*(?:\*\*)?/gi);
         console.log('Day matches found:', dayMatches);
         
         if (dayMatches) {
           dayMatches.forEach((dayMatch, matchIndex) => {
             // Find content between this day and the next day (or end of section)
             const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Day \\d+:|$)', 'i');
+            const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Days? \\d+:|$)', 'i');
             const match = content.match(regex);
             const dayContent = match?.[1] || '';
             
-            const dayNumber = dayMatch.match(/Day (\d+)/i)?.[1];
-            const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+            // Handle both single days and day ranges
+            const singleDayMatch = dayMatch.match(/Day (\d+)/i);
+            const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
+            
+            let dayNumber, dayTitle;
+            
+            if (dayRangeMatch) {
+              // For day ranges like "Days 1-2"
+              dayNumber = dayRangeMatch[1];
+              dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+              if (!dayTitle) {
+                dayTitle = `Days ${dayRangeMatch[1]}-${dayRangeMatch[2]}`;
+              }
+            } else if (singleDayMatch) {
+              // For single days like "Day 1"
+              dayNumber = singleDayMatch[1];
+              dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+              if (!dayTitle) {
+                dayTitle = `Day ${dayNumber}`;
+              }
+            }
             
             console.log(`Parsing Day ${dayNumber}:`, { dayTitle, contentLength: dayContent.length });
             
             if (dayNumber) {
               parsed.days.push({
                 number: dayNumber,
-                title: dayTitle || `Day ${dayNumber}`,
+                title: dayTitle,
                 content: dayContent.trim()
               });
             }

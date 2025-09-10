@@ -148,6 +148,12 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     const checkSavedStatus = () => {
       if (!user?.id) return;
       const isPostSaved = yourSavedPosts.some(savedPost => savedPost.item_id === post.id);
+      console.log('checkSavedStatus:', { 
+        postId: post.id, 
+        isPostSaved, 
+        yourSavedPostsCount: yourSavedPosts.length,
+        savedPostIds: yourSavedPosts.map(sp => sp.item_id)
+      });
       setIsSaved(isPostSaved);
     };
 
@@ -322,9 +328,18 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const handleSavePost = async (folderId?: string) => {
     if (!user?.id) return;
 
+    console.log('handleSavePost called:', { 
+      postId: post.id, 
+      isSaved, 
+      folderId,
+      yourSavedPostsCount: yourSavedPosts.length,
+      savedPostExists: yourSavedPosts.find(sp => sp.item_id === post.id)
+    });
+
     try {
       if (isSaved) {
         // Unsave the post
+        console.log('Attempting to unsave post:', post.id);
         const { error } = await supabase
           .from('saved_items')
           .delete()
@@ -332,7 +347,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
           .eq('user_id', user.id)
           .eq('item_type', 'post');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error unsaving post:', error);
+          throw error;
+        }
 
         setIsSaved(false);
         refetch();
@@ -343,6 +361,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
         });
       } else {
         // Save the post
+        console.log('Attempting to save post:', post.id, 'to folder:', folderId);
         const { error } = await supabase
           .from('saved_items')
           .insert({
@@ -352,7 +371,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
             folder_id: folderId || null
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error saving post:', error);
+          throw error;
+        }
 
         setIsSaved(true);
         refetch();

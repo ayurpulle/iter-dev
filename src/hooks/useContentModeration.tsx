@@ -18,7 +18,8 @@ export const useContentModeration = () => {
     try {
       console.log(`Moderating ${contentType} content...`);
       
-      const { data, error } = await supabase.functions.invoke('moderate-content', {
+      // Use the free manual moderation instead of OpenAI
+      const { data, error } = await supabase.functions.invoke('manual-moderate-content', {
         body: { content, contentType }
       });
 

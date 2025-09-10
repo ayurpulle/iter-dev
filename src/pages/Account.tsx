@@ -77,8 +77,8 @@ const Account = () => {
   // Load user profile and posts on mount
   useEffect(() => {
     if (user) {
-      loadUserProfile();
-      loadUserPosts();
+      loadUserPosts(); // Load posts first to get count
+      loadUserProfile(); // Then load profile with preserved post count
     }
   }, [user]);
 
@@ -113,18 +113,18 @@ const Account = () => {
       }
 
       if (profile) {
-        setUserProfile({
+        setUserProfile(prev => ({
           name: profile.name || user.email?.split('@')[0] || '',
           username: profile.username || user.email?.split('@')[0] || '',
           avatar: profile.avatar,
           stats: {
-            posts: 0, // Will be updated when posts are loaded
+            posts: prev.stats.posts, // Preserve existing post count
             followers: profile.followers_count || 0,
             following: profile.following_count || 0,
           },
           bio: profile.bio || '',
           joinDate: new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        });
+        }));
       }
 
       // Set up real-time subscription for profile changes

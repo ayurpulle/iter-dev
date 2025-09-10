@@ -323,19 +323,9 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                           </Button>
                         </div>
                         
-                        {/* Floating Action Buttons */}
+                        {/* Floating Action Buttons - Fixed Order & Functionality */}
                         <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                          {/* Share Button (Send icon - left) */}
-                          <ShareToChatDialog
-                            itemType="itinerary"
-                            itemId={trip.id}
-                            itemTitle={trip.title}
-                            triggerText=""
-                            variant="ghost"
-                            size="sm"
-                          />
-                          
-                          {/* Save Button (Plus - right) */}
+                          {/* Save Button (Plus - left) */}
                           {!isSaved ? (
                             <ItemFolderSelector itemId={trip.id} itemType="trip" onSave={handleSave}>
                               <Button 
@@ -356,6 +346,16 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                               <Plus size={14} className="fill-current" />
                             </Button>
                           )}
+                          
+                          {/* Share Button (Send icon - right) */}
+                          <ShareToChatDialog
+                            itemType="itinerary"
+                            itemId={trip.id}
+                            itemTitle={trip.title}
+                            triggerText=""
+                            variant="ghost"
+                            size="sm"
+                          />
                         </div>
                       </div>
                     </CarouselItem>

@@ -52,7 +52,7 @@ export const ShareToChatDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size}>
+        <Button variant={variant} size={size} className="h-8 w-8 p-0">
           <Share2 className="h-4 w-4" />
           {triggerText && <span className="ml-2">{triggerText}</span>}
         </Button>

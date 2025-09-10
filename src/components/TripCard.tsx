@@ -258,11 +258,14 @@ const TripCard: React.FC<TripCardProps> = ({ user, trip, stats, expandable = fal
                   {/* Photos */}
                   {hasPhotos && photos.map((photo, index) => (
                     <CarouselItem key={index} className="h-full">
-                      <div className="h-full">
+                      <div className="h-full flex items-center justify-center bg-black">
                         <img 
                           src={photo} 
                           alt={`Trip photo ${index + 1}`} 
                           className="w-full h-full object-cover"
+                          style={{
+                            objectPosition: 'center center'
+                          }}
                         />
                       </div>
                     </CarouselItem>

@@ -841,6 +841,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   onClick={() => handleSavePost()}
                 >
                   <Plus className="w-5 h-5 fill-current" />
+                  <span className="ml-1 text-sm">Saved</span>
                 </Button>
               ) : (
                 <ItemFolderSelector
@@ -850,6 +851,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 >
                   <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500">
                     <Plus className="w-5 h-5" />
+                    <span className="ml-1 text-sm">Save</span>
                   </Button>
                 </ItemFolderSelector>
               )}

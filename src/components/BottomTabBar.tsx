@@ -9,51 +9,51 @@ const BottomTabBar = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2" style={{ paddingBottom: `calc(0.5rem + var(--safe-area-inset-bottom))` }}>
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3" style={{ paddingBottom: `calc(0.75rem + var(--safe-area-inset-bottom))` }}>
       <div className="flex items-center justify-between max-w-md mx-auto">
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2"
+          className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/")}
         >
-          <Home size={20} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground"} />
+          <Home size={24} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2"
+          className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/map")}
         >
-          <Globe size={20} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
+          <Globe size={24} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2 relative"
+          className="flex flex-col items-center gap-1 h-auto p-3 relative"
           onClick={() => navigate("/create")}
         >
-          <PlusCircle size={24} className={location.pathname === "/create" ? "text-primary" : "text-muted-foreground"} />
+          <PlusCircle size={28} className={location.pathname === "/create" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2"
+          className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/search")}
         >
-          <Plane size={20} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
+          <Plane size={24} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-2"
+          className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/account")}
         >
-          <User size={20} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />
+          <User size={24} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />
         </Button>
       </div>
     </div>

@@ -82,6 +82,7 @@ interface UnifiedPostCardProps {
       title: string;
       destination: string;
       stops?: any[];
+      images?: string[];
     };
   };
   profile?: Profile;
@@ -583,18 +584,26 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
 
   const locationText = getLocationText();
 
-  // Parse image URLs - could be single URL or JSON array
+  // Parse image URLs - could be from post.image_url or trips.images
   const getImageUrls = () => {
-    if (!post.image_url) return [];
-    
-    try {
-      // Try to parse as JSON array first
-      const parsed = JSON.parse(post.image_url);
-      return Array.isArray(parsed) ? parsed : [post.image_url];
-    } catch {
-      // If not JSON, treat as single URL
-      return [post.image_url];
+    // First try post.image_url (normal posts and trip posts)
+    if (post.image_url) {
+      try {
+        // Try to parse as JSON array first
+        const parsed = JSON.parse(post.image_url);
+        return Array.isArray(parsed) ? parsed : [post.image_url];
+      } catch {
+        // If not JSON, treat as single URL
+        return [post.image_url];
+      }
     }
+    
+    // Fallback to trip images if this is a trip post
+    if (post.trips?.images) {
+      return Array.isArray(post.trips.images) ? post.trips.images : [];
+    }
+    
+    return [];
   };
 
   const images = getImageUrls();
@@ -834,30 +843,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                />
              </div>
 
-             <div className="flex items-center gap-2">
-               {isSaved ? (
-                 <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   className="text-blue-500 p-2 hover:text-blue-600"
-                   onClick={() => handleSavePost()}
-                 >
-                   <Plus className="w-5 h-5 fill-current" />
-                   <span className="ml-1 text-sm">Saved</span>
-                 </Button>
-               ) : (
-                 <ItemFolderSelector
-                   itemId={post.id}
-                   itemType="post"
-                   onSave={handleSavePost}
-                 >
-                   <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500">
-                     <Plus className="w-5 h-5" />
-                     <span className="ml-1 text-sm">Save</span>
-                   </Button>
-                 </ItemFolderSelector>
-               )}
-             </div>
+              {/* Removed duplicate save button - only keep the bottom right one for trips */}
 
             {/* Bottom right action buttons for trip posts */}
             {hasTrip && (

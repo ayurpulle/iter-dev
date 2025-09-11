@@ -178,12 +178,13 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       });
       map.current.addControl(nav, 'top-right');
 
-      // Smooth rotation animation
-      const secondsPerRevolution = 300;
-      const maxSpinZoom = 4;
-      const slowSpinZoom = 2;
+      // Mobile-optimized rotation animation
+      const secondsPerRevolution = 120; // Faster rotation
+      const maxSpinZoom = 3; // Lower zoom threshold
+      const slowSpinZoom = 1.5;
       let userInteracting = false;
       let spinEnabled = true;
+      let interactionTimeout: NodeJS.Timeout;
 
       // Add atmosphere and fog effects when style loads
       map.current.on('style.load', () => {
@@ -264,37 +265,48 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
             distancePerSecond *= zoomDif;
           }
           const center = map.current.getCenter();
-          center.lng -= distancePerSecond / 60;
+          center.lng -= distancePerSecond / 30; // Smoother animation
           map.current.easeTo({ 
             center, 
-            duration: 1000, 
+            duration: 500, // Faster animation
             easing: (n) => n 
           });
         }
       }
 
-      // Event listeners for user interaction
+      // Mobile-optimized event listeners
+      map.current.on('touchstart', () => {
+        userInteracting = true;
+        clearTimeout(interactionTimeout);
+      });
+      
       map.current.on('mousedown', () => {
         userInteracting = true;
+        clearTimeout(interactionTimeout);
       });
       
       map.current.on('dragstart', () => {
         userInteracting = true;
-      });
-      
-      map.current.on('mouseup', () => {
-        userInteracting = false;
-        setTimeout(spinGlobe, 1000);
+        clearTimeout(interactionTimeout);
       });
       
       map.current.on('touchend', () => {
-        userInteracting = false;
-        setTimeout(spinGlobe, 1000);
+        interactionTimeout = setTimeout(() => {
+          userInteracting = false;
+          spinGlobe();
+        }, 2000); // Longer delay after touch
+      });
+      
+      map.current.on('mouseup', () => {
+        interactionTimeout = setTimeout(() => {
+          userInteracting = false;
+          spinGlobe();
+        }, 1000);
       });
 
       map.current.on('moveend', () => {
         if (!userInteracting) {
-          spinGlobe();
+          interactionTimeout = setTimeout(spinGlobe, 500);
         }
       });
 

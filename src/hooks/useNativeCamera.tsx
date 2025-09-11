@@ -10,11 +10,28 @@ export const useNativeCamera = () => {
     try {
       setLoading(true);
       
+      // Request permissions first
+      const permissions = await Camera.requestPermissions({
+        permissions: ['camera']
+      });
+      
+      if (permissions.camera !== 'granted') {
+        toast({
+          title: "Permission Required",
+          description: "Camera access is required to take photos.",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
+        width: 1024,
+        height: 1024,
+        correctOrientation: true
       });
 
       return photo.dataUrl;
@@ -35,11 +52,28 @@ export const useNativeCamera = () => {
     try {
       setLoading(true);
       
+      // Request permissions first
+      const permissions = await Camera.requestPermissions({
+        permissions: ['photos']
+      });
+      
+      if (permissions.photos !== 'granted') {
+        toast({
+          title: "Permission Required",
+          description: "Photo library access is required to select photos.",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Photos,
+        width: 1024,
+        height: 1024,
+        correctOrientation: true
       });
 
       return photo.dataUrl;

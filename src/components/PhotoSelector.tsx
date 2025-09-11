@@ -15,6 +15,10 @@ const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps)
   const { selectFromGallery, takePhoto, loading } = useNativeCamera();
 
   const handleSelectFromGallery = async () => {
+    if (selectedPhotos.length >= maxPhotos) {
+      return;
+    }
+    
     const photo = await selectFromGallery();
     if (photo) {
       const newPhotos = [...selectedPhotos, photo];
@@ -24,6 +28,10 @@ const PhotoSelector = ({ onPhotosSelected, maxPhotos = 10 }: PhotoSelectorProps)
   };
 
   const handleTakePhoto = async () => {
+    if (selectedPhotos.length >= maxPhotos) {
+      return;
+    }
+    
     const photo = await takePhoto();
     if (photo) {
       const newPhotos = [...selectedPhotos, photo];

@@ -75,6 +75,9 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       zoom: 0.8,
       center: [0, 15],
       pitch: 0,
+      // Mobile optimizations
+      preserveDrawingBuffer: false,
+      antialias: false, // Disable for better performance on mobile
     });
 
     // Add navigation controls
@@ -122,12 +125,13 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       });
     });
 
-    // Rotation animation settings - optimized for better performance
-    const secondsPerRevolution = 120; // Reduced from 240 for faster rotation
-    const maxSpinZoom = 4; // Reduced from 5
-    const slowSpinZoom = 3;
+    // Mobile-optimized rotation animation
+    const secondsPerRevolution = 200; // Slower for smoother performance
+    const maxSpinZoom = 3;
+    const slowSpinZoom = 2;
     let userInteracting = false;
     let spinEnabled = true;
+    let interactionTimeout: NodeJS.Timeout;
 
     // Spin globe function
     function spinGlobe() {
@@ -142,31 +146,44 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
         }
         const center = map.current.getCenter();
         center.lng -= distancePerSecond;
-        map.current.easeTo({ center, duration: 500, easing: (n) => n }); // Reduced duration from 1000ms
+        map.current.easeTo({ center, duration: 300, easing: (n) => n }); // Optimized for mobile
       }
     }
 
-    // Event listeners for interaction
+    // Mobile-optimized interaction handlers
+    map.current.on('touchstart', () => {
+      userInteracting = true;
+      clearTimeout(interactionTimeout);
+    });
+    
     map.current.on('mousedown', () => {
       userInteracting = true;
+      clearTimeout(interactionTimeout);
     });
     
     map.current.on('dragstart', () => {
       userInteracting = true;
-    });
-    
-    map.current.on('mouseup', () => {
-      userInteracting = false;
-      spinGlobe();
+      clearTimeout(interactionTimeout);
     });
     
     map.current.on('touchend', () => {
-      userInteracting = false;
-      spinGlobe();
+      interactionTimeout = setTimeout(() => {
+        userInteracting = false;
+        spinGlobe();
+      }, 3000); // Longer delay for mobile
+    });
+    
+    map.current.on('mouseup', () => {
+      interactionTimeout = setTimeout(() => {
+        userInteracting = false;
+        spinGlobe();
+      }, 1500);
     });
 
     map.current.on('moveend', () => {
-      spinGlobe();
+      if (!userInteracting) {
+        interactionTimeout = setTimeout(spinGlobe, 1000);
+      }
     });
 
     // Start the globe spinning

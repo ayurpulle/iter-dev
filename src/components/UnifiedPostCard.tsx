@@ -818,21 +818,46 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 <MessageCircle className="w-6 h-6" />
               </Button>
               
-              <ShareToChatDialog
-                itemType="post"
-                itemId={post.id}
-                itemTitle={hasTrip ? (() => {
-                  const stops = post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
-                  return stops.length > 1 
-                    ? `Trip to ${post.trips?.destination || stops[0]?.name} and ${stops.length - 1} more`
-                    : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
-                })() : "Post"}
-                content={post.content || ""}
-                triggerText=""
-                variant="ghost"
-                size="sm"
-              />
-            </div>
+               <ShareToChatDialog
+                 itemType="post"
+                 itemId={post.id}
+                 itemTitle={hasTrip ? (() => {
+                   const stops = post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
+                   return stops.length > 1 
+                     ? `Trip to ${post.trips?.destination || stops[0]?.name} and ${stops.length - 1} more`
+                     : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
+                 })() : "Post"}
+                 content={post.content || ""}
+                 triggerText=""
+                 variant="ghost"
+                 size="sm"
+               />
+             </div>
+
+             <div className="flex items-center gap-2">
+               {isSaved ? (
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   className="text-blue-500 p-2 hover:text-blue-600"
+                   onClick={() => handleSavePost()}
+                 >
+                   <Plus className="w-5 h-5 fill-current" />
+                   <span className="ml-1 text-sm">Saved</span>
+                 </Button>
+               ) : (
+                 <ItemFolderSelector
+                   itemId={post.id}
+                   itemType="post"
+                   onSave={handleSavePost}
+                 >
+                   <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500">
+                     <Plus className="w-5 h-5" />
+                     <span className="ml-1 text-sm">Save</span>
+                   </Button>
+                 </ItemFolderSelector>
+               )}
+             </div>
 
             {/* Bottom right action buttons for trip posts */}
             {hasTrip && (

@@ -605,7 +605,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 bg-background border-b flex items-center justify-between z-10" style={{ paddingTop: `calc(3rem + env(safe-area-inset-top))`, paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '1rem' }}>
+      <div className="sticky top-0 bg-background border-b flex items-center justify-between z-10" style={{ paddingTop: `calc(4rem + env(safe-area-inset-top))`, paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '1rem' }}>
         <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Cancel

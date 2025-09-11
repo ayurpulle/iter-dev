@@ -9,6 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowLeft, MapPin, Route, Search, X, Plus, Trash2 } from 'lucide-react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import PhotoSelector from './PhotoSelector';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,7 +38,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
   const [selectedLocations, setSelectedLocations] = useState<Location[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [photoLocations, setPhotoLocations] = useState<Array<{lat: number, lng: number, name: string, photoIndex: number}>>([]);
-  const [isSelectingPhoto, setIsSelectingPhoto] = useState(false);
+  const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [mapboxToken, setMapboxToken] = useState('');
   const [userMapboxToken, setUserMapboxToken] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
@@ -448,64 +449,47 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
     });
   };
 
-  const selectPhoto = async () => {
-    try {
-      console.log('Starting photo selection...');
-      setIsSelectingPhoto(true);
+  const handlePhotosSelected = async (photos: string[]) => {
+    console.log('Photos selected:', photos.length);
+    
+    // Process each new photo for GPS data
+    const newPhotos = photos.slice(selectedPhotos.length);
+    const newPhotoLocations: {lat: number, lng: number, name: string, photoIndex: number}[] = [];
+    
+    for (let i = 0; i < newPhotos.length; i++) {
+      const photo = newPhotos[i];
+      const photoIndex = selectedPhotos.length + i;
       
-      const photo = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Photos,
-      });
-
-      console.log('Photo received from camera:', !!photo.dataUrl);
-
-      if (photo.dataUrl) {
-        const newPhotoIndex = selectedPhotos.length;
-        console.log('Adding photo at index:', newPhotoIndex);
-        setSelectedPhotos(prev => [...prev, photo.dataUrl]);
+      try {
+        console.log('Attempting to extract GPS data from photo', photoIndex);
+        const gpsCoords = await extractGPSFromPhoto(photo);
+        console.log('GPS extraction result:', gpsCoords);
         
-        // Extract GPS coordinates from photo (don't let this block the photo addition)
-        try {
-          console.log('Attempting to extract GPS data...');
-          const gpsCoords = await extractGPSFromPhoto(photo.dataUrl);
-          console.log('GPS extraction result:', gpsCoords);
+        if (gpsCoords) {
+          const photoLocation = {
+            lat: gpsCoords.lat,
+            lng: gpsCoords.lng,
+            name: `Photo ${photoIndex + 1}`,
+            photoIndex: photoIndex
+          };
           
-          if (gpsCoords) {
-            const photoLocation = {
-              lat: gpsCoords.lat,
-              lng: gpsCoords.lng,
-              name: `Photo ${newPhotoIndex + 1}`,
-              photoIndex: newPhotoIndex
-            };
-            
-            setPhotoLocations(prev => [...prev, photoLocation]);
-            
-            toast({
-              title: "Location detected",
-              description: `GPS coordinates found in photo and added to map`,
-            });
-          } else {
-            console.log('No GPS coordinates found in photo');
-          }
-        } catch (gpsError) {
-          console.error('Error extracting GPS from photo:', gpsError);
-          // Don't show error to user, just continue without GPS data
+          newPhotoLocations.push(photoLocation);
+          
+          toast({
+            title: "Location detected",
+            description: `GPS coordinates found in photo and added to map`,
+          });
         }
+      } catch (gpsError) {
+        console.error('Error extracting GPS from photo:', gpsError);
       }
-    } catch (error) {
-      console.error('Error selecting photo:', error);
-      toast({
-        title: "Error",
-        description: "Failed to select photo",
-        variant: "destructive",
-      });
-    } finally {
-      console.log('Photo selection complete, setting isSelectingPhoto to false');
-      setIsSelectingPhoto(false);
     }
+    
+    setSelectedPhotos(photos);
+    if (newPhotoLocations.length > 0) {
+      setPhotoLocations(prev => [...prev, ...newPhotoLocations]);
+    }
+    setShowPhotoSelector(false);
   };
 
   const removePhoto = (index: number) => {
@@ -803,7 +787,12 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                 )}
               </div>
 
-              {selectedPhotos.length > 0 ? (
+              {showPhotoSelector ? (
+                <PhotoSelector 
+                  onPhotosSelected={handlePhotosSelected} 
+                  maxPhotos={6}
+                />
+              ) : selectedPhotos.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
                   {selectedPhotos.slice(0, 6).map((photo, index) => (
                     <div key={index} className="relative aspect-square">
@@ -837,8 +826,7 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                     <Button
                       variant="outline"
                       className="aspect-square border-dashed"
-                      onClick={selectPhoto}
-                      disabled={isSelectingPhoto}
+                      onClick={() => setShowPhotoSelector(true)}
                     >
                       +
                     </Button>
@@ -848,11 +836,10 @@ const TripPostCreator = ({ onBack }: TripPostCreatorProps) => {
                 <div className="space-y-3">
                   <Button
                     variant="outline"
-                    onClick={selectPhoto}
-                    disabled={isSelectingPhoto}
+                    onClick={() => setShowPhotoSelector(true)}
                     className="w-full"
                   >
-                    {isSelectingPhoto ? 'Selecting...' : 'Add Photos'}
+                    Add Photos
                   </Button>
                   <Button
                     variant="ghost"

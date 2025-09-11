@@ -805,9 +805,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 className={`p-2 ${isLiked ? 'text-red-500' : 'text-muted-foreground'}`}
               >
                 <Heart 
-                  className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} 
+                  className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} 
                 />
-                <span className="ml-1 text-sm">{likesCount}</span>
               </Button>
               
               <Button
@@ -816,8 +815,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 onClick={() => setShowComments(!showComments)}
                 className="p-2 text-muted-foreground"
               >
-                <MessageCircle className="w-5 h-5" />
-                <span className="ml-1 text-sm">{comments.length}</span>
+                <MessageCircle className="w-6 h-6" />
               </Button>
               
               <ShareToChatDialog
@@ -830,7 +828,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                     : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
                 })() : "Post"}
                 content={post.content || ""}
-                triggerText="Send"
+                triggerText=""
                 variant="ghost"
                 size="sm"
               />
@@ -843,7 +841,6 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   onClick={() => handleSavePost()}
                 >
                   <Plus className="w-5 h-5 fill-current" />
-                  <span className="ml-1 text-sm">Saved</span>
                 </Button>
               ) : (
                 <ItemFolderSelector
@@ -853,7 +850,6 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 >
                   <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500">
                     <Plus className="w-5 h-5" />
-                    <span className="ml-1 text-sm">Save</span>
                   </Button>
                 </ItemFolderSelector>
               )}

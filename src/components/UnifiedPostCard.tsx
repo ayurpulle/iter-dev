@@ -820,6 +820,21 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 <span className="ml-1 text-sm">{comments.length}</span>
               </Button>
               
+              <ShareToChatDialog
+                itemType="post"
+                itemId={post.id}
+                itemTitle={hasTrip ? (() => {
+                  const stops = post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
+                  return stops.length > 1 
+                    ? `Trip to ${post.trips?.destination || stops[0]?.name} and ${stops.length - 1} more`
+                    : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
+                })() : "Post"}
+                content={post.content || ""}
+                triggerText="Send"
+                variant="ghost"
+                size="sm"
+              />
+              
               {isSaved ? (
                 <Button 
                   variant="ghost" 
@@ -842,21 +857,6 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   </Button>
                 </ItemFolderSelector>
               )}
-              
-              <ShareToChatDialog
-                itemType="post"
-                itemId={post.id}
-                itemTitle={hasTrip ? (() => {
-                  const stops = post.trips?.stops ? (Array.isArray(post.trips.stops) ? post.trips.stops : []) : [];
-                  return stops.length > 1 
-                    ? `Trip to ${post.trips?.destination || stops[0]?.name} and ${stops.length - 1} more`
-                    : `Trip to ${post.trips?.destination || stops[0]?.name || 'destination'}`;
-                })() : "Post"}
-                content={post.content || ""}
-                triggerText="Send"
-                variant="ghost"
-                size="sm"
-              />
             </div>
           </div>
 

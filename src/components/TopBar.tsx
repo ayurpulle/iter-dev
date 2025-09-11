@@ -30,7 +30,7 @@ const TopBar = () => {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-0.5 rounded-b-xl shadow-sm" style={{ paddingTop: `calc(0.5rem + var(--safe-area-inset-top))` }}>
+    <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-0.5 rounded-b-xl shadow-sm" style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top))` }}>
       <div className="flex items-center justify-between max-w-6xl mx-auto">
         <Logo size="lg" onClick={() => navigate('/')} />
         

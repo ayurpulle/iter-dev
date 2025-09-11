@@ -843,7 +843,30 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                />
              </div>
 
-              {/* Removed duplicate save button - only keep the bottom right one for trips */}
+              <div className="flex items-center gap-2">
+                {isSaved ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-blue-500 p-2 hover:text-blue-600"
+                    onClick={() => handleSavePost()}
+                  >
+                    <Plus className="w-5 h-5 fill-current" />
+                    <span className="ml-1 text-sm">Saved</span>
+                  </Button>
+                ) : (
+                  <ItemFolderSelector
+                    itemId={post.id}
+                    itemType="post"
+                    onSave={handleSavePost}
+                  >
+                    <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500">
+                      <Plus className="w-5 h-5" />
+                      <span className="ml-1 text-sm">Save</span>
+                    </Button>
+                  </ItemFolderSelector>
+                )}
+              </div>
 
             {/* Bottom right action buttons for trip posts */}
             {hasTrip && (
@@ -863,28 +886,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   size="sm"
                 />
                 
-                {isSaved ? (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-blue-500 p-2 hover:text-blue-600 bg-white/80 backdrop-blur-sm"
-                    onClick={() => handleSavePost()}
-                  >
-                    <Plus className="w-5 h-5 fill-current" />
-                    <span className="ml-1 text-sm">Saved</span>
-                  </Button>
-                ) : (
-                  <ItemFolderSelector
-                    itemId={post.id}
-                    itemType="post"
-                    onSave={handleSavePost}
-                  >
-                    <Button variant="ghost" size="sm" className="text-muted-foreground p-2 hover:text-blue-500 bg-white/80 backdrop-blur-sm">
-                      <Plus className="w-5 h-5" />
-                      <span className="ml-1 text-sm">Save</span>
-                    </Button>
-                  </ItemFolderSelector>
-                )}
+                {/* Removed save button from map overlay - it's now in the main action bar */}
               </div>
             )}
           </div>

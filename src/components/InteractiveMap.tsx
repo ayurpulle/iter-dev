@@ -122,9 +122,9 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       });
     });
 
-    // Rotation animation settings
-    const secondsPerRevolution = 240;
-    const maxSpinZoom = 5;
+    // Rotation animation settings - optimized for better performance
+    const secondsPerRevolution = 120; // Reduced from 240 for faster rotation
+    const maxSpinZoom = 4; // Reduced from 5
     const slowSpinZoom = 3;
     let userInteracting = false;
     let spinEnabled = true;
@@ -142,7 +142,7 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
         }
         const center = map.current.getCenter();
         center.lng -= distancePerSecond;
-        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+        map.current.easeTo({ center, duration: 500, easing: (n) => n }); // Reduced duration from 1000ms
       }
     }
 

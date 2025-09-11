@@ -107,7 +107,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+      <div className="sticky top-0 z-50 bg-background border-b" style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top))` }}>
         <div className="flex items-center justify-between p-4">
           <Button
             variant="ghost"

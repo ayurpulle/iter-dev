@@ -52,12 +52,18 @@ export const useNativeCamera = () => {
     try {
       setLoading(true);
       
+      console.log('📱 Starting photo selection...');
+      
       // Request permissions first
+      console.log('📱 Requesting photo permissions...');
       const permissions = await Camera.requestPermissions({
         permissions: ['photos']
       });
       
+      console.log('📱 Permission result:', permissions);
+      
       if (permissions.photos !== 'granted') {
+        console.log('📱 Photo permission denied:', permissions.photos);
         toast({
           title: "Permission Required",
           description: "Photo library access is required to select photos.",
@@ -66,22 +72,32 @@ export const useNativeCamera = () => {
         return null;
       }
       
+      console.log('📱 Attempting to get photo from gallery...');
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Photos,
-        width: 1024,
-        height: 1024,
         correctOrientation: true
       });
 
+      console.log('📱 Photo selected successfully');
       return photo.dataUrl;
     } catch (error) {
-      console.error('Error selecting photo:', error);
+      console.error('📱 Error selecting photo:', error);
+      console.error('📱 Error details:', JSON.stringify(error, null, 2));
+      
+      // More specific error handling
+      let errorMessage = "Failed to select photo. Please try again.";
+      if (error && typeof error === 'object') {
+        if ('message' in error) {
+          errorMessage = `Photo selection failed: ${error.message}`;
+        }
+      }
+      
       toast({
         title: "Photo Selection Error",
-        description: "Failed to select photo. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
       return null;

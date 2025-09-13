@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { MapPin, X, Camera, Clock, DollarSign } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Pin {
   location: string;
@@ -12,18 +16,30 @@ interface Pin {
   posts?: any[];
 }
 
+interface LocationDetails {
+  name: string;
+  country: string;
+  description: string;
+  activities: string[];
+  bestTime: string;
+  avgCost: string;
+  coordinates: [number, number];
+}
+
 interface InteractiveMapProps {
   onLocationClick?: (location: string) => void;
   pins?: Pin[];
 }
 
 const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [isTokenSet, setIsTokenSet] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [selectedLocation, setSelectedLocation] = useState<LocationDetails | null>(null);
 
 
   // Fetch Mapbox token from secure edge function
@@ -66,7 +82,7 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
+      style: 'mapbox://styles/mapbox/outdoors-v12', // Changed to colorful outdoors style for atlas look
       projection: { name: 'globe' },
       zoom: 1.2,
       center: [-98, 39], // Center on North America like InteractiveGlobe
@@ -105,6 +121,45 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       map.current?.setPaintProperty('settlement-major-label', 'text-color', '#1d4ed8');
       map.current?.setPaintProperty('settlement-major-label', 'text-halo-color', '#ffffff');
       map.current?.setPaintProperty('settlement-major-label', 'text-halo-width', 1.5);
+
+      // Add click handler for location details (same as InteractiveGlobe)
+      map.current.on('click', async (e) => {
+        const { lng, lat } = e.lngLat;
+        
+        try {
+          // Reverse geocode to get location information
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=place,locality,country`
+          );
+          const data = await response.json();
+          
+          if (data.features && data.features.length > 0) {
+            const feature = data.features[0];
+            const placeName = feature.text || feature.place_name;
+            const country = feature.context?.find((c: any) => c.id.startsWith('country.'))?.text || 'Unknown';
+            
+            const locationDetails: LocationDetails = {
+              name: placeName,
+              country: country,
+              description: `Discover the wonders of ${placeName}, a beautiful destination offering unique experiences and cultural attractions.`,
+              activities: [
+                'Explore historical landmarks',
+                'Experience local cuisine',
+                'Visit museums and galleries',
+                'Enjoy outdoor activities',
+                'Shop at local markets'
+              ],
+              bestTime: 'Varies by season',
+              avgCost: '$30-200 per day',
+              coordinates: [lng, lat]
+            };
+            
+            setSelectedLocation(locationDetails);
+          }
+        } catch (error) {
+          console.error('Error fetching location details:', error);
+        }
+      });
 
       // Function to determine continent based on coordinates (same as InteractiveGlobe)
       const getContinentColor = (lng: number, lat: number, location: string) => {
@@ -307,6 +362,72 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       <div ref={mapContainer} className="absolute inset-0 rounded-2xl" style={{
         background: 'radial-gradient(circle at center, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)'
       }} />
+      
+      {/* Location Details Popup (same as InteractiveGlobe) */}
+      {selectedLocation && (
+        <Card className="absolute top-4 left-4 right-4 z-10 max-w-sm mx-auto">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="h-5 w-5 text-blue-600" />
+                {selectedLocation.name}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedLocation(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">{selectedLocation.country}</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {selectedLocation.description}
+            </p>
+            
+            <div>
+              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Things to Do
+              </h4>
+              <ul className="text-xs space-y-1">
+                {selectedLocation.activities.slice(0, 3).map((activity, index) => (
+                  <li key={index} className="text-muted-foreground">• {activity}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {selectedLocation.bestTime}
+              </div>
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3" />
+                {selectedLocation.avgCost}
+              </div>
+            </div>
+
+            <Button 
+              size="sm" 
+              className="w-full"
+              onClick={() => {
+                // Navigate to trip planning with pre-filled destination
+                navigate('/search', { 
+                  state: { 
+                    prefilledDestination: `${selectedLocation.name}, ${selectedLocation.country}`,
+                    coordinates: selectedLocation.coordinates 
+                  }
+                });
+              }}
+            >
+              Plan Trip Here
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

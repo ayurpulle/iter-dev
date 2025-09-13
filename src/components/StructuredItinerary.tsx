@@ -473,73 +473,94 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
 
           {/* Practical Tips Section */}
           {parsed.practicalTips && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Info className="h-5 w-5 text-orange-600" />
-                  Essential Travel Tips
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {(() => {
-                    const tips = parsed.practicalTips.split('\n').filter(tip => tip.trim()).map(tip => tip.trim().replace(/^[•\-]\s*/, ''));
-                    
-                    // Categorize tips by type (system prompt guidance)
-                    const categorizeTips = (tips: string[]) => {
-                      const categories = {
-                        customs: [] as string[],
-                        transportation: [] as string[],
-                        gettingAround: [] as string[],
-                        language: [] as string[],
-                        safety: [] as string[],
-                        cost: [] as string[],
-                        general: [] as string[]
-                      };
-                      
-                      tips.forEach(tip => {
-                        const lowerTip = tip.toLowerCase();
-                        if (lowerTip.includes('custom') || lowerTip.includes('culture') || lowerTip.includes('tradition') || lowerTip.includes('respect') || lowerTip.includes('etiquette')) {
-                          categories.customs.push(tip);
-                        } else if (lowerTip.includes('transport') || lowerTip.includes('train') || lowerTip.includes('bus') || lowerTip.includes('metro') || lowerTip.includes('subway') || lowerTip.includes('flight')) {
-                          categories.transportation.push(tip);
-                        } else if (lowerTip.includes('getting around') || lowerTip.includes('navigation') || lowerTip.includes('map') || lowerTip.includes('walk') || lowerTip.includes('taxi') || lowerTip.includes('uber')) {
-                          categories.gettingAround.push(tip);
-                        } else if (lowerTip.includes('language') || lowerTip.includes('speak') || lowerTip.includes('english') || lowerTip.includes('translate') || lowerTip.includes('phrase')) {
-                          categories.language.push(tip);
-                        } else if (lowerTip.includes('safe') || lowerTip.includes('security') || lowerTip.includes('avoid') || lowerTip.includes('careful') || lowerTip.includes('danger') || lowerTip.includes('crime')) {
-                          categories.safety.push(tip);
-                        } else if (lowerTip.includes('cost') || lowerTip.includes('price') || lowerTip.includes('money') || lowerTip.includes('budget') || lowerTip.includes('expensive') || lowerTip.includes('cheap') || lowerTip.includes('tip') || lowerTip.includes('cash') || lowerTip.includes('card')) {
-                          categories.cost.push(tip);
-                        } else {
-                          categories.general.push(tip);
-                        }
-                      });
-                      
-                      return categories;
-                    };
-                    
-                    const categorizedTips = categorizeTips(tips);
-                    const allTips = [
-                      ...categorizedTips.customs,
-                      ...categorizedTips.transportation,
-                      ...categorizedTips.gettingAround,
-                      ...categorizedTips.language,
-                      ...categorizedTips.safety,
-                      ...categorizedTips.cost,
-                      ...categorizedTips.general
-                    ];
-                    
-                    return allTips.map((tip, tipIndex) => (
-                      <div key={tipIndex} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
-                        <span className="text-orange-600 mt-0.5 flex-shrink-0">💡</span>
-                        <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">{tip}</span>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Info className="h-5 w-5 text-orange-600" />
+                <h3 className="text-lg font-semibold">Essential Travel Tips</h3>
+              </div>
+              
+              {(() => {
+                const tips = parsed.practicalTips.split('\n').filter(tip => tip.trim()).map(tip => tip.trim().replace(/^[•\-]\s*/, ''));
+                
+                // Categorize tips by type with improved keywords
+                const categorizeTips = (tips: string[]) => {
+                  const categories = {
+                    payment: [] as string[],
+                    transportation: [] as string[],
+                    weather: [] as string[],
+                    locals: [] as string[],
+                    communication: [] as string[],
+                    navigation: [] as string[],
+                    culture: [] as string[],
+                    safety: [] as string[],
+                    general: [] as string[]
+                  };
+                  
+                  tips.forEach(tip => {
+                    const lowerTip = tip.toLowerCase();
+                    if (lowerTip.includes('card') || lowerTip.includes('cash') || lowerTip.includes('money') || lowerTip.includes('payment') || lowerTip.includes('tip') || lowerTip.includes('dollar') || lowerTip.includes('cost') || lowerTip.includes('price') || lowerTip.includes('budget')) {
+                      categories.payment.push(tip);
+                    } else if (lowerTip.includes('transport') || lowerTip.includes('train') || lowerTip.includes('bus') || lowerTip.includes('metro') || lowerTip.includes('subway') || lowerTip.includes('flight') || lowerTip.includes('muni') || lowerTip.includes('bart') || lowerTip.includes('clipper') || lowerTip.includes('airport')) {
+                      categories.transportation.push(tip);
+                    } else if (lowerTip.includes('weather') || lowerTip.includes('temperature') || lowerTip.includes('rain') || lowerTip.includes('sunny') || lowerTip.includes('foggy') || lowerTip.includes('layer') || lowerTip.includes('wear') || lowerTip.includes('shoes') || lowerTip.includes('hilly') || lowerTip.includes('climate')) {
+                      categories.weather.push(tip);
+                    } else if (lowerTip.includes('locals') || lowerTip.includes('people') || lowerTip.includes('friendly') || lowerTip.includes('space') || lowerTip.includes('mindful') || lowerTip.includes('residential') || lowerTip.includes('photos') || lowerTip.includes('direction')) {
+                      categories.locals.push(tip);
+                    } else if (lowerTip.includes('wifi') || lowerTip.includes('phone') || lowerTip.includes('internet') || lowerTip.includes('text') || lowerTip.includes('map') || lowerTip.includes('tourist map') || lowerTip.includes('blend in')) {
+                      categories.communication.push(tip);
+                    } else if (lowerTip.includes('navigate') || lowerTip.includes('getting around') || lowerTip.includes('walk') || lowerTip.includes('taxi') || lowerTip.includes('uber') || lowerTip.includes('direction') || lowerTip.includes('gps')) {
+                      categories.navigation.push(tip);
+                    } else if (lowerTip.includes('culture') || lowerTip.includes('tradition') || lowerTip.includes('respect') || lowerTip.includes('etiquette') || lowerTip.includes('custom')) {
+                      categories.culture.push(tip);
+                    } else if (lowerTip.includes('safe') || lowerTip.includes('security') || lowerTip.includes('avoid') || lowerTip.includes('careful') || lowerTip.includes('danger') || lowerTip.includes('crime')) {
+                      categories.safety.push(tip);
+                    } else {
+                      categories.general.push(tip);
+                    }
+                  });
+                  
+                  return categories;
+                };
+                
+                const categorizedTips = categorizeTips(tips);
+                
+                // Define tip icons for each category
+                const getTipIcon = (category: string) => {
+                  switch(category) {
+                    case 'payment': return '💳';
+                    case 'transportation': return '🚌';
+                    case 'weather': return '🌤️';
+                    case 'locals': return '👥';
+                    case 'communication': return '📱';
+                    case 'navigation': return '🗺️';
+                    case 'culture': return '🏛️';
+                    case 'safety': return '🛡️';
+                    default: return '💡';
+                  }
+                };
+                
+                return Object.entries(categorizedTips)
+                  .filter(([_, tipsList]) => tipsList.length > 0)
+                  .map(([category, tipsList]) => (
+                    <Card key={category} className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {tipsList.map((tip, tipIndex) => (
+                            <div key={tipIndex} className="flex items-start gap-3">
+                              <span className="text-orange-600 mt-0.5 flex-shrink-0 text-lg">
+                                {getTipIcon(category)}
+                              </span>
+                              <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">
+                                {tip}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ));
+              })()}
+            </div>
           )}
         </div>
       )}

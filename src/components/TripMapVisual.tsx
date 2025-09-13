@@ -166,9 +166,27 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
             scale: 0.7  // Smaller pins for trip posts
           })
             .setLngLat([stop.lng, stop.lat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div style="font-weight: bold;">${index + 1}. ${stop.name}</div>`
-            ))
+            .setPopup(new mapboxgl.Popup({ 
+              offset: 25,
+              closeButton: false,
+              className: 'custom-trip-popup'
+            }).setHTML(`
+              <div style="
+                background: hsl(var(--card));
+                color: hsl(var(--card-foreground));
+                border: 1px solid hsl(var(--border));
+                border-radius: calc(var(--radius) - 2px);
+                padding: 8px 12px;
+                font-family: ui-sans-serif, system-ui, sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                min-width: fit-content;
+                white-space: nowrap;
+              ">
+                ${index + 1}. ${stop.name}
+              </div>
+            `))
             .addTo(map.current!);
           console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);
         });

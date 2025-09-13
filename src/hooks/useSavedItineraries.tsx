@@ -64,6 +64,27 @@ export const useSavedItineraries = () => {
 
       if (collabError) throw collabError;
 
+      // Fetch background-generated trips (from generate-itinerary edge function)
+      const { data: backgroundTrips, error: tripsError } = await client
+        .from('trips')
+        .select(`
+          id,
+          title,
+          destination,
+          start_date,
+          end_date,
+          cost,
+          description,
+          created_at,
+          updated_at,
+          user_id,
+          profiles!trips_user_id_fkey(username, name)
+        `)
+        .eq('user_id', user.id)
+        .not('description', 'is', null); // Only trips with descriptions (generated itineraries)
+
+      if (tripsError) throw tripsError;
+
       // Process owned itineraries
       const processedOwned = (ownedItineraries || []).map(iter => ({
         ...iter,
@@ -107,8 +128,39 @@ export const useSavedItineraries = () => {
         };
       });
 
+      // Process background-generated trips and transform to SavedItinerary format
+      const processedTrips = (backgroundTrips || []).map(trip => {
+        // Extract budget from cost string (e.g., "Budget Level 2" -> 2)
+        let budget = null;
+        if (trip.cost && typeof trip.cost === 'string') {
+          const budgetMatch = trip.cost.match(/Budget Level (\d+)/);
+          if (budgetMatch) {
+            budget = parseInt(budgetMatch[1]);
+          }
+        }
+
+        return {
+          id: trip.id,
+          title: trip.title || trip.destination || 'Generated Trip',
+          destination: trip.destination || 'Unknown Destination',
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          budget: budget,
+          interests: [], // trips table doesn't store interests
+          itinerary_content: trip.description || '',
+          friend_recommendations: {},
+          created_at: trip.created_at,
+          updated_at: trip.updated_at,
+          user_id: trip.user_id,
+          creator_username: trip.profiles?.username || 'Unknown',
+          creator_name: trip.profiles?.name || 'Unknown User',
+          is_owner: true,
+          can_edit: true
+        } as SavedItinerary;
+      });
+
       // Combine and deduplicate results
-      const allItineraries = [...processedOwned];
+      const allItineraries = [...processedOwned, ...processedTrips];
       
       processedCollaborative.forEach(iter => {
         // Only add if not already in owned itineraries

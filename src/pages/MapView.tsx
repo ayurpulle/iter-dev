@@ -142,7 +142,8 @@ const MapView = () => {
         }`} 
         style={{ 
           height: showPostsList ? 'calc(100vh - 10rem)' : '0px',
-          maxHeight: 'calc(100vh - 10rem)'
+          maxHeight: 'calc(100vh - 10rem)',
+          paddingTop: showPostsList ? `calc(1rem + var(--safe-area-inset-top))` : '0'
         }}
       >
         {showPostsList && (

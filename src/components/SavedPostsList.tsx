@@ -55,7 +55,7 @@ const SavedPostsList = ({
   return (
     <div className="h-full flex flex-col">
       {/* Header with folder dropdown */}
-      <div className="flex items-center justify-between p-4 border-b bg-card" style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top))` }}>
+      <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Your Saved Posts</h2>
           <DropdownMenu>

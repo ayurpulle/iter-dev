@@ -439,7 +439,7 @@ const Chat = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         {/* Chat Header */}
-        <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-16 py-0.5 flex items-center gap-3" style={{ paddingTop: `calc(1.5rem + var(--safe-area-inset-top))` }}>
+        <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-0.5 flex items-center gap-3" style={{ paddingTop: `calc(3rem + var(--safe-area-inset-top))` }}>
           <Button 
             variant="ghost" 
             size="sm" 

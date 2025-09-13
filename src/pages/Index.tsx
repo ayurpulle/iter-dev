@@ -3,7 +3,7 @@ import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TripPlanning from "@/components/TripPlanning";
 import { useOptimizedPosts } from "@/hooks/useOptimizedPosts";
-import OptimizedPostCard from "@/components/OptimizedPostCard";
+import UnifiedPostCard from "@/components/UnifiedPostCard";
 
 interface Post {
   id: string;
@@ -100,7 +100,7 @@ const Index = () => {
             </div>
           ) : (
             posts.map((post) => (
-              <OptimizedPostCard
+              <UnifiedPostCard
                 key={post.id}
                 post={post}
                 onDelete={handleDeletePost}

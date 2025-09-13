@@ -8,8 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load heavy components
 const LazyTripMapVisual = lazy(() => import('@/components/LazyTripMapVisual'));
-const Carousel = lazy(() => import('@/components/ui/carousel').then(mod => ({ default: mod.Carousel })));
-const PostActions = lazy(() => import('@/components/PostActions').then(mod => ({ default: mod.PostActions })));
+const LazyCarousel = lazy(() => import('@/components/ui/carousel').then(mod => ({ default: mod.Carousel })));
+const LazyCarouselContent = lazy(() => import('@/components/ui/carousel').then(mod => ({ default: mod.CarouselContent })));
+const LazyCarouselItem = lazy(() => import('@/components/ui/carousel').then(mod => ({ default: mod.CarouselItem })));
 
 interface Post {
   id: string;
@@ -58,15 +59,7 @@ const MapSkeleton = () => (
 );
 
 const CarouselSkeleton = () => (
-  <Skeleton className="w-full h-48 rounded-lg mb-3" />
-);
-
-const ActionsSkeleton = () => (
-  <div className="flex gap-4">
-    <Skeleton className="h-8 w-16" />
-    <Skeleton className="h-8 w-16" />
-    <Skeleton className="h-8 w-16" />
-  </div>
+  <Skeleton className="w-full h-24 rounded" />
 );
 
 const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
@@ -145,13 +138,21 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
           </div>
         )}
 
-        {/* Trip Images Carousel - Lazy loaded */}
+        {/* Trip Images - Simple display instead of lazy carousel */}
         {post.trips?.images && post.trips.images.length > 0 && (
-          <Suspense fallback={<CarouselSkeleton />}>
-            <Carousel>
-              {/* Carousel content will be lazy loaded */}
-            </Carousel>
-          </Suspense>
+          <div className="mb-3">
+            <div className="grid grid-cols-2 gap-2">
+              {post.trips.images.slice(0, 4).map((image, index) => (
+                <img
+                  key={index}
+                  src={image}
+                  alt={`Trip image ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Basic Actions */}

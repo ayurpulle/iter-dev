@@ -78,7 +78,7 @@ export const useSavedItineraries = () => {
           created_at,
           updated_at,
           user_id,
-          profiles!trips_user_id_fkey(username, name)
+          profiles!trips_user_id_profiles_fkey(username, name)
         `)
         .eq('user_id', user.id)
         .not('description', 'is', null); // Only trips with descriptions (generated itineraries)

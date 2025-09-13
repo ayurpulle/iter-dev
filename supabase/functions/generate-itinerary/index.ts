@@ -263,7 +263,7 @@ STRICT GUIDELINES:
       }
 
       // Create notification for completion
-      await supabaseClient
+      const { error: notificationError } = await supabaseClient
         .from('notifications')
         .insert({
           user_id: userId,
@@ -276,6 +276,12 @@ STRICT GUIDELINES:
             friendRecommendations: finalFriendRecommendations 
           }
         });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      } else {
+        console.log('Notification created successfully');
+      }
 
       console.log('Background itinerary generation completed successfully');
 

@@ -7,6 +7,7 @@ export interface TripData {
   country_code: string;
   cost?: string;
   companions?: string;
+  taggedFriends?: string[];
   duration?: string;
   distance?: string;
   route: Array<{lat: number, lng: number, name: string}>;

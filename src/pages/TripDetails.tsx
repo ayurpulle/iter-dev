@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, DollarSign, Users, FileText, Star, Loader2 } from 'lucide-react';
 import { useTrips } from '@/hooks/useTrips';
 import { useToast } from '@/hooks/use-toast';
+import { MentionInput } from '@/components/MentionInput';
 
 interface TripData {
   country?: string;
@@ -29,6 +30,7 @@ const TripDetails = () => {
   const [tripDescription, setTripDescription] = useState('');
   const [cost, setCost] = useState('');
   const [companions, setCompanions] = useState('');
+  const [taggedFriends, setTaggedFriends] = useState<string[]>([]);
   const [duration, setDuration] = useState('');
   const [distance, setDistance] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -65,6 +67,7 @@ const TripDetails = () => {
         country_code: tripData?.country || '',
         cost,
         companions,
+        taggedFriends,
         duration,
         distance,
         route: routeData,
@@ -208,14 +211,17 @@ const TripDetails = () => {
             <Users className="h-4 w-4" />
             <Label htmlFor="companions" className="font-medium">Who did you go with?</Label>
           </div>
-          <Input
+          <MentionInput
             id="companions"
-            placeholder="e.g., Solo, Friends, Family, Partner..."
+            placeholder="e.g., Solo, Friends, Family, Partner... or @username to tag friends"
             value={companions}
-            onChange={(e) => setCompanions(e.target.value)}
+            onChange={(value, mentions) => {
+              setCompanions(value);
+              setTaggedFriends(mentions);
+            }}
           />
           <p className="text-xs text-muted-foreground">
-            Optional: Let others know your travel style
+            Optional: Let others know your travel style. Use @username to tag friends who went with you.
           </p>
         </Card>
 

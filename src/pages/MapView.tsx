@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Users, User } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
-import InteractiveGlobe from "@/components/InteractiveGlobe";
+import LazyInteractiveMap from "@/components/LazyInteractiveMap";
 import SavedPostsList from "@/components/SavedPostsList";
 import LocationPostsList from "@/components/LocationPostsList";
 import { useSavedPosts, SavedPost } from "@/hooks/useSavedPosts";
@@ -77,7 +77,10 @@ const MapView = () => {
       
       {/* Globe Container - Full height between bars */}
       <div className="absolute top-16 bottom-20 left-0 right-0">
-        <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
+        <LazyInteractiveMap onLocationClick={(location) => {
+          const pin = pins.find(p => p.location === location);
+          if (pin) handlePinClick(pin);
+        }} />
         {pins.length > 0 && (
           <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs z-40">
             {pins.length} pins loaded

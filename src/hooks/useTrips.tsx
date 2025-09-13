@@ -76,6 +76,7 @@ export const useTrips = () => {
           country_code: tripData.country_code,
           cost: tripData.cost,
           companions: tripData.companions,
+          tagged_friends: tripData.taggedFriends || [], // Store tagged friend usernames
           duration: tripData.duration,
           distance: tripData.distance || '', // Make sure this doesn't cause issues if undefined
           stops: tripData.route,
@@ -109,6 +110,38 @@ export const useTrips = () => {
         if (updateError) {
           console.error('Error updating trip with images:', updateError);
           throw updateError;
+        }
+      }
+
+      // Create trip tags for tagged friends
+      if (tripData.taggedFriends && tripData.taggedFriends.length > 0) {
+        console.log('Creating trip tags for:', tripData.taggedFriends);
+        
+        // Get user IDs for tagged usernames
+        const { data: taggedUsers, error: usersError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .in('username', tripData.taggedFriends);
+        
+        if (usersError) {
+          console.error('Error fetching tagged users:', usersError);
+        } else if (taggedUsers && taggedUsers.length > 0) {
+          // Create trip_tags records
+          const tripTags = taggedUsers.map(taggedUser => ({
+            trip_id: trip.id,
+            user_id: user.id, // Trip creator
+            tagged_user_id: taggedUser.user_id
+          }));
+          
+          const { error: tagsError } = await supabase
+            .from('trip_tags')
+            .insert(tripTags);
+          
+          if (tagsError) {
+            console.error('Error creating trip tags:', tagsError);
+          } else {
+            console.log('Trip tags created successfully');
+          }
         }
       }
 

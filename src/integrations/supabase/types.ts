@@ -516,6 +516,38 @@ export type Database = {
           },
         ]
       }
+      trip_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tagged_user_id: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tagged_user_id: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tagged_user_id?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_tags_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           companions: string | null
@@ -534,6 +566,7 @@ export type Database = {
           photo_count: number | null
           start_date: string | null
           stops: Json | null
+          tagged_friends: string[] | null
           title: string | null
           updated_at: string | null
           user_id: string
@@ -555,6 +588,7 @@ export type Database = {
           photo_count?: number | null
           start_date?: string | null
           stops?: Json | null
+          tagged_friends?: string[] | null
           title?: string | null
           updated_at?: string | null
           user_id: string
@@ -576,6 +610,7 @@ export type Database = {
           photo_count?: number | null
           start_date?: string | null
           stops?: Json | null
+          tagged_friends?: string[] | null
           title?: string | null
           updated_at?: string | null
           user_id?: string

@@ -7,19 +7,28 @@ import LazyInteractiveMap from "@/components/LazyInteractiveMap";
 import SavedPostsList from "@/components/SavedPostsList";
 import LocationPostsList from "@/components/LocationPostsList";
 import { useSavedPosts, SavedPost } from "@/hooks/useSavedPosts";
+import { useAuth } from "@/hooks/useAuth";
 
 const MapView = () => {
   const [showPostsList, setShowPostsList] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{location: string; posts: SavedPost[]} | null>(null);
   const { yourSavedPosts, loading } = useSavedPosts();
+  const { user } = useAuth();
 
-  // Create pins from user's saved posts only
+  // Create pins from user's saved posts only - but only for posts they authored (their own trips)
   const createPinsFromPosts = () => {
-    // Group saved posts by location
+    if (!yourSavedPosts.length) return [];
+    
+    // Group saved posts by location, but only for posts authored by the current user
     const locationGroups: { [key: string]: { location: string; lat: number; lng: number; posts: SavedPost[] } } = {};
     
     yourSavedPosts
-      .filter(savedPost => savedPost.posts?.trips?.stops)
+      .filter(savedPost => {
+        // Only include posts that:
+        // 1. Have trip data with stops
+        // 2. Are authored by the current user (their own trips, not saved from others)
+        return savedPost.posts?.trips?.stops && savedPost.posts?.user_id === user?.id;
+      })
       .forEach(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];
         stops.forEach((stop: any) => {
@@ -77,10 +86,13 @@ const MapView = () => {
       
       {/* Globe Container - Full height between bars */}
       <div className="absolute top-16 bottom-20 left-0 right-0">
-        <LazyInteractiveMap onLocationClick={(location) => {
-          const pin = pins.find(p => p.location === location);
-          if (pin) handlePinClick(pin);
-        }} />
+        <LazyInteractiveMap 
+          onLocationClick={(location) => {
+            const pin = pins.find(p => p.location === location);
+            if (pin) handlePinClick(pin);
+          }} 
+          pins={pins}
+        />
         {pins.length > 0 && (
           <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs z-40">
             {pins.length} pins loaded

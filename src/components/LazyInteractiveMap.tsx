@@ -4,8 +4,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Lazy load the interactive map component
 const InteractiveMap = lazy(() => import('@/components/InteractiveMap'));
 
+interface Pin {
+  location: string;
+  lat: number;
+  lng: number;
+  friends: string[];
+  trips: number;
+  posts?: any[];
+}
+
 interface LazyInteractiveMapProps {
   onLocationClick?: (location: string) => void;
+  pins?: Pin[];
 }
 
 const MapSkeleton = () => (
@@ -17,10 +27,10 @@ const MapSkeleton = () => (
   </div>
 );
 
-const LazyInteractiveMap = ({ onLocationClick }: LazyInteractiveMapProps) => {
+const LazyInteractiveMap = ({ onLocationClick, pins }: LazyInteractiveMapProps) => {
   return (
     <Suspense fallback={<MapSkeleton />}>
-      <InteractiveMap onLocationClick={onLocationClick} />
+      <InteractiveMap onLocationClick={onLocationClick} pins={pins} />
     </Suspense>
   );
 };

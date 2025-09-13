@@ -190,11 +190,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
       map.current.on('style.load', () => {
         if (map.current) {
           map.current.setFog({
-            color: 'rgb(135, 206, 235)', // Sky blue color for atmosphere
-            'high-color': 'rgb(70, 130, 180)', // Steel blue for high altitude
-            'horizon-blend': 0.1,
-            'space-color': 'rgb(10, 15, 25)',
-            'star-intensity': 0.8,
+            color: 'rgb(220, 240, 255)', // Light blue atmosphere
+            'high-color': 'rgb(135, 206, 235)', // Sky blue for high altitude
+            'horizon-blend': 0.2,
+            'space-color': 'rgb(11, 19, 43)', // Dark space background
+            'star-intensity': 0.6,
           });
 
           // Enhance place name labels

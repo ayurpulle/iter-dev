@@ -3,11 +3,21 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from "@/integrations/supabase/client";
 
-interface InteractiveMapProps {
-  onLocationClick?: (location: string) => void;
+interface Pin {
+  location: string;
+  lat: number;
+  lng: number;
+  friends: string[];
+  trips: number;
+  posts?: any[];
 }
 
-const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
+interface InteractiveMapProps {
+  onLocationClick?: (location: string) => void;
+  pins?: Pin[];
+}
+
+const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
@@ -15,20 +25,6 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
-  // Enhanced trip locations with friends' data
-  const tripLocations = [
-    { name: "Tokyo", latitude: 35.6762, longitude: 139.6503, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
-    { name: "Kyoto", latitude: 35.0116, longitude: 135.7681, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
-    { name: "Osaka", latitude: 34.6937, longitude: 135.5023, trip: "Japan Adventure — Sarah & Friends", friendsCount: 2 },
-    { name: "Barcelona", latitude: 41.3851, longitude: 2.1734, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
-    { name: "Rome", latitude: 41.9028, longitude: 12.4964, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
-    { name: "Athens", latitude: 37.9838, longitude: 23.7275, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
-    { name: "Santorini", latitude: 36.3932, longitude: 25.4615, trip: "Mediterranean Cruise — Emma & Group", friendsCount: 1 },
-    { name: "Reykjavik", latitude: 64.1466, longitude: -21.9426, trip: "Iceland Road Trip — Mike", friendsCount: 1 },
-    { name: "Bangkok", latitude: 13.7563, longitude: 100.5018, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
-    { name: "Chiang Mai", latitude: 18.7061, longitude: 98.9817, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
-    { name: "Phuket", latitude: 7.8804, longitude: 98.3923, trip: "Thailand Backpacking — Alex & Friends", friendsCount: 1 },
-  ];
 
   // Fetch Mapbox token from secure edge function
   useEffect(() => {
@@ -88,35 +84,37 @@ const InteractiveMap = ({ onLocationClick }: InteractiveMapProps) => {
       'top-right'
     );
 
-    // Add atmosphere and fog effects
+    // Add atmosphere and fog effects to match reference image
     map.current.on('style.load', () => {
       map.current?.setFog({
-        color: 'rgb(255, 255, 255)',
-        'high-color': 'rgb(200, 200, 225)',
+        color: 'rgb(220, 240, 255)', // Light blue atmosphere
+        'high-color': 'rgb(135, 206, 235)', // Sky blue for high altitude
         'horizon-blend': 0.2,
+        'space-color': 'rgb(11, 19, 43)', // Dark space background
+        'star-intensity': 0.6,
       });
 
-      // Add markers for friends' trip locations
-      tripLocations.forEach((location) => {
+      // Add markers for user's actual trip locations from pins
+      pins.forEach((pin) => {
         const marker = new mapboxgl.Marker({ 
-          color: location.friendsCount > 1 ? '#8b5cf6' : '#10b981' // Purple for multiple friends, green for single
+          color: pin.friends.length > 1 ? '#8b5cf6' : '#10b981' // Purple for multiple friends, green for single
         })
-          .setLngLat([location.longitude, location.latitude])
+          .setLngLat([pin.lng, pin.lat])
           .addTo(map.current!);
 
         // Add click event to marker
         const markerElement = marker.getElement();
         markerElement.addEventListener('click', () => {
-          onLocationClick?.(location.name);
+          onLocationClick?.(pin.location);
         });
         markerElement.style.cursor = 'pointer';
 
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
             <div class="p-2">
-              <h3 class="font-semibold">${location.name}</h3>
-              <p class="text-sm text-gray-600">${location.trip}</p>
-              <p class="text-xs text-blue-600 font-medium">${location.friendsCount} friend${location.friendsCount > 1 ? 's' : ''} visited</p>
+              <h3 class="font-semibold">${pin.location}</h3>
+              <p class="text-sm text-gray-600">${pin.trips} trip${pin.trips > 1 ? 's' : ''}</p>
+              <p class="text-xs text-blue-600 font-medium">${pin.friends.length} friend${pin.friends.length > 1 ? 's' : ''} visited</p>
               <p class="text-xs text-gray-500">Click to see details</p>
             </div>
           `);

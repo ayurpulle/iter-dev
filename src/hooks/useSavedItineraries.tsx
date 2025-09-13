@@ -65,6 +65,7 @@ export const useSavedItineraries = () => {
       if (collabError) throw collabError;
 
       // Fetch background-generated trips (from generate-itinerary edge function)
+      // These are distinguished by having long, structured descriptions (>500 chars)
       const { data: backgroundTrips, error: tripsError } = await client
         .from('trips')
         .select(`
@@ -81,7 +82,7 @@ export const useSavedItineraries = () => {
           profiles!trips_user_id_profiles_fkey(username, name)
         `)
         .eq('user_id', user.id)
-        .not('description', 'is', null); // Only trips with descriptions (generated itineraries)
+        .not('description', 'is', null);
 
       if (tripsError) throw tripsError;
 
@@ -128,8 +129,10 @@ export const useSavedItineraries = () => {
         };
       });
 
-      // Process background-generated trips and transform to SavedItinerary format
-      const processedTrips = (backgroundTrips || []).map(trip => {
+      // Filter and process background-generated trips (only long descriptions are itineraries)
+      const processedTrips = (backgroundTrips || [])
+        .filter(trip => trip.description && trip.description.length > 500) // Only keep actual itineraries
+        .map(trip => {
         // Extract budget from cost string (e.g., "Budget Level 2" -> 2)
         let budget = null;
         if (trip.cost && typeof trip.cost === 'string') {

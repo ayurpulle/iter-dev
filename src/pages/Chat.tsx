@@ -439,7 +439,7 @@ const Chat = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         {/* Chat Header */}
-        <div className="border-b p-4 flex items-center gap-3">
+        <div className="border-b p-4 flex items-center gap-3" style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top))` }}>
           <Button 
             variant="ghost" 
             size="sm" 

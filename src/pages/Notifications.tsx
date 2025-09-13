@@ -62,6 +62,48 @@ const Notifications = () => {
     }
   };
 
+  const handleFollowBack = async (userId: string) => {
+    try {
+      // Check if already following
+      const { data: existingRelation } = await supabase
+        .from('friends')
+        .select('id, status')
+        .eq('user_id', user?.id)
+        .eq('friend_id', userId)
+        .maybeSingle();
+
+      if (existingRelation?.status === 'accepted') {
+        toast({
+          title: "Already following",
+          description: "You are already following this user."
+        });
+        return;
+      }
+
+      // Send follow request
+      const { error } = await supabase
+        .from('friends')
+        .insert({
+          user_id: user?.id,
+          friend_id: userId,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Follow request sent",
+        description: "Your follow request has been sent!"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send follow request",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleItineraryInviteResponse = async (collaborationId: string, status: 'accepted' | 'declined') => {
     try {
       const success = await respondToInvite(collaborationId, status);
@@ -115,6 +157,7 @@ const Notifications = () => {
       case 'comment': return <MessageCircle size={16} className="text-blue-500" />;
       case 'reply': return <MessageCircle size={16} className="text-blue-500" />;
       case 'friend_request': return <Users size={16} className="text-green-500" />;
+      case 'friend_accepted': return <Users size={16} className="text-blue-500" />;
       case 'friend_post': return <Users size={16} className="text-green-500" />;
       case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
       case 'itinerary_invite': return <MapPin size={16} className="text-blue-500" />;
@@ -131,6 +174,7 @@ const Notifications = () => {
       case 'comment': return 'bg-blue-50 border-blue-100';
       case 'reply': return 'bg-blue-50 border-blue-100';
       case 'friend_request': return 'bg-green-50 border-green-100';
+      case 'friend_accepted': return 'bg-blue-50 border-blue-100';
       case 'friend_post': return 'bg-green-50 border-green-100';
       case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
       case 'itinerary_invite': return 'bg-blue-50 border-blue-100';
@@ -249,8 +293,24 @@ const Notifications = () => {
                               Decline
                             </Button>
                           </div>
-                        )}
-                        
+                         )}
+                         
+                         {/* Friend Accepted Actions */}
+                         {notification.type === 'friend_accepted' && notification.related_user_id && (
+                           <div className="flex gap-2 mt-2">
+                             <Button 
+                               size="sm" 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleFollowBack(notification.related_user_id!);
+                               }}
+                               className="text-xs"
+                             >
+                               Follow Back
+                             </Button>
+                           </div>
+                         )}
+                         
                         {/* Itinerary Invite Actions */}
                         {notification.type === 'itinerary_invite' && notification.data?.collaboration_id && (
                           <div className="flex gap-2 mt-2">

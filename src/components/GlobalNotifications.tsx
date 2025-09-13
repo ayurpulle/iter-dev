@@ -33,16 +33,7 @@ export const GlobalNotifications = () => {
             if (notification.type === 'itinerary_complete') {
               toast.success(notification.title, {
                 description: notification.message,
-                action: {
-                  label: 'View Trip',
-                  onClick: () => {
-                    const data = notification.data as any;
-                    if (data?.tripId) {
-                      navigate(`/trip-details/${data.tripId}`);
-                    }
-                  },
-                },
-                duration: 10000, // Show for 10 seconds
+                duration: 8000, // Show for 8 seconds
               });
             } else if (notification.type === 'itinerary_error') {
               toast.error(notification.title, {
@@ -89,16 +80,7 @@ export const GlobalNotifications = () => {
           if (notification.type === 'itinerary_complete') {
             toast.success(notification.title, {
               description: notification.message,
-              action: {
-                label: 'View Trip',
-                onClick: () => {
-                  const data = notification.data as any;
-                  if (data?.tripId) {
-                    navigate(`/trip-details/${data.tripId}`);
-                  }
-                },
-              },
-              duration: 10000,
+              duration: 8000,
             });
           } else if (notification.type === 'itinerary_error') {
             toast.error(notification.title, {

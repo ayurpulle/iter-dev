@@ -482,44 +482,89 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
               {(() => {
                 const tips = parsed.practicalTips.split('\n').filter(tip => tip.trim()).map(tip => tip.trim().replace(/^[•\-]\s*/, ''));
                 
-                // Categorize tips by type with improved keywords
+                // Enhanced categorization with sentence-level analysis
                 const categorizeTips = (tips: string[]) => {
                   const categories = {
                     payment: [] as string[],
                     transportation: [] as string[],
+                    language: [] as string[],
+                    navigation: [] as string[],
+                    culture: [] as string[],
                     weather: [] as string[],
                     locals: [] as string[],
                     communication: [] as string[],
-                    navigation: [] as string[],
-                    culture: [] as string[],
+                    budget: [] as string[],
                     safety: [] as string[],
                     general: [] as string[]
                   };
                   
                   tips.forEach(tip => {
-                    const lowerTip = tip.toLowerCase();
-                    if (lowerTip.includes('card') || lowerTip.includes('cash') || lowerTip.includes('money') || lowerTip.includes('payment') || lowerTip.includes('tip') || lowerTip.includes('dollar') || lowerTip.includes('cost') || lowerTip.includes('price') || lowerTip.includes('budget')) {
-                      categories.payment.push(tip);
-                    } else if (lowerTip.includes('transport') || lowerTip.includes('train') || lowerTip.includes('bus') || lowerTip.includes('metro') || lowerTip.includes('subway') || lowerTip.includes('flight') || lowerTip.includes('muni') || lowerTip.includes('bart') || lowerTip.includes('clipper') || lowerTip.includes('airport')) {
-                      categories.transportation.push(tip);
-                    } else if (lowerTip.includes('weather') || lowerTip.includes('temperature') || lowerTip.includes('rain') || lowerTip.includes('sunny') || lowerTip.includes('foggy') || lowerTip.includes('layer') || lowerTip.includes('wear') || lowerTip.includes('shoes') || lowerTip.includes('hilly') || lowerTip.includes('climate')) {
-                      categories.weather.push(tip);
-                    } else if (lowerTip.includes('locals') || lowerTip.includes('people') || lowerTip.includes('friendly') || lowerTip.includes('space') || lowerTip.includes('mindful') || lowerTip.includes('residential') || lowerTip.includes('photos') || lowerTip.includes('direction')) {
-                      categories.locals.push(tip);
-                    } else if (lowerTip.includes('wifi') || lowerTip.includes('phone') || lowerTip.includes('internet') || lowerTip.includes('text') || lowerTip.includes('map') || lowerTip.includes('tourist map') || lowerTip.includes('blend in')) {
-                      categories.communication.push(tip);
-                    } else if (lowerTip.includes('navigate') || lowerTip.includes('getting around') || lowerTip.includes('walk') || lowerTip.includes('taxi') || lowerTip.includes('uber') || lowerTip.includes('direction') || lowerTip.includes('gps')) {
-                      categories.navigation.push(tip);
-                    } else if (lowerTip.includes('culture') || lowerTip.includes('tradition') || lowerTip.includes('respect') || lowerTip.includes('etiquette') || lowerTip.includes('custom')) {
-                      categories.culture.push(tip);
-                    } else if (lowerTip.includes('safe') || lowerTip.includes('security') || lowerTip.includes('avoid') || lowerTip.includes('careful') || lowerTip.includes('danger') || lowerTip.includes('crime')) {
-                      categories.safety.push(tip);
+                    // Split tip into sentences for better categorization
+                    const sentences = tip.split(/[.!?]+/).filter(s => s.trim());
+                    
+                    // If tip has multiple sentences, try to split them into different categories
+                    if (sentences.length > 1) {
+                      sentences.forEach(sentence => {
+                        const trimmedSentence = sentence.trim();
+                        if (trimmedSentence) {
+                          categorizeIndividualTip(trimmedSentence, categories);
+                        }
+                      });
                     } else {
-                      categories.general.push(tip);
+                      categorizeIndividualTip(tip, categories);
                     }
                   });
                   
                   return categories;
+                };
+                
+                const categorizeIndividualTip = (tip: string, categories: any) => {
+                  const lowerTip = tip.toLowerCase();
+                  
+                  // Payment and money-related
+                  if (lowerTip.includes('card') || lowerTip.includes('cash') || lowerTip.includes('atm') || lowerTip.includes('exchange rate') || lowerTip.includes('payment')) {
+                    categories.payment.push(tip);
+                  }
+                  // Transportation specific
+                  else if (lowerTip.includes('metro') || lowerTip.includes('train') || lowerTip.includes('bus') || lowerTip.includes('transport') || lowerTip.includes('muni') || lowerTip.includes('bart') || lowerTip.includes('clipper') || lowerTip.includes('airport') || lowerTip.includes('subway')) {
+                    categories.transportation.push(tip);
+                  }
+                  // Language and communication
+                  else if (lowerTip.includes('language') || lowerTip.includes('french') || lowerTip.includes('english') || lowerTip.includes('greeting') || lowerTip.includes('speak') || lowerTip.includes('translate') || lowerTip.includes('phrase') || lowerTip.includes('bonjour') || lowerTip.includes('merci')) {
+                    categories.language.push(tip);
+                  }
+                  // Navigation and maps
+                  else if (lowerTip.includes('google maps') || lowerTip.includes('navigation') || lowerTip.includes('route') || lowerTip.includes('direction') || lowerTip.includes('gps') || lowerTip.includes('map') || lowerTip.includes('getting around')) {
+                    categories.navigation.push(tip);
+                  }
+                  // Budget and costs
+                  else if (lowerTip.includes('budget') || lowerTip.includes('cost') || lowerTip.includes('price') || lowerTip.includes('expensive') || lowerTip.includes('cheap') || lowerTip.includes('splurge') || lowerTip.includes('save money') || lowerTip.includes('backpacking')) {
+                    categories.budget.push(tip);
+                  }
+                  // Weather and clothing
+                  else if (lowerTip.includes('weather') || lowerTip.includes('layer') || lowerTip.includes('wear') || lowerTip.includes('shoes') || lowerTip.includes('temperature') || lowerTip.includes('rain') || lowerTip.includes('sunny') || lowerTip.includes('foggy') || lowerTip.includes('climate')) {
+                    categories.weather.push(tip);
+                  }
+                  // Local interaction
+                  else if (lowerTip.includes('locals') || lowerTip.includes('people') || lowerTip.includes('friendly') || lowerTip.includes('space') || lowerTip.includes('mindful') || lowerTip.includes('residential') || lowerTip.includes('photos') || lowerTip.includes('respect')) {
+                    categories.locals.push(tip);
+                  }
+                  // Communication and tech
+                  else if (lowerTip.includes('wifi') || lowerTip.includes('phone') || lowerTip.includes('internet') || lowerTip.includes('text') || lowerTip.includes('tourist map') || lowerTip.includes('blend in')) {
+                    categories.communication.push(tip);
+                  }
+                  // Culture and etiquette
+                  else if (lowerTip.includes('culture') || lowerTip.includes('tradition') || lowerTip.includes('etiquette') || lowerTip.includes('custom') || lowerTip.includes('appreciate')) {
+                    categories.culture.push(tip);
+                  }
+                  // Safety
+                  else if (lowerTip.includes('safe') || lowerTip.includes('security') || lowerTip.includes('avoid') || lowerTip.includes('careful') || lowerTip.includes('danger') || lowerTip.includes('crime')) {
+                    categories.safety.push(tip);
+                  }
+                  // General
+                  else {
+                    categories.general.push(tip);
+                  }
                 };
                 
                 const categorizedTips = categorizeTips(tips);
@@ -528,11 +573,13 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
                 const getTipIcon = (category: string) => {
                   switch(category) {
                     case 'payment': return '💳';
-                    case 'transportation': return '🚌';
+                    case 'transportation': return '🚇';
+                    case 'language': return '💬';
+                    case 'navigation': return '🗺️';
+                    case 'budget': return '💰';
                     case 'weather': return '🌤️';
                     case 'locals': return '👥';
                     case 'communication': return '📱';
-                    case 'navigation': return '🗺️';
                     case 'culture': return '🏛️';
                     case 'safety': return '🛡️';
                     default: return '💡';

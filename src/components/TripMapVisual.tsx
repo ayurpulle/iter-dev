@@ -186,6 +186,22 @@ const TripMapVisual = ({ stops, className }: TripMapVisualProps) => {
               ">
                 ${index + 1}. ${stop.name}
               </div>
+              <style>
+                .custom-trip-popup .mapboxgl-popup-content {
+                  background: transparent !important;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  box-shadow: none !important;
+                  padding: 0 !important;
+                  pointer-events: none;
+                }
+                .custom-trip-popup .mapboxgl-popup-tip {
+                  display: none !important;
+                }
+                .custom-trip-popup {
+                  pointer-events: none;
+                }
+              </style>
             `))
             .addTo(map.current!);
           console.log(`=== DEBUG: Marker ${index + 1} added for ${stop.name} ===`);

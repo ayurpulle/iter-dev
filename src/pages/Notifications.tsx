@@ -96,16 +96,11 @@ const Notifications = () => {
           .eq('id', notification.id);
       }
 
-      // Navigate based on notification type
+      // Only navigate for post-related notifications
       if (notification.related_post_id && (notification.type === 'like' || notification.type === 'comment' || notification.type === 'comment_reply')) {
         navigate(`/post/${notification.related_post_id}`);
-      } else if (notification.type === 'itinerary_complete' || notification.type === 'itinerary_error') {
-        // Navigate to the home page with savedTrips view to show saved itineraries
-        navigate('/?view=savedTrips');
-      } else if (notification.data?.trip_id) {
-        // For other trip-related notifications, go to saved trips view
-        navigate('/?view=savedTrips');
       }
+      // For itinerary notifications, just mark as read (no navigation)
       
       // Refresh notifications
       await refetch();

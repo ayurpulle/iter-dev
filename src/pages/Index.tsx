@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import TripPlanning from "@/components/TripPlanning";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import UnifiedPostCard from "@/components/UnifiedPostCard";
+import { useOptimizedPosts } from "@/hooks/useOptimizedPosts";
+import OptimizedPostCard from "@/components/OptimizedPostCard";
 
 interface Post {
   id: string;
@@ -46,66 +43,12 @@ interface PostWithProfile extends Post {
 }
 
 const Index = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const [posts, setPosts] = useState<PostWithProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { posts, loading, handleDeletePost } = useOptimizedPosts();
   
   // Check if we should show trip planning (saved trips view)
   const shouldShowTripPlanning = searchParams.get('view') === 'savedTrips';
   const openIterId = searchParams.get('openIter');
-
-  const fetchPosts = async () => {
-    try {
-      const { data: postsData, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles (
-            id,
-            user_id,
-            name,
-            username,
-            avatar
-          ),
-          trips (
-            id,
-            title,
-            destination,
-            duration,
-            distance,
-            cost,
-            companions,
-            stops,
-            images
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setPosts(postsData || []);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load posts",
-        variant: "destructive",
-        duration: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeletePost = (postId: string) => {
-    setPosts(prev => prev.filter(post => post.id !== postId));
-  };
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
 
   if (loading) {
     return (
@@ -157,7 +100,7 @@ const Index = () => {
             </div>
           ) : (
             posts.map((post) => (
-              <UnifiedPostCard
+              <OptimizedPostCard
                 key={post.id}
                 post={post}
                 onDelete={handleDeletePost}

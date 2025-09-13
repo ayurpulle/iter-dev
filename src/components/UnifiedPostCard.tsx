@@ -17,7 +17,7 @@ import { CommentReplies } from "@/components/CommentReplies";
 import { ShareToChatDialog } from "@/components/ShareToChatDialog";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
-import { useProcessedImages } from "@/utils/imageProcessor";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -610,7 +610,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const hasImages = images.length > 0;
   const hasTrip = !!(post as any).trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
-  const { processedImages, isProcessing } = useProcessedImages(images);
+  // Remove processed images to fix flickering - use images directly
 
   // Caption logic
   const maxCaptionLength = 150;
@@ -687,8 +687,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                       </CarouselItem>
                     )}
                   
-                  {/* Images - Come after trip map */}
-                  {processedImages.map((imageUrl, index) => (
+                   {/* Images - Come after trip map */}
+                   {images.map((imageUrl, index) => (
                     <CarouselItem key={`image-${index}`} className="h-full pl-0">
                       <div className="w-full h-full bg-muted overflow-hidden">
                         <img 
@@ -701,7 +701,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   ))}
                 </CarouselContent>
                 {/* Show navigation if there's a trip map + images, or multiple images */}
-                {((hasTrip && hasImages) || processedImages.length > 1) && (
+                {((hasTrip && hasImages) || images.length > 1) && (
                   <>
                     <CarouselPrevious className="left-2" />
                     <CarouselNext className="right-2" />

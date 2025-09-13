@@ -165,7 +165,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ pins, onPinClick })
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12', // Changed to streets style to show place names
+        style: 'mapbox://styles/mapbox/light-v11',
         projection: { name: 'globe' },
         zoom: 1.2,
         center: [-98, 39], // Center on North America to show both SF and NYC

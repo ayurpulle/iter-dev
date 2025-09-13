@@ -269,6 +269,8 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       if (!userInteracting) {
         interactionTimeout = setTimeout(spinGlobe, 1000);
       }
+    });
+
     // Start spinning after initial delay like InteractiveGlobe
     setTimeout(spinGlobe, 2000);
 

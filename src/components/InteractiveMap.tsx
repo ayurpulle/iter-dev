@@ -67,13 +67,10 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      projection: 'globe' as any,
-      zoom: 0.8,
-      center: [0, 15],
+      projection: { name: 'globe' },
+      zoom: 1.2,
+      center: [-98, 39], // Center on North America like InteractiveGlobe
       pitch: 0,
-      // Mobile optimizations
-      preserveDrawingBuffer: false,
-      antialias: false, // Disable for better performance on mobile
     });
 
     // Add navigation controls
@@ -84,7 +81,7 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       'top-right'
     );
 
-    // Add atmosphere and fog effects to match reference image
+    // Add atmosphere and fog effects to match InteractiveGlobe exactly
     map.current.on('style.load', () => {
       map.current?.setFog({
         color: 'rgb(220, 240, 255)', // Light blue atmosphere
@@ -93,6 +90,21 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
         'space-color': 'rgb(11, 19, 43)', // Dark space background
         'star-intensity': 0.6,
       });
+
+      // Enhance place name labels exactly like InteractiveGlobe
+      map.current?.setLayoutProperty('country-label', 'text-size', 14);
+      map.current?.setLayoutProperty('state-label', 'text-size', 12);
+      map.current?.setLayoutProperty('settlement-major-label', 'text-size', 12);
+      map.current?.setLayoutProperty('settlement-minor-label', 'text-size', 10);
+      
+      // Make labels more visible exactly like InteractiveGlobe
+      map.current?.setPaintProperty('country-label', 'text-color', '#2563eb');
+      map.current?.setPaintProperty('country-label', 'text-halo-color', '#ffffff');
+      map.current?.setPaintProperty('country-label', 'text-halo-width', 2);
+      
+      map.current?.setPaintProperty('settlement-major-label', 'text-color', '#1d4ed8');
+      map.current?.setPaintProperty('settlement-major-label', 'text-halo-color', '#ffffff');
+      map.current?.setPaintProperty('settlement-major-label', 'text-halo-width', 1.5);
 
       // Function to determine continent based on coordinates (same as InteractiveGlobe)
       const getContinentColor = (lng: number, lat: number, location: string) => {
@@ -194,15 +206,15 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       });
     });
 
-    // Mobile-optimized rotation animation
-    const secondsPerRevolution = 200; // Slower for smoother performance
-    const maxSpinZoom = 3;
-    const slowSpinZoom = 2;
+    // Mobile-optimized rotation animation (exactly like InteractiveGlobe)
+    const secondsPerRevolution = 120; // Faster rotation like InteractiveGlobe
+    const maxSpinZoom = 3; // Lower zoom threshold like InteractiveGlobe  
+    const slowSpinZoom = 1.5;
     let userInteracting = false;
     let spinEnabled = true;
     let interactionTimeout: NodeJS.Timeout;
 
-    // Spin globe function
+    // Gentle spin function (exactly like InteractiveGlobe)
     function spinGlobe() {
       if (!map.current) return;
       
@@ -214,8 +226,12 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
           distancePerSecond *= zoomDif;
         }
         const center = map.current.getCenter();
-        center.lng -= distancePerSecond;
-        map.current.easeTo({ center, duration: 300, easing: (n) => n }); // Optimized for mobile
+        center.lng -= distancePerSecond / 30; // Smoother animation like InteractiveGlobe
+        map.current.easeTo({ 
+          center, 
+          duration: 500, // Faster animation like InteractiveGlobe
+          easing: (n) => n 
+        });
       }
     }
 
@@ -253,10 +269,8 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
       if (!userInteracting) {
         interactionTimeout = setTimeout(spinGlobe, 1000);
       }
-    });
-
-    // Start the globe spinning
-    spinGlobe();
+    // Start spinning after initial delay like InteractiveGlobe
+    setTimeout(spinGlobe, 2000);
 
     // Cleanup
     return () => {
@@ -287,15 +301,10 @@ const InteractiveMap = ({ onLocationClick, pins = [] }: InteractiveMapProps) => 
   }
 
   return (
-    <div className="absolute inset-0">
-      <div ref={mapContainer} className="w-full h-full" />
-      
-      {/* Swipe up indicator at bottom */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="bg-background/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-          <p className="text-sm text-white/70 font-medium">Swipe up to explore</p>
-        </div>
-      </div>
+    <div className="relative w-full h-full bg-transparent">
+      <div ref={mapContainer} className="absolute inset-0 rounded-2xl" style={{
+        background: 'radial-gradient(circle at center, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)'
+      }} />
     </div>
   );
 };

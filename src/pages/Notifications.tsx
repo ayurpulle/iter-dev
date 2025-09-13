@@ -96,9 +96,15 @@ const Notifications = () => {
           .eq('id', notification.id);
       }
 
-      // Navigate to post if it's a post-related notification
+      // Navigate based on notification type
       if (notification.related_post_id && (notification.type === 'like' || notification.type === 'comment' || notification.type === 'comment_reply')) {
         navigate(`/post/${notification.related_post_id}`);
+      } else if (notification.type === 'itinerary_complete' || notification.type === 'itinerary_error') {
+        // Navigate to the home page with savedTrips view to show saved itineraries
+        navigate('/?view=savedTrips');
+      } else if (notification.data?.trip_id) {
+        // For other trip-related notifications, go to saved trips view
+        navigate('/?view=savedTrips');
       }
       
       // Refresh notifications
@@ -118,6 +124,8 @@ const Notifications = () => {
       case 'iter_inspiration': return <Sparkles size={16} className="text-purple-500" />;
       case 'itinerary_invite': return <MapPin size={16} className="text-blue-500" />;
       case 'itinerary_share': return <Share2 size={16} className="text-green-500" />;
+      case 'itinerary_complete': return <Sparkles size={16} className="text-green-500" />;
+      case 'itinerary_error': return <Clock size={16} className="text-red-500" />;
       default: return <Clock size={16} className="text-muted-foreground" />;
     }
   };
@@ -132,6 +140,8 @@ const Notifications = () => {
       case 'iter_inspiration': return 'bg-purple-50 border-purple-100';
       case 'itinerary_invite': return 'bg-blue-50 border-blue-100';
       case 'itinerary_share': return 'bg-green-50 border-green-100';
+      case 'itinerary_complete': return 'bg-green-50 border-green-100';
+      case 'itinerary_error': return 'bg-red-50 border-red-100';
       default: return 'bg-muted/50';
     }
   };

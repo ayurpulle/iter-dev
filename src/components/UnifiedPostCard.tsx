@@ -800,8 +800,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
             {hasTrip && isMapView ? (
               /* Overall Trip Details */
               <TripOverallDetails trip={trip} />
-            ) : hasTrip && !isMapView && currentPhotoDetail ? (
-              /* Individual Photo Details */
+            ) : hasTrip && !isMapView ? (
+              /* Individual Photo Details - always show for trip photos */
               <PhotoSpecificDetails 
                 photo={tripPhotos[currentPhotoIndex]}
                 details={currentPhotoDetail}

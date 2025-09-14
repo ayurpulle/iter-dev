@@ -42,8 +42,10 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
         <span className="text-xs text-muted-foreground">Photo {photoIndex + 1}</span>
       </div>
       
-      {details?.caption && (
+      {details?.caption ? (
         <p className="text-sm text-muted-foreground leading-relaxed">{details.caption}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground leading-relaxed italic">No caption added for this photo</p>
       )}
       
       {(details?.budget || details?.tagged_friends?.length) && (

@@ -35,8 +35,8 @@ const TripOverallDetails: React.FC<TripOverallDetailsProps> = ({ trip }) => {
         <h3 className="font-semibold text-lg">{trip.title}</h3>
       )}
       
-      {(trip.overall_caption || trip.description) && (
-        <p className="text-sm text-muted-foreground">{trip.overall_caption || trip.description}</p>
+      {trip.description && (
+        <p className="text-sm text-muted-foreground leading-relaxed">{trip.description}</p>
       )}
       
       <div className="flex flex-wrap gap-3 text-xs">

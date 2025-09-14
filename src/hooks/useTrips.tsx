@@ -39,7 +39,7 @@ export const useTrips = () => {
         const blob = await response.blob();
         
         // Limit file size to prevent timeouts
-        if (blob.size > 5 * 1024 * 1024) { // 5MB limit
+        if (blob.size > 10 * 1024 * 1024) { // 10MB limit
           console.warn(`Photo ${i + 1} is too large (${blob.size} bytes), skipping`);
           uploadedResults.push({url: null, originalIndex: i});
           continue;
@@ -150,10 +150,11 @@ export const useTrips = () => {
 
       // Update with photo details in a separate transaction if we have them
       if (simplifiedPhotoDetails.length > 0) {
+        console.log('Saving photo details to database:', simplifiedPhotoDetails);
         const { error: updateError } = await supabase
           .from('trips')
           .update({ 
-            photo_details: JSON.stringify(simplifiedPhotoDetails),
+            photo_details: simplifiedPhotoDetails,
             tagged_friends: tripData.taggedFriends || []
           })
           .eq('id', trip.id);

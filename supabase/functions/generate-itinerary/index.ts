@@ -215,7 +215,7 @@ serve(async (req) => {
 
       const budgetDescription = budget ? budgetMapping[budget] || 'Not specified' : 'Not specified';
       const estimatedDailyCost = budget ? 
-        ['$30-50', '$50-100', '$100-200', '$200-400', '$400+''][budget - 1] : 'Not specified';
+        ['$30-50', '$50-100', '$100-200', '$200-400', '$400+'][budget - 1] : 'Not specified';
 
       const prompt = `You are an expert travel planner. Create a comprehensive itinerary for a ${duration}-day trip to ${destination}.
 

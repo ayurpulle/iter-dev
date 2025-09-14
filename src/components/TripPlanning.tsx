@@ -596,9 +596,32 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             startDate={viewingIter.start_date ? new Date(viewingIter.start_date) : undefined}
             endDate={viewingIter.end_date ? new Date(viewingIter.end_date) : undefined}
             holidayTypes={viewingIter.interests}
-            onUpdateDates={(startDate, endDate) => {
-              // Handle date updates here if needed
-              console.log('Dates updated:', startDate, endDate);
+            budget={viewingIter.budget?.toString()}
+            onUpdateItinerary={async (changes) => {
+              // Update form data with changes
+              setFormData(prev => ({
+                ...prev,
+                destination: viewingIter.destination || prev.destination,
+                startDate: changes.startDate || prev.startDate,
+                endDate: changes.endDate || prev.endDate,
+                holidayTypes: changes.holidayTypes || prev.holidayTypes,
+                budget: changes.budget || prev.budget,
+              }));
+              
+              // Set editing mode to regenerate with updated data
+              setEditingItinerary(viewingIter);
+              
+              // Trigger regeneration
+              await generateIter();
+              
+              // Update the viewed itinerary with new data
+              setViewingIter(prev => prev ? {
+                ...prev,
+                start_date: changes.startDate?.toISOString(),
+                end_date: changes.endDate?.toISOString(),
+                interests: changes.holidayTypes,
+                budget: changes.budget
+              } : null);
             }}
           />
         </div>
@@ -646,6 +669,23 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                 itinerary={generatedIter}
                 friendRecommendations={friendRecommendations}
                 destination={lastGeneratedData?.destination || formData.destination}
+                startDate={lastGeneratedData?.startDate || formData.startDate}
+                endDate={lastGeneratedData?.endDate || formData.endDate}
+                holidayTypes={lastGeneratedData?.holidayTypes || formData.holidayTypes}
+                budget={lastGeneratedData?.budget?.toString() || formData.budget.toString()}
+                onUpdateItinerary={async (changes) => {
+                  // Update form data with changes  
+                  setFormData(prev => ({
+                    ...prev,
+                    startDate: changes.startDate || prev.startDate,
+                    endDate: changes.endDate || prev.endDate,
+                    holidayTypes: changes.holidayTypes || prev.holidayTypes,
+                    budget: changes.budget || prev.budget,
+                  }));
+                  
+                  // Trigger regeneration with updated data
+                  await generateIter();
+                }}
               />
             </CardContent>
           </Card>

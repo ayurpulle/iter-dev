@@ -9,6 +9,7 @@ import { InteractiveItineraryMap } from './InteractiveItineraryMap';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { generateTripSummary } from '@/utils/tripSummaryGenerator';
 
@@ -29,7 +30,7 @@ interface StructuredItineraryProps {
   holidayTypes?: string[];
   budget?: string;
   onUpdateDates?: (startDate: Date, endDate: Date) => void;
-  onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: string }) => void;
+  onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: number }) => void;
 }
 
 export const StructuredItinerary = ({ 
@@ -47,7 +48,61 @@ export const StructuredItinerary = ({
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
-  const [localBudget, setLocalBudget] = useState<string>(budget || 'moderate');
+  const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+
+  const availableHolidayTypes = [
+    "Adventure & Outdoor",
+    "Beach & Relaxation", 
+    "City Break",
+    "Cultural & Historical",
+    "Food & Wine",
+    "Romantic Getaway",
+    "Family Holiday",
+    "Solo Travel",
+    "Backpacking",
+    "Luxury & Spa"
+  ];
+
+  const toggleHolidayType = (type: string) => {
+    setLocalHolidayTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  const getBudgetDisplay = (budget: number) => {
+    if (budget === 0) return "Select budget";
+    return "$".repeat(budget);
+  };
+
+  const getBudgetDescription = (budget: number) => {
+    const descriptions = {
+      1: "Budget-friendly",
+      2: "Moderate", 
+      3: "Comfortable",
+      4: "Luxury",
+      5: "Ultra-luxury"
+    };
+    return descriptions[budget as keyof typeof descriptions] || "";
+  };
+
+  // Generate actual brief summary
+  const generateBriefSummary = () => {
+    const dest = destination || parsed.destinations[0] || 'your destination';
+    const days = localStartDate && localEndDate 
+      ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+    
+    const typeStr = localHolidayTypes.length > 0 ? localHolidayTypes[0].toLowerCase() : 'cultural';
+    const budgetStr = getBudgetDescription(localBudget).toLowerCase();
+    
+    if (days) {
+      return `A ${days}-day ${typeStr} ${budgetStr} adventure in ${dest}. Experience the best attractions, dining, and culture this destination has to offer.`;
+    } else {
+      return `A ${typeStr} ${budgetStr} journey to ${dest}. Discover amazing attractions, local cuisine, and unforgettable experiences.`;
+    }
+  };
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -542,10 +597,11 @@ export const StructuredItinerary = ({
   const airportCodes = getAirportCodes(destination || parsed.destinations[0] || '');
 
   const hasChanges = () => {
+    const currentBudgetNumber = budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3;
     return localStartDate !== startDate || 
            localEndDate !== endDate ||
            JSON.stringify(localHolidayTypes) !== JSON.stringify(holidayTypes) ||
-           localBudget !== budget;
+           localBudget !== currentBudgetNumber;
   };
 
   const handleUpdate = () => {
@@ -566,8 +622,8 @@ export const StructuredItinerary = ({
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Your trip to {destination || parsed.destinations[0] || 'Destination'}</h2>
           {hasChanges() && (
-            <Button onClick={handleUpdate} size="sm" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
+            <Button onClick={handleUpdate} size="sm" className="flex items-center gap-1 px-3 py-1 h-8 text-xs">
+              <RefreshCw className="h-3 w-3" />
               Update
             </Button>
           )}
@@ -593,12 +649,7 @@ export const StructuredItinerary = ({
           {/* Short Summary */}
           <div>
             <p className="text-sm text-muted-foreground">
-              {generateTripSummary({
-                destination: destination || parsed.destinations[0] || 'Trip',
-                startDate: localStartDate,
-                endDate: localEndDate,
-                holidayTypes: localHolidayTypes
-              })}
+              {generateBriefSummary()}
             </p>
           </div>
           
@@ -679,34 +730,58 @@ export const StructuredItinerary = ({
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Type:</span>
-              <Select value={localHolidayTypes[0] || 'cultural'} onValueChange={(value) => setLocalHolidayTypes([value])}>
-                <SelectTrigger className="w-auto h-auto p-1 border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cultural">Cultural</SelectItem>
-                  <SelectItem value="adventure">Adventure</SelectItem>
-                  <SelectItem value="relaxation">Relaxation</SelectItem>
-                  <SelectItem value="business">Business</SelectItem>
-                  <SelectItem value="romantic">Romantic</SelectItem>
-                  <SelectItem value="family">Family</SelectItem>
-                  <SelectItem value="foodie">Foodie</SelectItem>
-                  <SelectItem value="wildlife">Wildlife</SelectItem>
-                </SelectContent>
-              </Select>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
+                    {localHolidayTypes.length > 0 
+                      ? `${localHolidayTypes.length} selected`
+                      : 'Select types'
+                    }
+                    <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Holiday Types</DialogTitle>
+                    <DialogDescription>Choose your holiday types</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-2 py-4">
+                    {availableHolidayTypes.map((type) => (
+                      <Button
+                        key={type}
+                        variant={localHolidayTypes.includes(type) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleHolidayType(type)}
+                        className="justify-start text-left h-auto py-2"
+                      >
+                        {type}
+                      </Button>
+                    ))}
+                  </div>
+                  {localHolidayTypes.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium">Selected: {localHolidayTypes.join(", ")}</p>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Budget:</span>
-              <Select value={localBudget} onValueChange={setLocalBudget}>
+              <Select value={localBudget.toString()} onValueChange={(value) => setLocalBudget(parseInt(value))}>
                 <SelectTrigger className="w-auto h-auto p-1 border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
-                  <SelectValue />
+                  <SelectValue>
+                    {getBudgetDisplay(localBudget)} {getBudgetDescription(localBudget)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="budget">Budget</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="luxury">Luxury</SelectItem>
+                  <SelectItem value="1">$ Budget-friendly</SelectItem>
+                  <SelectItem value="2">$$ Moderate</SelectItem>
+                  <SelectItem value="3">$$$ Comfortable</SelectItem>
+                  <SelectItem value="4">$$$$ Luxury</SelectItem>
+                  <SelectItem value="5">$$$$$ Ultra-luxury</SelectItem>
                 </SelectContent>
               </Select>
             </div>

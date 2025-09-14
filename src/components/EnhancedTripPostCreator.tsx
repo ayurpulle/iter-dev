@@ -301,6 +301,21 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     );
   };
 
+  const getBudgetLevel = (budget: string): number => {
+    return budget.length; // $ = 1, $$ = 2, $$$ = 3, etc.
+  };
+
+  const getBudgetLabel = (budget: string): string => {
+    const labels = {
+      '$': 'Budget-friendly',
+      '$$': 'Moderate',
+      '$$$': 'Expensive',
+      '$$$$': 'Luxury',
+      '$$$$$': 'Ultra-luxury'
+    };
+    return labels[budget as keyof typeof labels] || '';
+  };
+
   const removePhoto = (index: number) => {
     setPhotoDetails(prev => prev.filter((_, i) => i !== index));
     if (currentPhotoIndex >= photoDetails.length - 1 && currentPhotoIndex > 0) {
@@ -439,13 +454,17 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
             
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setSearchOpen(true)}
+                >
                   <Search size={16} className="mr-2" />
                   Add location...
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
-                <Command>
+              <PopoverContent className="w-80 p-0 bg-background border shadow-lg z-50">
+                <Command shouldFilter={false}>
                   <CommandInput
                     placeholder="Search locations..."
                     value={searchQuery}
@@ -565,26 +584,53 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor={`budget-${currentPhotoIndex}`}>Budget/Cost</Label>
-                      <Input
-                        id={`budget-${currentPhotoIndex}`}
-                        value={currentPhoto.budget}
-                        onChange={(e) => updatePhotoDetail(currentPhotoIndex, 'budget', e.target.value)}
-                        placeholder="e.g., $50 dinner"
-                      />
+                      <Label htmlFor={`budget-${currentPhotoIndex}`}>Budget</Label>
+                      <div className="flex items-center gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <Button
+                            key={level}
+                            variant={getBudgetLevel(currentPhoto.budget) >= level ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updatePhotoDetail(currentPhotoIndex, 'budget', '$'.repeat(level))}
+                            className="h-8 px-2"
+                          >
+                            $
+                          </Button>
+                        ))}
+                        {currentPhoto.budget && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updatePhotoDetail(currentPhotoIndex, 'budget', '')}
+                            className="h-8 px-2 ml-2"
+                          >
+                            <X size={14} />
+                          </Button>
+                        )}
+                      </div>
+                      {currentPhoto.budget && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {getBudgetLabel(currentPhoto.budget)}
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <Label>Tagged Friends</Label>
                       <Popover open={tagSearchOpen} onOpenChange={setTagSearchOpen}>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full justify-start"
+                            onClick={() => setTagSearchOpen(true)}
+                          >
                             <Users size={16} className="mr-2" />
                             Tag friends...
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 p-0">
-                          <Command>
+                        <PopoverContent className="w-80 p-0 bg-background border shadow-lg z-50">
+                          <Command shouldFilter={false}>
                             <CommandInput
                               placeholder="Search friends..."
                               value={tagSearchQuery}

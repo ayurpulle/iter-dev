@@ -90,6 +90,17 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
   const currentPhotoDetail = currentMediaIndex === 0 ? null : photoDetails[currentMediaIndex - 1];
   const isMapView = currentMediaIndex === 0;
   
+  const getBudgetLabel = (budget: string): string => {
+    const labels = {
+      '$': 'Budget-friendly',
+      '$$': 'Moderate', 
+      '$$$': 'Expensive',
+      '$$$$': 'Luxury',
+      '$$$$$': 'Ultra-luxury'
+    };
+    return labels[budget as keyof typeof labels] || '';
+  };
+  
   // Define consistent height for all media content
   const getConsistentMediaHeight = () => {
     const STANDARD_HEIGHT = 256; // 16rem = 256px (h-64 equivalent)
@@ -422,7 +433,8 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
                       {currentPhotoDetail.budget && (
                         <div className="flex items-center gap-1">
                           <DollarSign size={12} />
-                          <span>{currentPhotoDetail.budget}</span>
+                          <span className="font-medium text-primary">{currentPhotoDetail.budget}</span>
+                          <span className="text-xs">({getBudgetLabel(currentPhotoDetail.budget)})</span>
                         </div>
                       )}
                       

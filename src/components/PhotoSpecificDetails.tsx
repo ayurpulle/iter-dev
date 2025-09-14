@@ -7,6 +7,7 @@ interface PhotoDetail {
   budget?: string;
   tagged_friends?: string[];
   location?: string;
+  tags?: string[];
 }
 
 interface PhotoSpecificDetailsProps {
@@ -52,6 +53,16 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
         <p className="text-sm text-muted-foreground leading-relaxed italic">No caption added for this photo</p>
       )}
       
+      {details?.tags && details.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs mb-3">
+          {details.tags.map((tag, index) => (
+            <Badge key={index} variant="default" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {(details?.budget && details.budget.length > 0) || (details?.tagged_friends?.length > 0) ? (
         <div className="flex flex-wrap gap-2 text-xs">
           {details?.budget && details.budget.length > 0 && (

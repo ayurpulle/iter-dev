@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, MapPin, Search, X, Plus, Trash2, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, MapPin, Search, X, Plus, Trash2, Users, DollarSign, Tag } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel";
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import PhotoSelector from './PhotoSelector';
@@ -40,6 +40,7 @@ interface PhotoDetail {
   budget: string;
   tagged_friends: string[];
   location?: string;
+  tags: string[];
 }
 
 const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
@@ -76,6 +77,20 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
   const [photoLocationSearchOpen, setPhotoLocationSearchOpen] = useState(false);
   const [photoLocationSearchQuery, setPhotoLocationSearchQuery] = useState('');
   const [photoLocationResults, setPhotoLocationResults] = useState<Location[]>([]);
+  
+  // Available tags for photos
+  const availableTags = [
+    "Adventure & Outdoor",
+    "Beach & Relaxation", 
+    "City Break",
+    "Cultural & Historical",
+    "Food & Wine",
+    "Romantic Getaway",
+    "Family Holiday",
+    "Solo Travel",
+    "Backpacking",
+    "Luxury & Spa"
+  ];
   
   // Map data
   const [mapboxToken, setMapboxToken] = useState('');
@@ -262,7 +277,8 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
         caption: '',
         budget: '',
         tagged_friends: [],
-        location: locationName
+        location: locationName,
+        tags: []
       });
     }
     
@@ -289,7 +305,8 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
               url: dataUrl,
               caption: '',
               budget: '',
-              tagged_friends: []
+              tagged_friends: [],
+              tags: []
             }
           ]);
         }
@@ -332,6 +349,14 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     updatePhotoDetail(photoIndex, 'tagged_friends', 
       photoDetails[photoIndex].tagged_friends.filter(f => f !== username)
     );
+  };
+
+  const togglePhotoTag = (photoIndex: number, tag: string) => {
+    const currentTags = photoDetails[photoIndex]?.tags || [];
+    const updatedTags = currentTags.includes(tag)
+      ? currentTags.filter(t => t !== tag)
+      : [...currentTags, tag];
+    updatePhotoDetail(photoIndex, 'tags', updatedTags);
   };
 
   // Search locations for photo (similar to main location search)
@@ -691,6 +716,35 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
                         placeholder="What's happening in this photo?"
                         rows={2}
                       />
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <Label>Tags</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {availableTags.map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={() => togglePhotoTag(currentPhotoIndex, tag)}
+                            className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                              currentPhoto.tags?.includes(tag)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                            }`}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                      {currentPhoto.tags && currentPhoto.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {currentPhoto.tags.map((tag, tagIndex) => (
+                            <Badge key={tagIndex} variant="default" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div>

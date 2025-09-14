@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useFriends } from './useFriends';
@@ -35,7 +35,7 @@ export const useSavedPosts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSavedPosts = useCallback(async () => {
+  const fetchSavedPosts = async () => {
     if (!user) return;
 
     try {
@@ -53,37 +53,28 @@ export const useSavedPosts = () => {
       const savedPostsWithDetails: SavedPost[] = [];
       
       for (const savedItem of savedItemsData || []) {
-        try {
-          const { data: postData, error: postError } = await supabase
-            .from('posts')
-            .select(`
-              *,
-              profiles!posts_user_id_profiles_fkey (
-                name,
-                username,
-                avatar
-              ),
-              trips (
-                title,
-                stops
-              )
-            `)
-            .eq('id', savedItem.item_id)
-            .maybeSingle(); // Use maybeSingle() instead of single() to handle missing posts
+        const { data: postData, error: postError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles!posts_user_id_profiles_fkey (
+              name,
+              username,
+              avatar
+            ),
+            trips (
+              title,
+              stops
+            )
+          `)
+          .eq('id', savedItem.item_id)
+          .single();
 
-          // Only add to results if the post still exists
-          if (!postError && postData) {
-            savedPostsWithDetails.push({
-              ...savedItem,
-              posts: postData
-            } as SavedPost);
-          } else if (postError) {
-            console.warn(`Post ${savedItem.item_id} not found or error:`, postError);
-            // Optionally, you could clean up the saved_items entry here
-          }
-        } catch (err) {
-          console.warn(`Error fetching post ${savedItem.item_id}:`, err);
-          // Continue with other posts instead of failing completely
+        if (!postError && postData) {
+          savedPostsWithDetails.push({
+            ...savedItem,
+            posts: postData
+          } as SavedPost);
         }
       }
 
@@ -94,21 +85,19 @@ export const useSavedPosts = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]); // Add user as dependency since fetchSavedPosts depends on user
-
-  // Memoize the filter functions to prevent unnecessary re-renders
+  };
 
   // Filter posts by type
-  const getYourSavedPosts = useCallback(() => {
+  const getYourSavedPosts = () => {
     return savedPosts;  // Return all saved posts, not just user's own posts
-  }, [savedPosts]);
+  };
 
-  const getFriendsSavedPosts = useCallback(() => {
+  const getFriendsSavedPosts = () => {
     const friendIds = friends.map(f => f.friend_id);
     return savedPosts.filter(post => 
       post.posts?.user_id && friendIds.includes(post.posts.user_id)
     );
-  }, [savedPosts, friends]);
+  };
 
   useEffect(() => {
     fetchSavedPosts();
@@ -135,7 +124,7 @@ export const useSavedPosts = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchSavedPosts]); // Include fetchSavedPosts in dependencies
+  }, [user]);
 
   return {
     savedPosts,

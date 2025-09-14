@@ -84,10 +84,30 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
     tagged_friends: []
   })) || [];
   
-  const { processedImages, isProcessing } = useProcessedImages(photoDetails.map(p => p.url));
+  // Parse photo_details if it's a JSON string
+  const parsedPhotoDetails = (() => {
+    if (Array.isArray(trip.photo_details)) {
+      return trip.photo_details;
+    }
+    if (typeof trip.photo_details === 'string') {
+      try {
+        return JSON.parse(trip.photo_details);
+      } catch (e) {
+        return [];
+      }
+    }
+    return trip.photos?.map(url => ({
+      url,
+      caption: '',
+      budget: '',
+      tagged_friends: []
+    })) || [];
+  })();
+  
+  const { processedImages, isProcessing } = useProcessedImages(parsedPhotoDetails.map(p => p.url));
   
   // Current photo/media details for display
-  const currentPhotoDetail = currentMediaIndex === 0 ? null : photoDetails[currentMediaIndex - 1];
+  const currentPhotoDetail = currentMediaIndex === 0 ? null : parsedPhotoDetails[currentMediaIndex - 1];
   const isMapView = currentMediaIndex === 0;
   
   const getBudgetLabel = (budget: string): string => {
@@ -269,7 +289,7 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
   };
 
   // Total media items = 1 (map) + number of photos
-  const totalMediaItems = 1 + photoDetails.length;
+  const totalMediaItems = 1 + parsedPhotoDetails.length;
   
   return (
     <>
@@ -411,10 +431,17 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
                   <p className="text-sm text-muted-foreground">
                     {trip.duration} • {trip.distance} • {trip.stops.length} stops
                   </p>
+                  {trip.companions && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Users size={14} className="text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">{trip.companions}</span>
+                    </div>
+                  )}
                   {trip.cost && (
                     <div className="flex items-center gap-1 mt-1">
                       <DollarSign size={14} className="text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{trip.cost}</span>
+                      <span className="text-sm font-medium text-primary">{trip.cost}</span>
+                      <span className="text-xs text-muted-foreground">({getBudgetLabel(trip.cost)})</span>
                     </div>
                   )}
                   {trip.description && (
@@ -429,19 +456,19 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
                       <p className="text-sm mb-2">{currentPhotoDetail.caption}</p>
                     )}
                     
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-3 text-xs">
                       {currentPhotoDetail.budget && (
                         <div className="flex items-center gap-1">
-                          <DollarSign size={12} />
+                          <DollarSign size={12} className="text-muted-foreground" />
                           <span className="font-medium text-primary">{currentPhotoDetail.budget}</span>
-                          <span className="text-xs">({getBudgetLabel(currentPhotoDetail.budget)})</span>
+                          <span className="text-muted-foreground">({getBudgetLabel(currentPhotoDetail.budget)})</span>
                         </div>
                       )}
                       
                       {currentPhotoDetail.tagged_friends.length > 0 && (
                         <div className="flex items-center gap-1">
-                          <Users size={12} />
-                          <span>with {currentPhotoDetail.tagged_friends.join(', ')}</span>
+                          <Users size={12} className="text-muted-foreground" />
+                          <span className="text-muted-foreground">with {currentPhotoDetail.tagged_friends.join(', ')}</span>
                         </div>
                       )}
                     </div>

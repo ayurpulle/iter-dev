@@ -49,6 +49,7 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('');
+  const [overallBudget, setOverallBudget] = useState('');
   const [companions, setCompanions] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   
@@ -347,6 +348,7 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
         title,
         description,
         country_code: selectedLocations[0]?.countryCode || '',
+        cost: overallBudget,
         companions,
         duration,
         distance: '', // Could calculate this from route
@@ -443,6 +445,38 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
                   placeholder="e.g., Family"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label>Overall Trip Budget</Label>
+              <div className="flex items-center gap-1 mt-1">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <Button
+                    key={level}
+                    variant={getBudgetLevel(overallBudget) >= level ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setOverallBudget('$'.repeat(level))}
+                    className="h-8 px-2"
+                  >
+                    $
+                  </Button>
+                ))}
+                {overallBudget && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setOverallBudget('')}
+                    className="h-8 px-2 ml-2"
+                  >
+                    <X size={14} />
+                  </Button>
+                )}
+              </div>
+              {overallBudget && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getBudgetLabel(overallBudget)}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -385,6 +385,17 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         formData.inspirationFolder
       );
 
+      console.log('Calling generate-itinerary edge function with:', {
+        destination: formData.destination,
+        startDate: formData.startDate?.toISOString(),
+        endDate: formData.endDate?.toISOString(),
+        budget: formData.budget > 0 ? formData.budget : null,
+        interests: formData.holidayTypes.join(', '),
+        travelStyle: formData.notes,
+        ragContext: ragContext,
+        friendRecommendations: ragFriendRecs
+      });
+
       const { data, error } = await supabase.functions.invoke('generate-itinerary', {
         body: {
           destination: formData.destination,
@@ -397,6 +408,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           friendRecommendations: ragFriendRecs
         }
       });
+
+      console.log('Edge function response:', { data, error });
 
       if (error) {
         console.error('Error generating iter:', error);

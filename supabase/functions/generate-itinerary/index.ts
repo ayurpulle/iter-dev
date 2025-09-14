@@ -37,20 +37,43 @@ serve(async (req) => {
       // Get user's saved posts to use as review bank (filter by folder if specified)
       console.log('Fetching user saved posts for review bank...');
       
-      let savedItemsQuery = supabaseClient
+      // First get saved items that are posts
+      const { data: savedPostItems, error: savedItemsError } = await supabaseClient
         .from('saved_items')
-        .select(`
-          *,
-          posts (
-            *,
-            profiles!posts_user_id_fkey (name, username, avatar),
-            trips (title, destination, stops)
-          )
-        `)
+        .select('item_id, folder_id')
         .eq('user_id', userId)
         .eq('item_type', 'post');
 
-      // Filter by folder if specified
+      if (savedItemsError) {
+        console.error('Error fetching saved items:', savedItemsError);
+        return;
+      }
+
+      // If we have saved post items, get the actual posts
+      let savedItems = [];
+      if (savedPostItems && savedPostItems.length > 0) {
+        const postIds = savedPostItems.map(item => item.item_id);
+        const { data: posts, error: postsError } = await supabaseClient
+          .from('posts')
+          .select(`
+            *,
+            profiles!posts_user_id_fkey (name, username, avatar),
+            trips (title, destination, stops)
+          `)
+          .in('id', postIds);
+
+        if (postsError) {
+          console.error('Error fetching posts:', postsError);
+        } else {
+          // Map saved items with their posts
+          savedItems = savedPostItems.map(item => ({
+            ...item,
+            posts: posts?.find(post => post.id === item.item_id)
+          })).filter(item => item.posts); // Only keep items that have valid posts
+        }
+      }
+
+      // Apply folder filtering if specified
       if (inspirationSource === 'folder' && inspirationFolder && inspirationFolder !== 'all') {
         // Find the folder ID by name first
         const { data: folders } = await supabaseClient
@@ -61,14 +84,9 @@ serve(async (req) => {
           .single();
         
         if (folders) {
-          savedItemsQuery = savedItemsQuery.eq('folder_id', folders.id);
+          // Filter savedItems by folder_id
+          savedItems = savedItems.filter(item => item.folder_id === folders.id);
         }
-      }
-
-      const { data: savedItems, error: savedItemsError } = await savedItemsQuery;
-
-      if (savedItemsError) {
-        console.error('Error fetching saved posts:', savedItemsError);
       }
 
       console.log(`Found ${savedItems?.length || 0} saved posts for review bank`);
@@ -268,7 +286,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
@@ -276,7 +294,8 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
             },
             { role: 'user', content: prompt }
           ],
-          max_completion_tokens: 4000
+          max_tokens: 4000,
+          temperature: 0.7
         }),
       });
 
@@ -371,6 +390,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
 
   try {
     console.log('Starting itinerary generation request');
+    console.log('Authorization header present:', !!req.headers.get('Authorization'));
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -393,6 +413,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
 
     // Verify the user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('User verification result:', { userId: user?.id, email: user?.email, authError });
     
     if (authError || !user) {
       console.error('Authentication failed:', authError);

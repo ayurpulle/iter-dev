@@ -89,7 +89,11 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
       ) : (
         <div className="space-y-4">
           {savedItineraries.map((itinerary) => (
-            <Card key={itinerary.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={itinerary.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => onViewIter(itinerary)}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -107,40 +111,12 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                       {itinerary.destination}
                     </p>
                   </div>
-                  <div className="flex gap-2 ml-2">
+                  <div className="flex gap-2 ml-2" onClick={(e) => e.stopPropagation()}>
                     <UnifiedItineraryShareDialog 
                       itineraryId={itinerary.id}
                       itineraryTitle={itinerary.title}
                       isOwner={itinerary.is_owner}
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewIter(itinerary)}
-                      className="p-2"
-                      title="View itinerary"
-                    >
-                      <Eye size={16} />
-                    </Button>
-                    {(() => {
-                      const canEdit = itinerary.is_owner || itinerary.can_edit;
-                      console.log(`Itinerary ${itinerary.title}: is_owner=${itinerary.is_owner}, can_edit=${itinerary.can_edit}, showEdit=${canEdit}`);
-                      return canEdit;
-                    })() && (
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => {
-                           console.log('Edit button clicked for itinerary:', itinerary.title);
-                           console.log('Calling onEditIter with:', itinerary);
-                           onEditIter(itinerary);
-                         }}
-                         className="p-2"
-                         title="Edit itinerary"
-                       >
-                         <Edit size={16} />
-                       </Button>
-                    )}
                     {itinerary.is_owner && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

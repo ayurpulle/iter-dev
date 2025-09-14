@@ -556,10 +556,10 @@ export const StructuredItinerary = ({
   
   // Sync local state with props when they change
   React.useEffect(() => {
-    setLocalStartDate(startDate);
-    setLocalEndDate(endDate);
-    setLocalHolidayTypes(holidayTypes || []);
-    setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+    if (startDate) setLocalStartDate(startDate);
+    if (endDate) setLocalEndDate(endDate);
+    if (holidayTypes && holidayTypes.length > 0) setLocalHolidayTypes(holidayTypes);
+    if (budget) setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
   }, [startDate, endDate, holidayTypes, budget]);
   
   // Generate smart trip summary
@@ -738,8 +738,8 @@ export const StructuredItinerary = ({
             )}
           </div>
 
-          {/* Row 2: Holiday Type and Budget */}
-          <div className="flex items-center gap-4 text-sm">
+           {/* Row 2: Holiday Type and Budget */}
+          <div className="flex items-center gap-3 text-sm">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Type:</span>
@@ -747,7 +747,9 @@ export const StructuredItinerary = ({
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
                     {localHolidayTypes.length > 0 
-                      ? `${localHolidayTypes.length} selected`
+                      ? localHolidayTypes.length === 1 
+                        ? localHolidayTypes[0]
+                        : `${localHolidayTypes.length} selected`
                       : 'Select types'
                     }
                     <Edit3 className="h-3 w-3 ml-1 opacity-50" />
@@ -784,9 +786,9 @@ export const StructuredItinerary = ({
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Budget:</span>
               <Select value={localBudget.toString()} onValueChange={(value) => setLocalBudget(parseInt(value))}>
-                <SelectTrigger className="w-auto h-auto p-1 border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
+                <SelectTrigger className="w-auto h-7 px-2 text-xs border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
                   <SelectValue>
-                    {getBudgetDisplay(localBudget)} {getBudgetDescription(localBudget)}
+                    {getBudgetDisplay(localBudget)}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

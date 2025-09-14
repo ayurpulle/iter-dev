@@ -578,7 +578,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               // Update form data with changes
               setFormData(prev => ({
                 ...prev,
-                destination: viewingIter.destination || prev.destination,
+                destination: changes.destination || viewingIter.destination || prev.destination,
                 startDate: changes.startDate || prev.startDate,
                 endDate: changes.endDate || prev.endDate,
                 holidayTypes: changes.holidayTypes || prev.holidayTypes,
@@ -591,14 +591,19 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               // Trigger regeneration
               await generateIter();
               
-              // Update the viewed itinerary with new data
-              setViewingIter(prev => prev ? {
-                ...prev,
+              // Update the viewed itinerary with new data and sync with saved itineraries
+              const updatedIter = {
+                ...viewingIter,
                 start_date: changes.startDate?.toISOString(),
                 end_date: changes.endDate?.toISOString(),
                 interests: changes.holidayTypes,
                 budget: changes.budget
-              } : null);
+              };
+              
+              setViewingIter(updatedIter);
+              
+              // Also update in saved itineraries list
+              refetchSavedItineraries();
             }}
           />
         </div>

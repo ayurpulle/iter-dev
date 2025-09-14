@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useFriends } from './useFriends';
@@ -35,7 +35,7 @@ export const useSavedPosts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSavedPosts = async () => {
+  const fetchSavedPosts = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -94,19 +94,21 @@ export const useSavedPosts = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]); // Add user as dependency since fetchSavedPosts depends on user
+
+  // Memoize the filter functions to prevent unnecessary re-renders
 
   // Filter posts by type
-  const getYourSavedPosts = () => {
+  const getYourSavedPosts = useCallback(() => {
     return savedPosts;  // Return all saved posts, not just user's own posts
-  };
+  }, [savedPosts]);
 
-  const getFriendsSavedPosts = () => {
+  const getFriendsSavedPosts = useCallback(() => {
     const friendIds = friends.map(f => f.friend_id);
     return savedPosts.filter(post => 
       post.posts?.user_id && friendIds.includes(post.posts.user_id)
     );
-  };
+  }, [savedPosts, friends]);
 
   useEffect(() => {
     fetchSavedPosts();
@@ -133,7 +135,7 @@ export const useSavedPosts = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchSavedPosts]); // Include fetchSavedPosts in dependencies
 
   return {
     savedPosts,

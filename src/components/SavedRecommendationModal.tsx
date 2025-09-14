@@ -35,7 +35,7 @@ export const SavedRecommendationModal = ({
             {venueName}
           </DialogTitle>
           <DialogDescription>
-            Recommended from your saved posts ({recommendations.length} {recommendations.length === 1 ? 'recommendation' : 'recommendations'})
+            Recommended by {recommendations.map(r => r.name).join(', ')} ({recommendations.length} {recommendations.length === 1 ? 'recommendation' : 'recommendations'})
           </DialogDescription>
         </DialogHeader>
         

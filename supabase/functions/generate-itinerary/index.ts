@@ -31,24 +31,31 @@ serve(async (req) => {
         }
       );
 
-      const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations, existingItinerary, changeRequest } = requestData;
-      console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext, hasExistingItinerary: !!existingItinerary, changeRequest });
+      const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations, existingItinerary, changeRequest, inspirationSource, inspirationFolder } = requestData;
+      console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext, hasExistingItinerary: !!existingItinerary, changeRequest, inspirationSource, inspirationFolder });
 
-      // Get user's saved posts to use as review bank
+      // Get user's saved posts to use as review bank (filter by folder if specified)
       console.log('Fetching user saved posts for review bank...');
       
-      const { data: savedItems, error: savedItemsError } = await supabaseClient
+      let savedItemsQuery = supabaseClient
         .from('saved_items')
         .select(`
           *,
-          posts!saved_items_item_id_fkey (
+          posts (
             *,
-            profiles!posts_user_id_profiles_fkey (name, username, avatar),
+            profiles!posts_user_id_fkey (name, username, avatar),
             trips (title, destination, stops)
           )
         `)
         .eq('user_id', userId)
         .eq('item_type', 'post');
+
+      // Filter by folder if specified
+      if (inspirationFolder && inspirationFolder !== 'all') {
+        savedItemsQuery = savedItemsQuery.eq('folder_id', inspirationFolder);
+      }
+
+      const { data: savedItems, error: savedItemsError } = await savedItemsQuery;
 
       if (savedItemsError) {
         console.error('Error fetching saved posts:', savedItemsError);
@@ -98,34 +105,28 @@ serve(async (req) => {
                       if (detail.caption) {
                         allContent += ' ' + detail.caption;
                       }
-                      if (detail.location) {
-                        allContent += ' ' + detail.location;
-                      }
                     });
                   }
                 });
               }
             } catch (e) {
-              console.warn('Could not parse trip stops for venue extraction');
+              // Invalid JSON, continue with just the content
             }
           }
-          
+
           venuePatterns.forEach(pattern => {
-            const matches = allContent.matchAll(pattern);
-            for (const match of matches) {
-              let venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
-              if (venueName && venueName.length > 3 && venueName.length < 60) {
-                venueName = venueName.replace(/[^\w\s\-\.]/g, '').trim();
-                
-                if (!reviewBank[venueName]) {
-                  reviewBank[venueName] = [];
+            let match;
+            while ((match = pattern.exec(allContent)) !== null) {
+              const venue = match[1]?.trim();
+              if (venue && venue.length > 2 && venue.length < 100) {
+                const cleanVenue = venue.replace(/[\[\]()]/g, '').trim();
+                if (!reviewBank[cleanVenue]) {
+                  reviewBank[cleanVenue] = [];
                 }
-                
-                reviewBank[venueName].push({
-                  name: post.profiles?.name || post.profiles?.username || 'Anonymous',
+                reviewBank[cleanVenue].push({
+                  user: post.profiles?.name || post.profiles?.username || 'Someone',
                   avatar: post.profiles?.avatar,
-                  review: content.substring(0, 150) + (content.length > 150 ? '...' : ''),
-                  visitDate: new Date(post.created_at).toLocaleDateString(),
+                  review: content,
                   postId: post.id
                 });
               }
@@ -161,7 +162,7 @@ serve(async (req) => {
       // Prepare context from saved posts review bank
       const reviewBankContext = Object.keys(reviewBank).length > 0 
         ? `\n\nREVIEW BANK (from your saved posts):\n${Object.entries(reviewBank).map(([venue, recs]) => 
-            `- ${venue}: ${recs.map(rec => `"${rec.review}" - ${rec.name}`).join('; ')}`
+            `- ${venue}: ${recs.map(rec => `"${rec.review}" - ${rec.user}`).join('; ')}`
           ).join('\n')}`
         : '';
 
@@ -193,72 +194,57 @@ serve(async (req) => {
         ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
         : 7; // Default to 7 days if dates not provided
 
-      // Create a natural, user-friendly prompt for travel recommendations with RAG context
-      const basePrompt = `I'm planning a trip to ${destination} from ${startDate || 'flexible dates'} to ${endDate || 'flexible dates'}.
+      const prompt = `You are an expert travel planner. Create a comprehensive itinerary for a ${duration}-day trip to ${destination}.
 
-My details:
-- Base location: ${baseLocation}
-- Budget level: ${budget ? '$'.repeat(budget) : 'Flexible'}  
-- Interests: ${interests || 'General exploration'}
-${travelStyle ? `- Travel style: ${travelStyle}` : ''}`;
+Trip Details:
+- Destination: ${destination}
+- Dates: ${startDate} to ${endDate}
+- Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'}
+- Travel Style: ${travelStyle || 'Not specified'}
+- Interests: ${interests || 'General travel'}
 
-      const ragPrompt = ragContext ? `${basePrompt}
+${reviewBankContext}
 
-${ragContext}` : `${basePrompt}
+${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsContext}\n` : ''}
 
-${reviewBankContext}${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsContext}\n` : ''}`;
+Create a structured itinerary with these sections:
 
-      const prompt = `${ragPrompt}
+**Trip Summary** 
+Generate a personalized 2-line summary that captures the unique essence and highlights of this specific ${destination} trip, considering the travel style, interests, and duration.
 
-Create a travel itinerary that sounds natural and conversational, like advice from a well-traveled friend. Avoid formal language, bullet points, asterisks, and structured formatting that looks AI-generated.
+**Getting There**
+• Flight recommendations and booking tips
+• Airport transfer options  
+• Any travel documentation needed
 
-Use this exact format:
+**Perfect Stay**  
+• Accommodation recommendations (3-4 options across different price points)
+• Best neighborhoods to stay in
+• Booking tips and timing
 
-SUMMARY:
-Write exactly 3 lines that capture the essence of this trip. Each line should be a complete sentence about what makes this destination special. Focus on the overall experience, vibe, and highlights.
+**Day-by-Day Itinerary**
+• Detailed daily plans with specific activities, restaurants, and attractions
+• Include approximate times and costs
+• Mix of must-see attractions and hidden gems
+• Restaurant recommendations for each meal
 
-FLIGHTS:
-Write a natural paragraph about flight options from ${baseLocation} to ${destination}, including practical advice about airlines, timing, and booking. Only mention specific booking sites if you're certain they work (like skyscanner.com or expedia.com).
+**Travel Tips**
+• Local customs and etiquette
+• Transportation within the destination  
+• Money and payment tips
+• What to pack
+• Safety considerations
+• Best times to visit attractions
 
-ACCOMMODATION:
-Write conversational recommendations about where to stay. Describe 2-3 options in paragraph form, explaining the neighborhood, vibe, and what type of traveler would love each place. Only include booking links if you can provide actual working URLs.
+**Booking Links**
+• Direct links to recommended hotels
+• Restaurant reservation information
+• Attraction tickets and tours
+• Transportation booking links
 
-DAY-BY-DAY ITINERARY:
+IMPORTANT: When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post. Use bullet points for Getting There, Perfect Stay, and Day-by-Day sections.
 
-${duration > 14 ? 
-  `For this ${duration}-day trip, group days by 2-3 day periods for better readability:
-
-Days 1-2: [Engaging theme for arrival and orientation]
-Write in natural paragraphs covering the first 2-3 days. Start with "Your first morning should begin with..." Make it flow like a conversation. Include approximate costs in ${defaultCurrency} naturally in the text. Mention meal suggestions organically.
-
-Days 3-5: [Different theme for main exploration]
-Continue the same conversational style. Each grouping should feel distinct and build on previous experiences.
-
-[Continue grouping every 2-3 days for all ${duration} days]` :
-  `Day 1: [Engaging theme]
-Write in natural paragraphs what to do each part of the day. Start with "Your first morning should begin with..." or "Wake up and head to..." Make it flow like a conversation. Include approximate costs in ${defaultCurrency} naturally in the text. Mention meal suggestions organically. End with evening plans.
-
-Day 2: [Different theme]
-Continue the same conversational style. Each day should feel distinct and build on the previous day's experiences.
-
-[Continue for all ${duration} days]`}
-
-BOOKING LINKS & TIPS:
-Only include actual working links from major sites like skyscanner.com, booking.com, or getyourguide.com. Write this as friendly advice paragraphs, not bullet points. Include practical tips about local transport, payment methods, and cultural notes.
-
-PRACTICAL TIPS:
-Write 3-4 conversational paragraphs covering money matters, getting around, cultural etiquette, and communication. Make it personal and specific to ${destination}, like you're sharing insider knowledge.
-
-Guidelines:
-- Write in complete sentences and paragraphs, never use bullet points or asterisks
-- Sound like a knowledgeable friend, not a travel guide
-- Include specific prices naturally in conversation
-- When mentioning places from your saved posts (review bank), add [SAVED_REC:place_name:count] where count is the number of saved posts mentioning it
-- When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name
-- Prioritize venues from your saved posts review bank as these are personally curated recommendations
-- Only include links if they're from major, trusted booking sites
-- Make each day's personality shine through the writing style
-- Focus on the experience and feelings, not just logistics`;
+Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 
       console.log('Calling OpenAI API...');
       
@@ -273,72 +259,63 @@ Guidelines:
           messages: [
             { 
               role: 'system', 
-              content: `You are a specialized travel itinerary assistant. You ONLY respond to travel-related requests and use travel data as your knowledge base.
-
-STRICT GUIDELINES:
-1. ONLY generate travel itineraries, trip plans, and travel-related content
-2. If asked about anything non-travel related, politely decline and redirect to travel topics
-3. Use the provided user data (saved posts, friend recommendations, travel preferences) as your primary information source
-4. Generate detailed, day-by-day travel itineraries with specific activities, locations, and timing
-5. Include practical travel information like transportation, accommodation tips, and local insights
-6. Consider the user's budget, interests, and travel dates when provided
-7. Incorporate friend recommendations and saved travel experiences when relevant
-8. Provide practical, actionable advice with specific costs, booking links, and day-by-day schedules
-9. Focus on efficiency and value while ensuring travelers have memorable experiences
-10. Write in a natural, conversational tone like advice from a well-traveled friend` 
+              content: 'You are an expert travel planner that creates detailed, practical itineraries. Always format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
             },
             { role: 'user', content: prompt }
           ],
-          max_completion_tokens: 4000,
-          temperature: 0.7,
+          max_tokens: 4000,
+          temperature: 0.7
         }),
       });
 
+      console.log('OpenAI response received');
+
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('OpenAI API error:', response.status, errorData);
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('OpenAI response received');
-      
       const generatedItinerary = data.choices[0].message.content;
 
-      // Save the generated itinerary as a trip (removed budget field that doesn't exist)
-      const { data: newTrip, error: tripError } = await supabaseClient
+      // Save the trip to the database
+      const { data: savedTrip, error: tripError } = await supabaseClient
         .from('trips')
         .insert({
           user_id: userId,
-          title: `${destination} Itinerary`,
-          description: generatedItinerary,
+          title: `${destination} Trip`,
           destination: destination,
           start_date: startDate,
           end_date: endDate,
-          cost: budget ? `Budget Level ${budget}` : null,
+          overall_budget: budget ? '$'.repeat(budget) : null,
+          description: generatedItinerary,
+          is_public: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
 
       if (tripError) {
         console.error('Error saving trip:', tripError);
-        // Still continue to create notification even if saving fails
-      } else {
-        console.log('Trip saved successfully:', newTrip.id);
+        throw new Error('Failed to save itinerary');
       }
 
-      // Create notification for completion
+      console.log('Trip saved successfully:', savedTrip.id);
+
+      // Create notification for the user
       const { error: notificationError } = await supabaseClient
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'itinerary_complete',
-          title: 'Itinerary Ready!',
-          message: `Your ${destination} itinerary has been generated and saved.`,
+          type: 'itinerary_ready',
+          title: 'Your Itinerary is Ready!',
+          message: `Your ${destination} itinerary has been generated and is ready to view.`,
           data: { 
-            tripId: newTrip?.id, 
+            trip_id: savedTrip.id,
             destination: destination,
-            friendRecommendations: finalFriendRecommendations 
+            friend_recommendations: finalFriendRecommendations
           }
         });
 
@@ -363,15 +340,15 @@ STRICT GUIDELINES:
           },
         }
       );
-      
+
       await supabaseClient
         .from('notifications')
         .insert({
           user_id: userId,
           type: 'itinerary_error',
           title: 'Itinerary Generation Failed',
-          message: 'There was an error generating your itinerary. Please try again.',
-          data: { destination: requestData.destination }
+          message: 'We encountered an issue generating your itinerary. Please try again.',
+          data: { error: error.message }
         });
     }
   }
@@ -379,70 +356,54 @@ STRICT GUIDELINES:
   try {
     console.log('Starting itinerary generation request');
     
-    // Create Supabase client
-    const supabaseClient = createClient(
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create Supabase client for auth verification
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Verify user is authenticated
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
-
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const requestData = await req.json();
-    const { destination } = requestData;
-    
-    if (!destination) {
-      return new Response(
-        JSON.stringify({ error: 'Destination is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
 
-    // Start background generation
-    EdgeRuntime.waitUntil(generateItineraryBackground(requestData, req.headers.get('Authorization')!, user.id));
-    
+    // Start the background itinerary generation
+    EdgeRuntime.waitUntil(generateItineraryBackground(requestData, authHeader, user.id));
+
     // Return immediate response
-    return new Response(
-      JSON.stringify({ 
-        message: 'Itinerary generation started in background',
-        destination: destination,
-        status: 'processing'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      message: 'Itinerary generation started. You will receive a notification when it\'s ready.',
+      status: 'processing'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Error in generate-itinerary function:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to start itinerary generation', details: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

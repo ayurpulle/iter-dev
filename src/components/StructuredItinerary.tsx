@@ -371,7 +371,7 @@ export const StructuredItinerary = ({
       }
 
       // Handle both saved recommendations and friend recommendations
-      const savedRecRegex = /\[SAVED_REC:([^:\]]+):(\d+)\]/g;
+      const savedRecRegex = /\[SAVED_REC:([^:\]]+):([^:\]]+)\]/g;
       const friendRecRegex = /\[FRIEND_REC:([^\]]+)\]/g;
       
       // First handle saved recommendations
@@ -382,7 +382,7 @@ export const StructuredItinerary = ({
         if (savedIndex % 3 === 1) {
           // This is a saved recommendation venue name
           const venueName = savedPart;
-          const count = savedRecParts[savedIndex + 1];
+          const userName = savedRecParts[savedIndex + 1];
           processedParts.push(
             <span key={`saved-${index}-${savedIndex}`} className="inline-flex items-center gap-1">
               <span className="font-medium text-green-700 dark:text-green-300">{venueName}</span>
@@ -394,7 +394,7 @@ export const StructuredItinerary = ({
                 }}
                 title={`Recommended from your saved posts`}
               >
-                +{count}
+                +1
               </button>
             </span>
           );

@@ -457,15 +457,21 @@ export const StructuredItinerary = ({
 
   return (
     <div className="space-y-4">
-      {/* Trip Header with Editable Dates */}
+      {/* Trip Header */}
+      <div className="text-center">
+        <h1 className="text-xl font-semibold text-foreground">
+          Your trip to {destination || parsed.destinations[0] || 'your destination'}
+        </h1>
+      </div>
+
+      {/* Trip Summary */}
       <Card className="border-l-4 border-l-primary">
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {/* Trip Summary */}
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-2">
+              <p className="text-muted-foreground leading-relaxed">
                 {tripSummary}
-              </h2>
+              </p>
             </div>
             
             {/* Editable Dates */}
@@ -520,6 +526,19 @@ export const StructuredItinerary = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Trip Overview Map - Prominent but Muted */}
+      {parsed.destinations.length > 0 && (
+        <div className="bg-muted/30 rounded-lg p-4 border border-muted">
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-muted-foreground">Trip Overview</h3>
+          </div>
+          <div className="rounded-md overflow-hidden">
+            <InteractiveItineraryMap destinations={parsed.destinations} />
+          </div>
+        </div>
+      )}
 
       {/* Individual Section Dropdowns */}
       <div className="space-y-3">
@@ -673,33 +692,6 @@ export const StructuredItinerary = ({
           </Card>
         )}
 
-        {/* Interactive Map Section */}
-        {parsed.destinations.length > 0 && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.map} 
-              onOpenChange={() => toggleSection('map')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      Trip Overview Map
-                    </div>
-                    {expandedSections.map ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground mb-4">Click on markers to learn about each destination</p>
-                  <InteractiveItineraryMap destinations={parsed.destinations} />
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-        )}
       </div>
     </div>
   );

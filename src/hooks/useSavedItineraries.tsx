@@ -231,30 +231,45 @@ export const useSavedItineraries = () => {
 
     setLoading(true);
     const result = await executeQuery(async (client) => {
-      // First check if user has permission to delete (must be owner)
-      const { data: itinerary, error: fetchError } = await client
+      // Check both tables to see which one contains this itinerary
+      const { data: savedItinerary } = await client
         .from('saved_itineraries')
         .select('user_id')
         .eq('id', id)
-        .maybeSingle(); // Use maybeSingle instead of single to handle missing rows
+        .maybeSingle();
 
-      if (fetchError) throw fetchError;
-      
-      // If itinerary doesn't exist, consider it already deleted
-      if (!itinerary) {
-        return { data: null, error: null }; // Return success since it's already gone
-      }
-      
-      if (itinerary.user_id !== user.id) {
-        throw new Error('You can only delete your own itineraries');
-      }
-
-      // Delete the itinerary
-      return client
-        .from('saved_itineraries')
-        .delete()
+      const { data: tripItinerary } = await client
+        .from('trips')
+        .select('user_id')
         .eq('id', id)
-        .eq('user_id', user.id); // Extra safety check
+        .maybeSingle();
+
+      if (savedItinerary) {
+        // Check ownership
+        if (savedItinerary.user_id !== user.id) {
+          throw new Error('You can only delete your own itineraries');
+        }
+        // Delete from saved_itineraries
+        return client
+          .from('saved_itineraries')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } else if (tripItinerary) {
+        // Check ownership
+        if (tripItinerary.user_id !== user.id) {
+          throw new Error('You can only delete your own itineraries');
+        }
+        // Delete from trips
+        return client
+          .from('trips')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } else {
+        // Itinerary doesn't exist, consider it already deleted
+        return { data: null, error: null };
+      }
     });
 
     setLoading(false);

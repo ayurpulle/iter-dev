@@ -556,10 +556,14 @@ export const StructuredItinerary = ({
   
   // Sync local state with props when they change
   React.useEffect(() => {
-    if (startDate) setLocalStartDate(startDate);
-    if (endDate) setLocalEndDate(endDate);
-    if (holidayTypes && holidayTypes.length > 0) setLocalHolidayTypes(holidayTypes);
-    if (budget) setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+    setLocalStartDate(startDate);
+    setLocalEndDate(endDate);
+    if (holidayTypes && holidayTypes.length > 0) {
+      setLocalHolidayTypes(holidayTypes);
+    }
+    if (budget) {
+      setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+    }
   }, [startDate, endDate, holidayTypes, budget]);
   
   // Generate smart trip summary

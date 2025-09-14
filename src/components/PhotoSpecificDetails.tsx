@@ -1,11 +1,12 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Users } from 'lucide-react';
+import { DollarSign, Users, MapPin } from 'lucide-react';
 
 interface PhotoDetail {
   caption?: string;
   budget?: string;
   tagged_friends?: string[];
+  location?: string;
 }
 
 interface PhotoSpecificDetailsProps {
@@ -38,9 +39,12 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
         <h3 className="font-semibold text-lg">{tripTitle}</h3>
       )}
       
-      <div className="flex justify-between items-start">
-        <span className="text-xs text-muted-foreground">Photo {photoIndex + 1}</span>
-      </div>
+      {details?.location && (
+        <div className="flex items-center gap-1">
+          <MapPin size={14} className="text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{details.location}</span>
+        </div>
+      )}
       
       {details?.caption ? (
         <p className="text-sm text-muted-foreground leading-relaxed">{details.caption}</p>

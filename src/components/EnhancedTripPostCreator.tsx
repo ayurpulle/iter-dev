@@ -17,6 +17,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTrips } from '@/hooks/useTrips';
+import { extractLocationFromBase64 } from '@/utils/photoLocationExtractor';
 
 interface EnhancedTripPostCreatorProps {
   onBack?: () => void;
@@ -38,6 +39,7 @@ interface PhotoDetail {
   caption: string;
   budget: string;
   tagged_friends: string[];
+  location?: string;
 }
 
 const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
@@ -227,13 +229,32 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, mapboxToken, userMapboxToken]);
 
-  const handlePhotosSelected = (photos: string[]) => {
-    const newPhotoDetails: PhotoDetail[] = photos.map((url, index) => ({
-      url,
-      caption: '',
-      budget: '',
-      tagged_friends: []
-    }));
+  const handlePhotosSelected = async (photos: string[]) => {
+    const newPhotoDetails: PhotoDetail[] = [];
+    
+    // Process each photo to extract location data
+    for (let index = 0; index < photos.length; index++) {
+      const url = photos[index];
+      let locationName = '';
+      
+      try {
+        // Extract location from EXIF data
+        const locationData = await extractLocationFromBase64(url);
+        locationName = locationData.locationName || '';
+        console.log(`Location extracted for photo ${index + 1}:`, locationName);
+      } catch (error) {
+        console.error(`Error extracting location for photo ${index + 1}:`, error);
+      }
+      
+      newPhotoDetails.push({
+        url,
+        caption: '',
+        budget: '',
+        tagged_friends: [],
+        location: locationName
+      });
+    }
+    
     setPhotoDetails(newPhotoDetails);
     setCurrentPhotoIndex(0);
     setShowPhotoSelector(false);
@@ -615,6 +636,24 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
                         placeholder="What's happening in this photo?"
                         rows={2}
                       />
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`location-${currentPhotoIndex}`}>Location</Label>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-muted-foreground" />
+                        <Input
+                          id={`location-${currentPhotoIndex}`}
+                          value={currentPhoto.location || ''}
+                          onChange={(e) => updatePhotoDetail(currentPhotoIndex, 'location', e.target.value)}
+                          placeholder="Add location for this photo..."
+                        />
+                      </div>
+                      {currentPhoto.location && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Location automatically detected from photo
+                        </p>
+                      )}
                     </div>
 
                     <div>

@@ -6,6 +6,7 @@ export interface PhotoDetail {
   caption: string;
   budget: string;
   tagged_friends: string[];
+  location?: string;
 }
 
 export interface TripData {
@@ -115,7 +116,8 @@ export const useTrips = () => {
             simplifiedPhotoDetails.push({
               caption: tripData.photo_details[result.originalIndex].caption || '',
               budget: tripData.photo_details[result.originalIndex].budget || '',
-              tagged_friends: tripData.photo_details[result.originalIndex].tagged_friends || []
+              tagged_friends: tripData.photo_details[result.originalIndex].tagged_friends || [],
+              location: tripData.photo_details[result.originalIndex].location || ''
             });
           }
         });

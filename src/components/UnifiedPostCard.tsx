@@ -743,12 +743,13 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                     {/* Images - Come after trip map */}
                    {images.map((imageUrl, index) => (
                     <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                      <div className="w-full h-full bg-muted overflow-hidden flex items-center justify-center">
-                        <img 
-                          src={imageUrl} 
-                          alt={`Post image ${index + 1}`} 
-                          className="max-w-full max-h-full object-contain"
-                        />
+                       <div className="w-full h-full bg-muted overflow-hidden flex items-center justify-center">
+                         <img 
+                           src={imageUrl} 
+                           alt={`Post image ${index + 1}`} 
+                           className="w-full h-full object-cover"
+                           style={{ objectPosition: 'center' }}
+                         />
                       </div>
                     </CarouselItem>
                   ))}

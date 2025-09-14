@@ -41,7 +41,7 @@ export const GlobalNotifications = () => {
                 action: {
                   label: 'Try Again',
                   onClick: () => {
-                    navigate('/create-trip');
+                    navigate('/create');
                   },
                 },
                 duration: 8000, // Show for 8 seconds
@@ -88,7 +88,7 @@ export const GlobalNotifications = () => {
               action: {
                 label: 'Try Again',
                 onClick: () => {
-                  navigate('/create-trip');
+                  navigate('/create');
                 },
               },
               duration: 8000,

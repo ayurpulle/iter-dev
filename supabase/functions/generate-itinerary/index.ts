@@ -77,8 +77,8 @@ serve(async (req) => {
       const reviewBank: { [venue: string]: any[] } = {};
       const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter(word => word.length > 2);
       
-      if (savedPosts?.length) {
-        savedPosts.forEach(savedItem => {
+      if (savedItems?.length) {
+        savedItems.forEach(savedItem => {
           const post = savedItem.posts;
           if (!post || !post.content) return;
 
@@ -268,7 +268,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: 'gpt-4o-2024-08-06',
           messages: [
             { 
               role: 'system', 

@@ -51,8 +51,18 @@ serve(async (req) => {
         .eq('item_type', 'post');
 
       // Filter by folder if specified
-      if (inspirationFolder && inspirationFolder !== 'all') {
-        savedItemsQuery = savedItemsQuery.eq('folder_id', inspirationFolder);
+      if (inspirationSource === 'folder' && inspirationFolder && inspirationFolder !== 'all') {
+        // Find the folder ID by name first
+        const { data: folders } = await supabaseClient
+          .from('item_folders')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('name', inspirationFolder)
+          .single();
+        
+        if (folders) {
+          savedItemsQuery = savedItemsQuery.eq('folder_id', folders.id);
+        }
       }
 
       const { data: savedItems, error: savedItemsError } = await savedItemsQuery;
@@ -223,10 +233,13 @@ Generate a personalized 2-line summary that captures the unique essence and high
 • Booking tips and timing
 
 **Day-by-Day Itinerary**
-• Detailed daily plans with specific activities, restaurants, and attractions
-• Include approximate times and costs
-• Mix of must-see attractions and hidden gems
-• Restaurant recommendations for each meal
+For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points:
+• Morning: [Activity/attraction with brief description]
+• Afternoon: [Activity/attraction with brief description]  
+• Evening: [Restaurant and activity recommendations]
+• Night: [Optional nightlife or relaxation suggestions]
+
+Keep descriptions concise but well-written, avoid overly specific times. Focus on experiences rather than rigid schedules.
 
 **Travel Tips**
 • Local customs and etiquette
@@ -242,7 +255,7 @@ Generate a personalized 2-line summary that captures the unique essence and high
 • Attraction tickets and tours
 • Transportation booking links
 
-IMPORTANT: When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post. Use bullet points for Getting There, Perfect Stay, and Day-by-Day sections.
+IMPORTANT: When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post. Use bullet points for all sections.
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 

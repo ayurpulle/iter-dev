@@ -30,7 +30,7 @@ export const GlobalNotifications = () => {
           if (notification.id !== lastNotificationId) {
             setLastNotificationId(notification.id);
             
-            if (notification.type === 'itinerary_complete') {
+            if (notification.type === 'itinerary_ready') {
               toast.success(notification.title, {
                 description: notification.message,
                 duration: 8000, // Show for 8 seconds
@@ -77,7 +77,7 @@ export const GlobalNotifications = () => {
         (payload) => {
           const notification = payload.new;
           
-          if (notification.type === 'itinerary_complete') {
+          if (notification.type === 'itinerary_ready') {
             toast.success(notification.title, {
               description: notification.message,
               duration: 8000,

@@ -374,6 +374,12 @@ export const StructuredItinerary = ({
       const savedRecRegex = /\[SAVED_REC:([^:\]]+):([^:\]]+)\]/g;
       const friendRecRegex = /\[FRIEND_REC:([^\]]+)\]/g;
       
+      // Count saved recommendations for this venue
+      const getSavedRecCount = (venueName: string) => {
+        const matches = part.match(new RegExp(`\\[SAVED_REC:${venueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:([^:\\]]+)\\]`, 'g'));
+        return matches ? matches.length : 1;
+      };
+      
       // First handle saved recommendations
       let savedRecParts = part.split(savedRecRegex);
       let processedParts: (string | JSX.Element)[] = [];
@@ -383,6 +389,8 @@ export const StructuredItinerary = ({
           // This is a saved recommendation venue name
           const venueName = savedPart;
           const userName = savedRecParts[savedIndex + 1];
+          const recCount = getSavedRecCount(venueName);
+          
           processedParts.push(
             <span key={`saved-${index}-${savedIndex}`} className="inline-flex items-center gap-1">
               <span className="font-medium text-green-700 dark:text-green-300">{venueName}</span>
@@ -392,9 +400,9 @@ export const StructuredItinerary = ({
                   setSelectedVenue(venueName);
                   setShowRecommendationModal(true);
                 }}
-                title={`Recommended from your saved posts`}
+                title={`Recommended by ${userName}`}
               >
-                +1
+                +{recCount}
               </button>
             </span>
           );

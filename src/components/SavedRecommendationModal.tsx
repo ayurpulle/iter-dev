@@ -74,7 +74,7 @@ export const SavedRecommendationModal = ({
                     {rec.visitDate}
                   </Badge>
                   <Badge variant="outline" className="text-xs text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                    From saved post
+                    Recommended by {rec.name}
                   </Badge>
                 </div>
               </div>

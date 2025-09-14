@@ -52,9 +52,9 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
         <p className="text-sm text-muted-foreground leading-relaxed italic">No caption added for this photo</p>
       )}
       
-      {(details?.budget || details?.tagged_friends?.length) && (
+      {(details?.budget && details.budget.length > 0) || (details?.tagged_friends?.length > 0) ? (
         <div className="flex flex-wrap gap-2 text-xs">
-          {details?.budget && (
+          {details?.budget && details.budget.length > 0 && (
             <Badge variant="secondary">
               <DollarSign size={12} className="mr-1" />
               {details.budget}
@@ -71,7 +71,7 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
             </Badge>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

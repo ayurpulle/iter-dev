@@ -73,6 +73,9 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
   const [friends, setFriends] = useState<Array<{username: string, name: string}>>([]);
   const [tagSearchOpen, setTagSearchOpen] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [photoLocationSearchOpen, setPhotoLocationSearchOpen] = useState(false);
+  const [photoLocationSearchQuery, setPhotoLocationSearchQuery] = useState('');
+  const [photoLocationResults, setPhotoLocationResults] = useState<Location[]>([]);
   
   // Map data
   const [mapboxToken, setMapboxToken] = useState('');
@@ -229,6 +232,14 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, mapboxToken, userMapboxToken]);
 
+  // Debounce photo location search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchPhotoLocations(photoLocationSearchQuery);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [photoLocationSearchQuery, mapboxToken, userMapboxToken]);
+
   const handlePhotosSelected = async (photos: string[]) => {
     const newPhotoDetails: PhotoDetail[] = [];
     
@@ -321,6 +332,50 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     updatePhotoDetail(photoIndex, 'tagged_friends', 
       photoDetails[photoIndex].tagged_friends.filter(f => f !== username)
     );
+  };
+
+  // Search locations for photo (similar to main location search)
+  const searchPhotoLocations = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setPhotoLocationResults([]);
+      return;
+    }
+
+    const token = mapboxToken || userMapboxToken;
+    if (!token) {
+      setPhotoLocationResults([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,place,locality&limit=5`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const locations: Location[] = data.features.map((feature: any) => {
+          return {
+            id: feature.id,
+            name: feature.text || feature.place_name,
+            type: 'place' as const,
+            fullName: feature.place_name,
+            coordinates: feature.center as [number, number],
+            countryCode: feature.context?.find((ctx: any) => ctx.id.startsWith('country.'))?.short_code || ''
+          };
+        });
+        setPhotoLocationResults(locations);
+      }
+    } catch (error) {
+      console.error('Error searching photo locations:', error);
+    }
+  };
+
+  const handlePhotoLocationSelect = (location: Location) => {
+    updatePhotoDetail(currentPhotoIndex, 'location', location.name);
+    setPhotoLocationSearchOpen(false);
+    setPhotoLocationSearchQuery('');
+    setPhotoLocationResults([]);
   };
 
   const getBudgetLevel = (budget: string): number => {
@@ -640,18 +695,50 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
 
                     <div>
                       <Label htmlFor={`location-${currentPhotoIndex}`}>Location</Label>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-muted-foreground" />
-                        <Input
-                          id={`location-${currentPhotoIndex}`}
-                          value={currentPhoto.location || ''}
-                          onChange={(e) => updatePhotoDetail(currentPhotoIndex, 'location', e.target.value)}
-                          placeholder="Add location for this photo..."
-                        />
-                      </div>
+                      <Popover open={photoLocationSearchOpen} onOpenChange={setPhotoLocationSearchOpen}>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full justify-start"
+                            onClick={() => setPhotoLocationSearchOpen(true)}
+                          >
+                            <MapPin size={16} className="mr-2" />
+                            {currentPhoto.location || 'Search for location...'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-0 bg-background border shadow-lg z-50">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search locations..."
+                              value={photoLocationSearchQuery}
+                              onValueChange={setPhotoLocationSearchQuery}
+                            />
+                            <CommandList>
+                              {photoLocationResults.length > 0 ? (
+                                <CommandGroup>
+                                  {photoLocationResults.map((location) => (
+                                    <CommandItem
+                                      key={location.id}
+                                      onSelect={() => handlePhotoLocationSelect(location)}
+                                    >
+                                      <MapPin size={14} className="mr-2" />
+                                      <span>{location.fullName}</span>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              ) : photoLocationSearchQuery.length > 0 ? (
+                                <CommandEmpty>No locations found.</CommandEmpty>
+                              ) : (
+                                <CommandEmpty>Start typing to search locations.</CommandEmpty>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {currentPhoto.location && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Location automatically detected from photo
+                          {currentPhoto.location.includes('auto') ? 'Location automatically detected from photo' : 'Location manually selected'}
                         </p>
                       )}
                     </div>

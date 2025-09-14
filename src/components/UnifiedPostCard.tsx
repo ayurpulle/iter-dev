@@ -654,6 +654,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     ? tripPhotoDetails[currentPhotoIndex] 
     : null;
 
+
   const getBudgetLabel = (budget: string): string => {
     const labels = {
       '$': 'Budget-friendly',

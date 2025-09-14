@@ -292,6 +292,13 @@ export const StructuredItinerary = ({
     // Clean up links and AI-generated explanatory text
     const cleanContent = (text: string) => {
       return text
+        // Remove any booking link markers and clean up text
+        .replace(/\[Booking Link\]\(\)/g, '')
+        .replace(/\(\[Booking Link\]\)/g, '')
+        .replace(/\[Booking Link\]/g, '')
+        .replace(/—\s*booking\s*link/gi, '')
+        .replace(/\(\)\s*—/g, '—')
+        .replace(/\(\)\s*/g, ' ')
         // Remove raw URLs that aren't in proper link format
         .replace(/https?:\/\/[^\s\)]+/g, '')
         // Remove "here's the booking link" type phrases
@@ -300,8 +307,10 @@ export const StructuredItinerary = ({
         .replace(/(?:you\s+can\s+book)[:\-\s]*/gmi, '')
         // Remove standalone explanatory phrases
         .replace(/(?:^|\n)(?:for\s+booking|to\s+book|booking\s+available)[:\-\s]*(?:\n|$)/gmi, '\n')
-        // Clean up multiple newlines
-        .replace(/\n{3,}/g, '\n\n');
+        // Clean up multiple newlines and spaces
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/\s+/g, ' ')
+        .trim();
     };
 
     // Enhanced link detection for various travel sites and hotel names

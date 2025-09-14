@@ -564,30 +564,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <h1 className="text-2xl font-bold text-foreground">Your Iter</h1>
               <p className="text-muted-foreground">{viewingIter.destination}</p>
             </div>
-            {(viewingIter.is_owner || viewingIter.can_edit) && (
-              <IterEditDialog 
-                iterData={{
-                  id: viewingIter.id,
-                  title: viewingIter.title,
-                  destination: viewingIter.destination,
-                  itinerary_content: viewingIter.itinerary_content,
-                  is_owner: viewingIter.is_owner,
-                  can_edit: viewingIter.can_edit
-                }}
-                onIterUpdated={(newContent, newDestination) => {
-                  // Update the viewing itinerary with new content and destination
-                  setViewingIter(prev => ({
-                    ...prev,
-                    itinerary_content: newContent,
-                    destination: newDestination || prev.destination,
-                    title: newDestination || prev.title // Update title to match destination
-                  }));
-                  // Also refresh the saved itineraries list
-                  refetchSavedItineraries();
-                }}
-              />
-            )}
-          </div>
+            </div>
 
           <StructuredItinerary 
             itinerary={viewingIter.itinerary_content}
@@ -651,17 +628,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <h1 className="text-2xl font-bold text-foreground">Your Iter</h1>
               <p className="text-muted-foreground">{lastGeneratedData?.destination || formData.destination}</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Go back to planning mode to edit
-                setCurrentView('planning');
-              }}
-            >
-              Edit
-            </Button>
-          </div>
+            </div>
 
           <Card>
             <CardContent className="pt-6">

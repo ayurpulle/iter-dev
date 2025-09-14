@@ -30,7 +30,7 @@ interface StructuredItineraryProps {
   holidayTypes?: string[];
   budget?: string;
   onUpdateDates?: (startDate: Date, endDate: Date) => void;
-  onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: number }) => void;
+  onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: number; destination?: string }) => void;
 }
 
 export const StructuredItinerary = ({ 
@@ -49,6 +49,7 @@ export const StructuredItinerary = ({
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
   const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+  // Store original destination
 
   const availableHolidayTypes = [
     "Adventure & Outdoor",
@@ -550,6 +551,17 @@ export const StructuredItinerary = ({
 
   const parsed = parseItinerary();
   
+  // Store original destination for updates
+  const [originalDestination] = useState<string>(destination || parsed.destinations[0] || '');
+  
+  // Sync local state with props when they change
+  React.useEffect(() => {
+    setLocalStartDate(startDate);
+    setLocalEndDate(endDate);
+    setLocalHolidayTypes(holidayTypes || []);
+    setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+  }, [startDate, endDate, holidayTypes, budget]);
+  
   // Generate smart trip summary
   const tripSummary = generateTripSummary({
     destination: destination || parsed.destinations[0] || 'Trip',
@@ -610,7 +622,8 @@ export const StructuredItinerary = ({
         startDate: localStartDate,
         endDate: localEndDate,
         holidayTypes: localHolidayTypes,
-        budget: localBudget
+        budget: localBudget,
+        destination: originalDestination // Preserve original destination
       });
     }
   };

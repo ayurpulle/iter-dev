@@ -12,12 +12,14 @@ interface PhotoSpecificDetailsProps {
   photo: string;
   details?: PhotoDetail;
   photoIndex: number;
+  tripTitle?: string;
 }
 
 const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({ 
   photo, 
   details, 
-  photoIndex 
+  photoIndex,
+  tripTitle 
 }) => {
   const getBudgetLabel = (budget: string): string => {
     const labels = {
@@ -32,6 +34,10 @@ const PhotoSpecificDetails: React.FC<PhotoSpecificDetailsProps> = ({
 
   return (
     <div className="space-y-3">
+      {tripTitle && (
+        <h3 className="font-semibold text-lg">{tripTitle}</h3>
+      )}
+      
       <div className="flex justify-between items-start">
         <span className="text-xs text-muted-foreground">Photo {photoIndex + 1}</span>
       </div>

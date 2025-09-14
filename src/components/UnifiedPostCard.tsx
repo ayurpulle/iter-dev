@@ -806,6 +806,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 photo={tripPhotos[currentPhotoIndex]}
                 details={currentPhotoDetail}
                 photoIndex={currentPhotoIndex}
+                tripTitle={trip?.title}
               />
             ) : post.content ? (
               /* Regular post content */

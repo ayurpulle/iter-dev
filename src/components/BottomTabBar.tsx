@@ -13,25 +13,25 @@ const BottomTabBar = () => {
       <div className="flex items-center justify-between max-w-md mx-auto">
         <Button 
           variant="ghost" 
-          size="lg" 
+          size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/")}
         >
-          <Home size={26} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground"} />
+          <Home size={30} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
-          size="lg" 
+          size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/map")}
         >
-          <Globe size={26} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
+          <Globe size={30} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
-          size="lg" 
+          size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-3 relative"
           onClick={() => navigate("/create")}
         >
@@ -40,20 +40,20 @@ const BottomTabBar = () => {
         
         <Button 
           variant="ghost" 
-          size="lg" 
+          size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/search")}
         >
-          <Plane size={26} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
+          <Plane size={30} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
-          size="lg" 
+          size="sm" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/account")}
         >
-          <User size={26} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />
+          <User size={30} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />
         </Button>
       </div>
     </div>

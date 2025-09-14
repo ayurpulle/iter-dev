@@ -3,9 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink, Info, Calendar, Edit3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InteractiveItineraryMap } from './InteractiveItineraryMap';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { generateTripSummary } from '@/utils/tripSummaryGenerator';
 
 interface FriendRecommendation {
   name: string;
@@ -19,20 +23,28 @@ interface StructuredItineraryProps {
   itinerary: string;
   friendRecommendations?: { [venueName: string]: FriendRecommendation[] };
   destination?: string;
+  startDate?: Date;
+  endDate?: Date;
+  holidayTypes?: string[];
+  onUpdateDates?: (startDate: Date, endDate: Date) => void;
 }
 
-export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, destination }: StructuredItineraryProps) => {
-  const [showFullDetails, setShowFullDetails] = useState(false);
-  const [showBookingLinks, setShowBookingLinks] = useState(false);
-  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
+export const StructuredItinerary = ({ 
+  itinerary, 
+  friendRecommendations = {}, 
+  destination,
+  startDate,
+  endDate,
+  holidayTypes,
+  onUpdateDates
+}: StructuredItineraryProps) => {
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
 
-  const toggleDay = (day: string) => {
-    console.log('Toggling day:', day, 'Current state:', expandedDays[day]);
-    setExpandedDays(prev => {
-      const newState = { ...prev, [day]: !prev[day] };
-      console.log('New expanded state:', newState);
-      return newState;
-    });
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   const renderFriendRecommendations = (venueName: string) => {
@@ -340,310 +352,355 @@ export const StructuredItinerary = ({ itinerary, friendRecommendations = {}, des
     });
   };
 
+  const renderTipsWithEmojis = (tipsContent: string) => {
+    // Categorize tips by content
+    const categorizeTip = (tip: string): { category: string; emoji: string } => {
+      const tipLower = tip.toLowerCase();
+      
+      // More specific categorization based on sentence-level analysis
+      const sentences = tip.split(/[.!?]+/).filter(s => s.trim());
+      
+      for (const sentence of sentences) {
+        const sentenceLower = sentence.toLowerCase();
+        
+        // Payment & Money tips
+        if (sentenceLower.includes('cash') || sentenceLower.includes('card') || 
+            sentenceLower.includes('payment') || sentenceLower.includes('money') ||
+            sentenceLower.includes('atm') || sentenceLower.includes('currency') ||
+            sentenceLower.includes('tip') && (sentenceLower.includes('restaurant') || sentenceLower.includes('service')) ||
+            sentenceLower.includes('exchange') || sentenceLower.includes('fee')) {
+          return { category: 'payment', emoji: '💳' };
+        }
+        
+        // Transportation tips
+        if (sentenceLower.includes('transport') || sentenceLower.includes('bus') || 
+            sentenceLower.includes('train') || sentenceLower.includes('metro') ||
+            sentenceLower.includes('taxi') || sentenceLower.includes('uber') ||
+            sentenceLower.includes('subway') || sentenceLower.includes('station') ||
+            sentenceLower.includes('ticket') && !sentenceLower.includes('museum')) {
+          return { category: 'transportation', emoji: '🚇' };
+        }
+        
+        // Language tips
+        if (sentenceLower.includes('language') || sentenceLower.includes('speak') || 
+            sentenceLower.includes('english') || sentenceLower.includes('translate') ||
+            sentenceLower.includes('phrase') || sentenceLower.includes('hello') ||
+            sentenceLower.includes('thank you') || sentenceLower.includes('please')) {
+          return { category: 'language', emoji: '🗣️' };
+        }
+        
+        // Navigation & Direction tips  
+        if (sentenceLower.includes('map') || sentenceLower.includes('gps') || 
+            sentenceLower.includes('direction') || sentenceLower.includes('navigate') ||
+            sentenceLower.includes('address') || sentenceLower.includes('location') ||
+            sentenceLower.includes('find') || sentenceLower.includes('lost')) {
+          return { category: 'navigation', emoji: '🧭' };
+        }
+        
+        // Budget tips
+        if (sentenceLower.includes('budget') || sentenceLower.includes('cheap') || 
+            sentenceLower.includes('expensive') || sentenceLower.includes('cost') ||
+            sentenceLower.includes('price') || sentenceLower.includes('save money') ||
+            sentenceLower.includes('affordable') || sentenceLower.includes('discount')) {
+          return { category: 'budget', emoji: '💰' };
+        }
+      }
+      
+      // Fallback to general patterns
+      if (tipLower.includes('safety') || tipLower.includes('secure') || tipLower.includes('avoid')) {
+        return { category: 'safety', emoji: '🛡️' };
+      }
+      if (tipLower.includes('weather') || tipLower.includes('rain') || tipLower.includes('sun')) {
+        return { category: 'weather', emoji: '🌤️' };
+      }
+      if (tipLower.includes('culture') || tipLower.includes('custom') || tipLower.includes('tradition')) {
+        return { category: 'culture', emoji: '🏛️' };
+      }
+      if (tipLower.includes('food') || tipLower.includes('restaurant') || tipLower.includes('eat')) {
+        return { category: 'food', emoji: '🍽️' };
+      }
+      
+      return { category: 'general', emoji: '💡' };
+    };
+
+    // Split tips by line breaks and filter out empty lines
+    const tips = tipsContent.split('\n').filter(tip => tip.trim() && !tip.trim().startsWith('PRACTICAL TIPS'));
+    
+    if (tips.length === 0) {
+      return <p className="text-muted-foreground">No specific tips available.</p>;
+    }
+
+    return tips.map((tip, index) => {
+      const cleanTip = tip.trim().replace(/^[-•*]\s*/, ''); // Remove bullet points
+      if (!cleanTip) return null;
+      
+      const { category, emoji } = categorizeTip(cleanTip);
+      
+      return (
+        <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+          <span className="text-lg flex-shrink-0 mt-0.5">{emoji}</span>
+          <p className="text-sm text-muted-foreground leading-relaxed">{cleanTip}</p>
+        </div>
+      );
+    }).filter(Boolean);
+  };
+
   const parsed = parseItinerary();
+  
+  // Generate smart trip summary
+  const tripSummary = generateTripSummary({
+    destination: destination || parsed.destinations[0] || 'Trip',
+    startDate,
+    endDate,
+    holidayTypes
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Interactive Map at Top */}
-      {parsed.destinations.length > 0 && (
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="pb-2 px-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              Trip Overview Map
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Click on markers to learn about each destination</p>
-          </CardHeader>
-          <CardContent className="px-0">
-            <InteractiveItineraryMap destinations={parsed.destinations} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary Section */}
-      {parsed.summary && (
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardContent className="pt-6 px-0">
-            <div className="space-y-2">
-              {parsed.summary.split('\n').filter(line => line.trim()).slice(0, 3).map((line, index) => (
-                <p key={index} className="text-muted-foreground leading-relaxed">{line.trim()}</p>
-              ))}
+    <div className="space-y-4">
+      {/* Trip Header with Editable Dates */}
+      <Card className="border-l-4 border-l-primary">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            {/* Trip Summary */}
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-2">
+                {tripSummary}
+              </h2>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Show Details Button */}
-      <div className="flex justify-center">
-        <Button 
-          onClick={() => setShowFullDetails(!showFullDetails)}
-          variant="outline"
-          className="px-8 py-2"
-        >
-          {showFullDetails ? 'Hide Full Details' : 'Click to See Full Details'}
-          {showFullDetails ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-        </Button>
-      </div>
-
-      {/* Full Details - Collapsible */}
-      {showFullDetails && (
-        <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-          {/* Flights Section */}
-          {parsed.flights && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Plane className="h-5 w-5 text-blue-600" />
-                  Getting There & Coming Home
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm space-y-2 break-words">
-                  {renderContentWithLinks(parsed.flights)}
+            
+            {/* Editable Dates */}
+            {(startDate || endDate) && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  {startDate && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted">
+                          {format(startDate, 'MMM d, yyyy')}
+                          <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={startDate}
+                          onSelect={(date) => date && onUpdateDates?.(date, endDate || date)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  
+                  {startDate && endDate && <span className="text-muted-foreground">to</span>}
+                  
+                  {endDate && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted">
+                          {format(endDate, 'MMM d, yyyy')}
+                          <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={endDate}
+                          onSelect={(date) => date && onUpdateDates?.(startDate || date, date)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Accommodation Section */}
-          {parsed.accommodation && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Hotel className="h-5 w-5 text-green-600" />
-                  Perfect Stay
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm space-y-2 break-words">
-                  {renderContentWithLinks(parsed.accommodation)}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Day by Day Itinerary */}
-          <div>
-            <div className="pb-4">
-              <h3 className="flex items-center gap-2 text-lg font-semibold">
-                <Clock className="h-5 w-5 text-purple-600" />
-                Day-by-Day Itinerary
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {parsed.days.map((day, index) => (
-                <Collapsible
-                  key={index}
-                  open={expandedDays[`day-${day.number}`] ?? false}
-                  onOpenChange={() => toggleDay(`day-${day.number}`)}
-                >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-4 h-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 rounded-lg border border-gray-200 dark:border-gray-800"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
-                          Day {day.number}
-                        </Badge>
-                        <span className="font-medium text-left truncate">
-                          {(() => {
-                            // Extract just the first 2 words after "Day X:"
-                            const titleParts = day.title.replace(/^Day \d+:\s*/, '').trim().split(' ');
-                            return titleParts.slice(0, 2).join(' ');
-                          })()}
-                        </span>
-                      </div>
-                      {expandedDays[`day-${day.number}`] ? (
-                        <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-4 px-4 pb-2">
-                    <div className="text-sm space-y-2 break-words">
-                      {renderContentWithLinks(day.content)}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-            </div>
-          </div>
-
-          {/* Practical Tips Section */}
-          {parsed.practicalTips && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Info className="h-5 w-5 text-orange-600" />
-                <h3 className="text-lg font-semibold">Essential Travel Tips</h3>
               </div>
-              
-              {(() => {
-                const tips = parsed.practicalTips.split('\n').filter(tip => tip.trim()).map(tip => tip.trim().replace(/^[•\-]\s*/, ''));
-                
-                // Enhanced categorization with sentence-level analysis
-                const categorizeTips = (tips: string[]) => {
-                  const categories = {
-                    payment: [] as string[],
-                    transportation: [] as string[],
-                    language: [] as string[],
-                    navigation: [] as string[],
-                    culture: [] as string[],
-                    weather: [] as string[],
-                    locals: [] as string[],
-                    communication: [] as string[],
-                    budget: [] as string[],
-                    safety: [] as string[],
-                    general: [] as string[]
-                  };
-                  
-                  tips.forEach(tip => {
-                    // Split tip into sentences for better categorization
-                    const sentences = tip.split(/[.!?]+/).filter(s => s.trim());
-                    
-                    // If tip has multiple sentences, try to split them into different categories
-                    if (sentences.length > 1) {
-                      sentences.forEach(sentence => {
-                        const trimmedSentence = sentence.trim();
-                        if (trimmedSentence) {
-                          categorizeIndividualTip(trimmedSentence, categories);
-                        }
-                      });
-                    } else {
-                      categorizeIndividualTip(tip, categories);
-                    }
-                  });
-                  
-                  return categories;
-                };
-                
-                const categorizeIndividualTip = (tip: string, categories: any) => {
-                  const lowerTip = tip.toLowerCase();
-                  
-                  // Payment and money-related
-                  if (lowerTip.includes('card') || lowerTip.includes('cash') || lowerTip.includes('atm') || lowerTip.includes('exchange rate') || lowerTip.includes('payment')) {
-                    categories.payment.push(tip);
-                  }
-                  // Transportation specific
-                  else if (lowerTip.includes('metro') || lowerTip.includes('train') || lowerTip.includes('bus') || lowerTip.includes('transport') || lowerTip.includes('muni') || lowerTip.includes('bart') || lowerTip.includes('clipper') || lowerTip.includes('airport') || lowerTip.includes('subway')) {
-                    categories.transportation.push(tip);
-                  }
-                  // Language and communication
-                  else if (lowerTip.includes('language') || lowerTip.includes('french') || lowerTip.includes('english') || lowerTip.includes('greeting') || lowerTip.includes('speak') || lowerTip.includes('translate') || lowerTip.includes('phrase') || lowerTip.includes('bonjour') || lowerTip.includes('merci')) {
-                    categories.language.push(tip);
-                  }
-                  // Navigation and maps
-                  else if (lowerTip.includes('google maps') || lowerTip.includes('navigation') || lowerTip.includes('route') || lowerTip.includes('direction') || lowerTip.includes('gps') || lowerTip.includes('map') || lowerTip.includes('getting around')) {
-                    categories.navigation.push(tip);
-                  }
-                  // Budget and costs
-                  else if (lowerTip.includes('budget') || lowerTip.includes('cost') || lowerTip.includes('price') || lowerTip.includes('expensive') || lowerTip.includes('cheap') || lowerTip.includes('splurge') || lowerTip.includes('save money') || lowerTip.includes('backpacking')) {
-                    categories.budget.push(tip);
-                  }
-                  // Weather and clothing
-                  else if (lowerTip.includes('weather') || lowerTip.includes('layer') || lowerTip.includes('wear') || lowerTip.includes('shoes') || lowerTip.includes('temperature') || lowerTip.includes('rain') || lowerTip.includes('sunny') || lowerTip.includes('foggy') || lowerTip.includes('climate')) {
-                    categories.weather.push(tip);
-                  }
-                  // Local interaction
-                  else if (lowerTip.includes('locals') || lowerTip.includes('people') || lowerTip.includes('friendly') || lowerTip.includes('space') || lowerTip.includes('mindful') || lowerTip.includes('residential') || lowerTip.includes('photos') || lowerTip.includes('respect')) {
-                    categories.locals.push(tip);
-                  }
-                  // Communication and tech
-                  else if (lowerTip.includes('wifi') || lowerTip.includes('phone') || lowerTip.includes('internet') || lowerTip.includes('text') || lowerTip.includes('tourist map') || lowerTip.includes('blend in')) {
-                    categories.communication.push(tip);
-                  }
-                  // Culture and etiquette
-                  else if (lowerTip.includes('culture') || lowerTip.includes('tradition') || lowerTip.includes('etiquette') || lowerTip.includes('custom') || lowerTip.includes('appreciate')) {
-                    categories.culture.push(tip);
-                  }
-                  // Safety
-                  else if (lowerTip.includes('safe') || lowerTip.includes('security') || lowerTip.includes('avoid') || lowerTip.includes('careful') || lowerTip.includes('danger') || lowerTip.includes('crime')) {
-                    categories.safety.push(tip);
-                  }
-                  // General
-                  else {
-                    categories.general.push(tip);
-                  }
-                };
-                
-                const categorizedTips = categorizeTips(tips);
-                
-                // Define tip icons for each category
-                const getTipIcon = (category: string) => {
-                  switch(category) {
-                    case 'payment': return '💳';
-                    case 'transportation': return '🚇';
-                    case 'language': return '💬';
-                    case 'navigation': return '🗺️';
-                    case 'budget': return '💰';
-                    case 'weather': return '🌤️';
-                    case 'locals': return '👥';
-                    case 'communication': return '📱';
-                    case 'culture': return '🏛️';
-                    case 'safety': return '🛡️';
-                    default: return '💡';
-                  }
-                };
-                
-                return Object.entries(categorizedTips)
-                  .filter(([_, tipsList]) => tipsList.length > 0)
-                  .map(([category, tipsList]) => (
-                    <Card key={category} className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {tipsList.map((tip, tipIndex) => (
-                            <div key={tipIndex} className="flex items-start gap-3">
-                              <span className="text-orange-600 mt-0.5 flex-shrink-0 text-lg">
-                                {getTipIcon(category)}
-                              </span>
-                              <span className="text-sm text-orange-900 dark:text-orange-100 leading-relaxed">
-                                {tip}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ));
-              })()}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Quick Booking Links - Toggleable */}
-      {parsed.bookingLinks && (
-        <div className="space-y-3">
-          <div className="flex justify-center">
-            <Button 
-              onClick={() => setShowBookingLinks(!showBookingLinks)}
-              variant="outline"
-              size="sm"
-              className="text-sm"
-            >
-              {showBookingLinks ? 'Hide Booking Links' : 'Show Quick Booking Links'}
-              <DollarSign className="ml-2 h-4 w-4" />
-            </Button>
+            )}
           </div>
-          
-          {showBookingLinks && (
-            <Card className="animate-in slide-in-from-top-2 duration-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                  Quick Booking Links
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm space-y-2 break-words">
-                  {renderContentWithLinks(parsed.bookingLinks)}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
+
+      {/* Individual Section Dropdowns */}
+      <div className="space-y-3">
+        {/* Day-by-Day Section */}
+        {parsed.days.length > 0 && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.days} 
+              onOpenChange={() => toggleSection('days')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      Day-by-Day Itinerary
+                    </div>
+                    {expandedSections.days ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    {parsed.days.map((day, index) => (
+                      <div key={index} className="border-l-2 border-l-muted pl-4">
+                        <h4 className="font-medium text-foreground mb-2">{day.title}</h4>
+                        <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
+                          {renderContentWithLinks(day.content)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+        {/* Getting There Section */}
+        {parsed.flights && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.flights} 
+              onOpenChange={() => toggleSection('flights')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-primary" />
+                      Getting There
+                    </div>
+                    {expandedSections.flights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    {renderContentWithLinks(parsed.flights)}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+        {/* Perfect Stay Section */}
+        {parsed.accommodation && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.accommodation} 
+              onOpenChange={() => toggleSection('accommodation')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <Hotel className="h-4 w-4 text-primary" />
+                      Perfect Stay
+                    </div>
+                    {expandedSections.accommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    {renderContentWithLinks(parsed.accommodation)}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+        {/* Travel Tips Section */}
+        {parsed.practicalTips && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.tips} 
+              onOpenChange={() => toggleSection('tips')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-primary" />
+                      Essential Travel Tips
+                    </div>
+                    {expandedSections.tips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">{renderTipsWithEmojis(parsed.practicalTips)}</div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+        {/* Booking Links Section */}
+        {parsed.bookingLinks && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.booking} 
+              onOpenChange={() => toggleSection('booking')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-primary" />
+                      Booking & Tips
+                    </div>
+                    {expandedSections.booking ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    {renderContentWithLinks(parsed.bookingLinks)}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+
+        {/* Interactive Map Section */}
+        {parsed.destinations.length > 0 && (
+          <Card>
+            <Collapsible 
+              open={expandedSections.map} 
+              onOpenChange={() => toggleSection('map')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Trip Overview Map
+                    </div>
+                    {expandedSections.map ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground mb-4">Click on markers to learn about each destination</p>
+                  <InteractiveItineraryMap destinations={parsed.destinations} />
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

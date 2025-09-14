@@ -589,15 +589,18 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             )}
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <StructuredItinerary 
-                itinerary={viewingIter.itinerary_content}
-                friendRecommendations={viewingIter.friend_recommendations || {}}
-                destination={viewingIter.destination}
-              />
-            </CardContent>
-          </Card>
+          <StructuredItinerary 
+            itinerary={viewingIter.itinerary_content}
+            friendRecommendations={viewingIter.friend_recommendations || {}}
+            destination={viewingIter.destination}
+            startDate={viewingIter.start_date ? new Date(viewingIter.start_date) : undefined}
+            endDate={viewingIter.end_date ? new Date(viewingIter.end_date) : undefined}
+            holidayTypes={viewingIter.interests}
+            onUpdateDates={(startDate, endDate) => {
+              // Handle date updates here if needed
+              console.log('Dates updated:', startDate, endDate);
+            }}
+          />
         </div>
       </div>
     );

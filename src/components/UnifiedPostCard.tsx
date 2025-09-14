@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Heart, MessageCircle, Trash2, MoreHorizontal, ChevronDown, ChevronUp, Plus, Clock, MapPin, Users, DollarSign, Send, Reply } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import TripMapVisual from "@/components/TripMapVisual";
 import { CommentReplies } from "@/components/CommentReplies";
@@ -105,6 +105,8 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const [showFullCaption, setShowFullCaption] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [comments, setComments] = useState<Array<{
     id: string;
     content: string;
@@ -268,6 +270,14 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     checkSavedStatus();
     loadComments();
   }, [post.id, user?.id]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    carouselApi.on("select", () => {
+      setCurrentMediaIndex(carouselApi.selectedScrollSnap());
+    });
+  }, [carouselApi]);
 
   // Watch for changes in saved posts state
   useEffect(() => {
@@ -610,7 +620,39 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const hasImages = images.length > 0;
   const hasTrip = !!(post as any).trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
-  // Remove processed images to fix flickering - use images directly
+  
+  // Parse trip photo details if available
+  const getTripPhotoDetails = () => {
+    const trip = (post as any).trips;
+    if (!trip?.photo_details) return [];
+    
+    try {
+      if (typeof trip.photo_details === 'string') {
+        return JSON.parse(trip.photo_details);
+      }
+      return trip.photo_details || [];
+    } catch (e) {
+      return [];
+    }
+  };
+  
+  const tripPhotoDetails = getTripPhotoDetails();
+  const isMapView = currentMediaIndex === 0;
+  const currentPhotoIndex = hasTrip ? currentMediaIndex - 1 : currentMediaIndex;
+  const currentPhotoDetail = currentPhotoIndex >= 0 && currentPhotoIndex < tripPhotoDetails.length 
+    ? tripPhotoDetails[currentPhotoIndex] 
+    : null;
+
+  const getBudgetLabel = (budget: string): string => {
+    const labels = {
+      '$': 'Budget-friendly',
+      '$$': 'Moderate', 
+      '$$$': 'Expensive',
+      '$$$$': 'Luxury',
+      '$$$$$': 'Ultra-luxury'
+    };
+    return labels[budget as keyof typeof labels] || '';
+  };
 
   // Caption logic
   const maxCaptionLength = 150;
@@ -673,7 +715,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
               className="w-full bg-muted overflow-hidden"
               style={{ height: "208px" }}
             >
-              <Carousel className="w-full h-full">
+              <Carousel className="w-full h-full" setApi={setCarouselApi}>
                 <CarouselContent className="h-full ml-0">
                    {/* Trip Map - ALWAYS FIRST when trip exists */}
                     {hasTrip && (
@@ -730,8 +772,30 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
 
           {/* Trip Details at bottom - Fixed height */}
           <div className="px-4 pb-3">
-            {/* Caption/Description */}
-            {post.content && (
+            {/* Caption/Description - Show photo-specific caption if available */}
+            {(currentPhotoDetail?.caption && !isMapView) ? (
+              <div>
+                <p className="text-sm leading-relaxed">{currentPhotoDetail.caption}</p>
+                
+                {/* Photo-specific details */}
+                <div className="flex flex-wrap gap-3 text-xs mt-2">
+                  {currentPhotoDetail.budget && (
+                    <div className="flex items-center gap-1">
+                      <DollarSign size={12} className="text-muted-foreground" />
+                      <span className="font-medium text-primary">{currentPhotoDetail.budget}</span>
+                      <span className="text-muted-foreground">({getBudgetLabel(currentPhotoDetail.budget)})</span>
+                    </div>
+                  )}
+                  
+                  {currentPhotoDetail.tagged_friends?.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Users size={12} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">with {currentPhotoDetail.tagged_friends.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : post.content ? (
               <div>
                 <p className="text-sm leading-relaxed">{captionToShow}</p>
                 {isCaptionLong && (
@@ -754,10 +818,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                   </Collapsible>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* Trip stats */}
-            {hasTrip && (
+            {/* Trip stats - Only show on map view or when no photo-specific content */}
+            {hasTrip && (isMapView || !currentPhotoDetail?.caption) && (
               <Collapsible open={showDetails} onOpenChange={setShowDetails}>
                 <CollapsibleTrigger asChild>
                   <Button 
@@ -792,9 +856,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                       </div>
                     )}
                     {(post as PostWithProfile).trips?.cost && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <DollarSign size={14} />
-                        <span>{(post as PostWithProfile).trips.cost}</span>
+                      <div className="flex items-center gap-2 text-xs">
+                        <DollarSign size={14} className="text-muted-foreground" />
+                        <span className="font-medium text-primary">{(post as PostWithProfile).trips.cost}</span>
+                        <span className="text-muted-foreground">({getBudgetLabel((post as PostWithProfile).trips.cost)})</span>
                       </div>
                     )}
                   </div>

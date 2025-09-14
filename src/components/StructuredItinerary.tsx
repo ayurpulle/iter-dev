@@ -455,6 +455,44 @@ export const StructuredItinerary = ({
     holidayTypes
   });
 
+  // Get airport codes for destination
+  const getAirportCodes = (destination: string): string[] => {
+    const airportMap: { [key: string]: string[] } = {
+      'new york': ['JFK', 'LGA', 'EWR'],
+      'london': ['LHR', 'LGW', 'STN'],
+      'paris': ['CDG', 'ORY'],
+      'tokyo': ['NRT', 'HND'],
+      'los angeles': ['LAX'],
+      'san francisco': ['SFO'],
+      'miami': ['MIA'],
+      'chicago': ['ORD', 'MDW'],
+      'boston': ['BOS'],
+      'seattle': ['SEA'],
+      'las vegas': ['LAS'],
+      'rome': ['FCO', 'CIA'],
+      'barcelona': ['BCN'],
+      'amsterdam': ['AMS'],
+      'berlin': ['BER'],
+      'madrid': ['MAD'],
+      'vienna': ['VIE'],
+      'seoul': ['ICN', 'GMP'],
+      'bangkok': ['BKK', 'DMK'],
+      'singapore': ['SIN'],
+      'sydney': ['SYD'],
+      'dubai': ['DXB'],
+      'istanbul': ['IST']
+    };
+    
+    const dest = destination.toLowerCase();
+    const matchedCity = Object.keys(airportMap).find(city => 
+      dest.includes(city) || city.includes(dest.split(',')[0].trim())
+    );
+    
+    return matchedCity ? airportMap[matchedCity] : [];
+  };
+
+  const airportCodes = getAirportCodes(destination || parsed.destinations[0] || '');
+
   return (
     <div className="space-y-4">
       {/* Trip Header */}
@@ -463,69 +501,6 @@ export const StructuredItinerary = ({
           Your trip to {destination || parsed.destinations[0] || 'your destination'}
         </h1>
       </div>
-
-      {/* Trip Summary */}
-      <Card className="border-l-4 border-l-primary">
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div>
-              <p className="text-muted-foreground leading-relaxed">
-                {tripSummary}
-              </p>
-            </div>
-            
-            {/* Editable Dates */}
-            {(startDate || endDate) && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div className="flex items-center gap-2">
-                  {startDate && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted">
-                          {format(startDate, 'MMM d, yyyy')}
-                          <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={startDate}
-                          onSelect={(date) => date && onUpdateDates?.(date, endDate || date)}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                  
-                  {startDate && endDate && <span className="text-muted-foreground">to</span>}
-                  
-                  {endDate && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted">
-                          {format(endDate, 'MMM d, yyyy')}
-                          <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={endDate}
-                          onSelect={(date) => date && onUpdateDates?.(startDate || date, date)}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Trip Overview Map - Prominent but Muted */}
       {parsed.destinations.length > 0 && (
@@ -540,7 +515,93 @@ export const StructuredItinerary = ({
         </div>
       )}
 
-      {/* Individual Section Dropdowns */}
+      {/* Trip Summary Section */}
+      <div className="space-y-3">
+        {/* Short Summary */}
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {tripSummary}
+          </p>
+        </div>
+        
+        {/* Editable Dates */}
+        {(startDate || endDate) && (
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Dates:</span>
+            <div className="flex items-center gap-2">
+              {startDate && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
+                      {format(startDate, 'MMM d, yyyy')}
+                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(date) => date && onUpdateDates?.(date, endDate || date)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+              
+              {startDate && endDate && <span className="text-muted-foreground">to</span>}
+              
+              {endDate && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
+                      {format(endDate, 'MMM d, yyyy')}
+                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => date && onUpdateDates?.(startDate || date, date)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Airport Codes with Skyscanner Links */}
+        {airportCodes.length > 0 && (
+          <div className="flex items-center gap-2 text-sm">
+            <Plane className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Best airports:</span>
+            <div className="flex items-center gap-1">
+              {airportCodes.map((code, index) => (
+                <React.Fragment key={code}>
+                  <a
+                    href={`https://www.skyscanner.com/flights-to/${code.toLowerCase()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80 underline font-medium"
+                  >
+                    {code}
+                  </a>
+                  {index < airportCodes.length - 1 && (
+                    <span className="text-muted-foreground">•</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dropdown Sections */}
       <div className="space-y-3">
         {/* Day-by-Day Section */}
         {parsed.days.length > 0 && (

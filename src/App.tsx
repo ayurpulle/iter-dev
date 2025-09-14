@@ -71,7 +71,7 @@ const App = () => {
               } />
               <Route path="/create-trip" element={
                 <ProtectedRoute>
-                  <CreateTrip />
+                  <Search />
                 </ProtectedRoute>
               } />
               <Route path="/trip-details" element={

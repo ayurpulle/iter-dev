@@ -98,9 +98,9 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             start_date: formData.startDate,
             end_date: formData.endDate,
             budget: formData.budget,
-            interests: formData.holidayTypes,
-            itinerary_content: generatedIter,
-            friend_recommendations: friendRecommendations
+          interests: formData.holidayTypes,
+          itinerary_content: generatedIter,
+          friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
           
           if (result) {

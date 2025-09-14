@@ -77,8 +77,8 @@ serve(async (req) => {
       const reviewBank: { [venue: string]: any[] } = {};
       const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter(word => word.length > 2);
       
-      if (savedItems?.length) {
-        savedItems.forEach(savedItem => {
+      if (savedPosts?.length) {
+        savedPosts.forEach(savedItem => {
           const post = savedItem.posts;
           if (!post || !post.content) return;
 
@@ -298,6 +298,10 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
         .insert({
           user_id: userId,
           title: `${destination} Trip`,
+          destination: destination,
+          start_date: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
+          end_date: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
+          hashtags: interests ? interests.split(', ') : null,
           destination: destination,
           start_date: startDate,
           end_date: endDate,

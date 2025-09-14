@@ -164,14 +164,15 @@ export const StructuredItinerary = ({
   };
 
   const parseItinerary = () => {
-    const sections = itinerary.split(/(?=FLIGHTS:|ACCOMMODATION:|DAY-BY-DAY|BOOKING LINKS|PRACTICAL TIPS:|SUMMARY:)/);
+    // Split into main sections based on headers
+    const sections = itinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*)/);
     const parsed = {
       summary: '',
-      flights: '',
-      accommodation: '',
+      gettingThere: '',
+      perfectStay: '',
       days: [] as any[],
+      travelTips: '',
       bookingLinks: '',
-      practicalTips: '',
       destinations: [] as string[]
     };
 
@@ -199,13 +200,13 @@ export const StructuredItinerary = ({
 
     sections.forEach(section => {
       const trimmed = section.trim();
-      if (trimmed.startsWith('SUMMARY:')) {
-        parsed.summary = trimmed.replace('SUMMARY:', '').trim();
-      } else if (trimmed.startsWith('FLIGHTS:')) {
-        parsed.flights = trimmed.replace('FLIGHTS:', '').trim();
-      } else if (trimmed.startsWith('ACCOMMODATION:')) {
-        parsed.accommodation = trimmed.replace('ACCOMMODATION:', '').trim();
-      } else if (trimmed.includes('**Day') || trimmed.includes('Day ') || trimmed.includes('Days ')) {
+      if (trimmed.startsWith('**Trip Summary**')) {
+        parsed.summary = trimmed.replace('**Trip Summary**', '').trim();
+      } else if (trimmed.startsWith('**Getting There**')) {
+        parsed.gettingThere = trimmed.replace('**Getting There**', '').trim();
+      } else if (trimmed.startsWith('**Perfect Stay**')) {
+        parsed.perfectStay = trimmed.replace('**Perfect Stay**', '').trim();
+      } else if (trimmed.startsWith('**Day-by-Day Itinerary**') || trimmed.includes('**Day') || trimmed.includes('Day ') || trimmed.includes('Days ')) {
         // Enhanced day parsing to catch both single days and grouped days
         const content = trimmed;
         
@@ -254,10 +255,10 @@ export const StructuredItinerary = ({
             }
           });
         }
-      } else if (trimmed.startsWith('BOOKING LINKS')) {
-        parsed.bookingLinks = trimmed.replace('BOOKING LINKS & TIPS:', '').trim();
-      } else if (trimmed.startsWith('PRACTICAL TIPS:')) {
-        parsed.practicalTips = trimmed.replace('PRACTICAL TIPS:', '').trim();
+      } else if (trimmed.startsWith('**Travel Tips**')) {
+        parsed.travelTips = trimmed.replace('**Travel Tips**', '').trim();
+      } else if (trimmed.startsWith('**Booking Links**')) {
+        parsed.bookingLinks = trimmed.replace('**Booking Links**', '').trim();
       }
     });
 
@@ -288,9 +289,11 @@ export const StructuredItinerary = ({
         .replace(/(?:^|\n)(Travel [Tt]ips|Tips|Recommendations|Getting Around)[:\-\s]*/gmi, '\n**TRAVEL_SECTION:TRAVEL_RECOMMENDATIONS**\n');
     };
 
-    // Clean up AI-generated explanatory text
+    // Clean up links and AI-generated explanatory text
     const cleanContent = (text: string) => {
       return text
+        // Remove raw URLs that aren't in proper link format
+        .replace(/https?:\/\/[^\s\)]+/g, '')
         // Remove "here's the booking link" type phrases
         .replace(/(?:here'?s?\s+(?:the\s+)?(?:booking\s+)?link|here\s+is\s+(?:the\s+)?(?:booking\s+)?link)[:\-\s]*/gmi, '')
         // Remove "you can book" type phrases
@@ -891,10 +894,10 @@ export const StructuredItinerary = ({
         )}
 
         {/* Getting There Section */}
-        {parsed.flights && (
+        {parsed.gettingThere && (
           <Collapsible 
-            open={expandedSections.flights} 
-            onOpenChange={() => toggleSection('flights')}
+            open={expandedSections.gettingThere} 
+            onOpenChange={() => toggleSection('gettingThere')}
           >
             <CollapsibleTrigger asChild>
               <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
@@ -903,14 +906,14 @@ export const StructuredItinerary = ({
                     <Plane className="h-4 w-4 text-primary" />
                     Getting There
                   </div>
-                  {expandedSections.flights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.gettingThere ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="p-4 pt-0">
                 <div className="prose prose-sm max-w-none text-muted-foreground">
-                  {renderContentWithLinks(parsed.flights)}
+                  {renderContentWithLinks(parsed.gettingThere)}
                 </div>
               </div>
             </CollapsibleContent>
@@ -918,10 +921,10 @@ export const StructuredItinerary = ({
         )}
 
         {/* Perfect Stay Section */}
-        {parsed.accommodation && (
+        {parsed.perfectStay && (
           <Collapsible 
-            open={expandedSections.accommodation} 
-            onOpenChange={() => toggleSection('accommodation')}
+            open={expandedSections.perfectStay} 
+            onOpenChange={() => toggleSection('perfectStay')}
           >
             <CollapsibleTrigger asChild>
               <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
@@ -930,14 +933,14 @@ export const StructuredItinerary = ({
                     <Hotel className="h-4 w-4 text-primary" />
                     Perfect Stay
                   </div>
-                  {expandedSections.accommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.perfectStay ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="p-4 pt-0">
                 <div className="prose prose-sm max-w-none text-muted-foreground">
-                  {renderContentWithLinks(parsed.accommodation)}
+                  {renderContentWithLinks(parsed.perfectStay)}
                 </div>
               </div>
             </CollapsibleContent>
@@ -945,10 +948,10 @@ export const StructuredItinerary = ({
         )}
 
         {/* Travel Tips Section */}
-        {parsed.practicalTips && (
+        {parsed.travelTips && (
           <Collapsible 
-            open={expandedSections.tips} 
-            onOpenChange={() => toggleSection('tips')}
+            open={expandedSections.travelTips} 
+            onOpenChange={() => toggleSection('travelTips')}
           >
             <CollapsibleTrigger asChild>
               <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
@@ -957,13 +960,15 @@ export const StructuredItinerary = ({
                     <Info className="h-4 w-4 text-primary" />
                     Essential Travel Tips
                   </div>
-                  {expandedSections.tips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.travelTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="p-4 pt-0">
-                <div className="space-y-3">{renderTipsWithEmojis(parsed.practicalTips)}</div>
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  {renderContentWithLinks(parsed.travelTips)}
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>

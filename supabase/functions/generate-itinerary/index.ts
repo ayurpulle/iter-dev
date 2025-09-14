@@ -410,7 +410,8 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
     // Return immediate response
     return new Response(JSON.stringify({ 
       message: 'Itinerary generation started. You will receive a notification when it\'s ready.',
-      status: 'processing'
+      status: 'processing',
+      destination: requestData.destination
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

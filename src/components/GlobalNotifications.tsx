@@ -41,7 +41,8 @@ export const GlobalNotifications = () => {
                 action: {
                   label: 'Try Again',
                   onClick: () => {
-                    navigate('/create');
+                    // Just close the toast, user can retry manually
+                    // No navigation needed
                   },
                 },
                 duration: 8000, // Show for 8 seconds
@@ -88,7 +89,8 @@ export const GlobalNotifications = () => {
               action: {
                 label: 'Try Again',
                 onClick: () => {
-                  navigate('/create');
+                  // Just close the toast, user can retry manually
+                  // No navigation needed
                 },
               },
               duration: 8000,

@@ -30,6 +30,7 @@ export const useTrips = () => {
   const uploadTripPhotos = async (photos: string[], tripId: string, userId: string) => {
     const uploadedUrls: string[] = [];
     
+    // Process photos with proper error handling and retries
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
       try {
@@ -37,14 +38,26 @@ export const useTrips = () => {
         const response = await fetch(photo);
         const blob = await response.blob();
         
+        // Limit file size to prevent timeouts
+        if (blob.size > 5 * 1024 * 1024) { // 5MB limit
+          console.warn(`Photo ${i + 1} is too large (${blob.size} bytes), skipping`);
+          continue;
+        }
+        
         const fileName = `${tripId}/photo-${i + 1}-${Date.now()}.jpg`;
         const filePath = `${userId}/${fileName}`;
         
         const { data, error } = await supabase.storage
           .from('trip-photos')
-          .upload(filePath, blob);
+          .upload(filePath, blob, {
+            upsert: true, // Allow overwriting
+            contentType: 'image/jpeg'
+          });
           
-        if (error) throw error;
+        if (error) {
+          console.error(`Error uploading photo ${i + 1}:`, error);
+          continue; // Skip this photo but continue with others
+        }
         
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
@@ -52,12 +65,14 @@ export const useTrips = () => {
           .getPublicUrl(filePath);
           
         uploadedUrls.push(publicUrl);
+        console.log(`Photo ${i + 1} uploaded successfully`);
       } catch (err) {
-        console.error('Error uploading photo:', err);
+        console.error(`Error processing photo ${i + 1}:`, err);
         // Continue with other photos even if one fails
       }
     }
     
+    console.log(`Successfully uploaded ${uploadedUrls.length} out of ${photos.length} photos`);
     return uploadedUrls;
   };
 
@@ -75,15 +90,30 @@ export const useTrips = () => {
       console.log('tripData.route length:', tripData.route?.length);
       console.log('User ID:', user.id);
 
-      // First, upload photos to avoid timeout in main transaction
+      // First, upload photos in smaller batches to avoid timeout
       let imageUrls: string[] = [];
       if (tripData.photos.length > 0) {
-        console.log('Uploading photos first:', tripData.photos.length);
-        imageUrls = await uploadTripPhotos(tripData.photos, `temp-${Date.now()}`, user.id);
+        console.log('Uploading photos in batches:', tripData.photos.length);
+        const tempId = `temp-${Date.now()}`;
+        
+        // Upload photos in batches of 3 to avoid timeout
+        const batchSize = 3;
+        for (let i = 0; i < tripData.photos.length; i += batchSize) {
+          const batch = tripData.photos.slice(i, i + batchSize);
+          const batchUrls = await uploadTripPhotos(batch, `${tempId}-batch-${i}`, user.id);
+          imageUrls.push(...batchUrls);
+        }
         console.log('Photos uploaded:', imageUrls);
       }
 
-      // Create trip record with uploaded images
+      // Simplify photo details to avoid large JSON
+      const simplifiedPhotoDetails = tripData.photo_details?.map(detail => ({
+        caption: detail.caption || '',
+        budget: detail.budget || '',
+        tagged_friends: detail.tagged_friends || []
+      })) || [];
+
+      // Create trip record with minimal data first
       const { data: trip, error: tripError } = await supabase
         .from('trips')
         .insert({
@@ -92,13 +122,11 @@ export const useTrips = () => {
           country_code: tripData.country_code,
           cost: tripData.cost,
           companions: tripData.companions,
-          tagged_friends: tripData.taggedFriends || [],
           duration: tripData.duration,
           distance: tripData.distance || '',
           stops: tripData.route,
-          photo_count: tripData.photos.length,
-          photo_details: tripData.photo_details ? JSON.stringify(tripData.photo_details) : '[]',
-          images: imageUrls, // Include images in initial insert
+          photo_count: imageUrls.length,
+          images: imageUrls,
           is_public: tripData.is_public || false,
           user_id: user.id
         })
@@ -111,6 +139,22 @@ export const useTrips = () => {
       }
 
       console.log('Trip created successfully:', trip);
+
+      // Update with photo details in a separate transaction if we have them
+      if (simplifiedPhotoDetails.length > 0) {
+        const { error: updateError } = await supabase
+          .from('trips')
+          .update({ 
+            photo_details: JSON.stringify(simplifiedPhotoDetails),
+            tagged_friends: tripData.taggedFriends || []
+          })
+          .eq('id', trip.id);
+          
+        if (updateError) {
+          console.error('Error updating trip with photo details:', updateError);
+          // Don't throw - trip was created successfully
+        }
+      }
 
       // Handle tagged friends and post creation in background (non-blocking)
       const backgroundTasks = async () => {

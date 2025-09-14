@@ -268,7 +268,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-2024-08-06',
+          model: 'gpt-5-2025-08-07',
           messages: [
             { 
               role: 'system', 
@@ -276,8 +276,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
             },
             { role: 'user', content: prompt }
           ],
-          max_tokens: 4000,
-          temperature: 0.7
+          max_completion_tokens: 4000
         }),
       });
 

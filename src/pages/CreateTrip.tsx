@@ -1,6 +1,6 @@
 import React from 'react';
-import TripPostCreator from '../components/TripPostCreator';
+import EnhancedTripPostCreator from '../components/EnhancedTripPostCreator';
 
 export default function CreateTrip() {
-  return <TripPostCreator />;
+  return <EnhancedTripPostCreator />;
 }

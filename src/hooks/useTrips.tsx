@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface PhotoDetail {
+  url: string;
+  caption: string;
+  budget: string;
+  tagged_friends: string[];
+}
+
 export interface TripData {
   title: string;
   description: string;
@@ -12,6 +19,7 @@ export interface TripData {
   distance?: string;
   route: Array<{lat: number, lng: number, name: string}>;
   photos: string[];
+  photo_details?: PhotoDetail[];
   is_public?: boolean;
 }
 
@@ -81,6 +89,7 @@ export const useTrips = () => {
           distance: tripData.distance || '', // Make sure this doesn't cause issues if undefined
           stops: tripData.route,
           photo_count: tripData.photos.length,
+          photo_details: tripData.photo_details ? JSON.stringify(tripData.photo_details) : '[]', // Store detailed photo information as JSON
           is_public: tripData.is_public || false,
           user_id: user.id
         })

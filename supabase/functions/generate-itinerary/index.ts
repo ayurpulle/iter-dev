@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -77,8 +77,8 @@ serve(async (req) => {
       const reviewBank: { [venue: string]: any[] } = {};
       const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter(word => word.length > 2);
       
-      if (savedItems?.length) {
-        savedItems.forEach(savedItem => {
+      if (savedPosts?.length) {
+        savedPosts.forEach(savedItem => {
           const post = savedItem.posts;
           if (!post || !post.content) return;
 
@@ -204,30 +204,14 @@ serve(async (req) => {
         ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
         : 7; // Default to 7 days if dates not provided
 
-      // Map budget level to descriptive terms for better AI understanding
-      const budgetMapping = {
-        1: 'Budget/Backpacker (hostels, budget accommodations, street food, public transport)',
-        2: 'Budget-Conscious (budget hotels, affordable restaurants, mix of public/private transport)',
-        3: 'Mid-Range (3-star hotels, good restaurants, private transport when needed)',
-        4: 'Upper Mid-Range (4-star hotels, quality dining, private transport, some luxury experiences)',
-        5: 'Luxury (5-star hotels, fine dining, private transport, premium experiences)'
-      };
-
-      const budgetDescription = budget ? budgetMapping[budget] || 'Not specified' : 'Not specified';
-      const estimatedDailyCost = budget ? 
-        ['$30-50', '$50-100', '$100-200', '$200-400', '$400+'][budget - 1] : 'Not specified';
-
       const prompt = `You are an expert travel planner. Create a comprehensive itinerary for a ${duration}-day trip to ${destination}.
 
 Trip Details:
 - Destination: ${destination}
 - Dates: ${startDate} to ${endDate}
-- Budget Level: ${budgetDescription}
-- Daily Budget Range: ${estimatedDailyCost} per person
+- Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'}
 - Travel Style: ${travelStyle || 'Not specified'}
 - Interests: ${interests || 'General travel'}
-- User Currency: ${defaultCurrency}
-- User Base Location: ${baseLocation}
 
 ${reviewBankContext}
 
@@ -236,49 +220,44 @@ ${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsConte
 Create a structured itinerary with these sections:
 
 **Trip Summary** 
-Write a warm, personal 2-3 sentence summary that captures what makes this ${destination} adventure special for someone with interests in ${interests}. Include an estimated total trip cost range in ${defaultCurrency} based on the ${budgetDescription} budget level for ${duration} days (including accommodation, food, activities, and local transport).
+Generate a personalized 2-line summary that captures the unique essence and highlights of this specific ${destination} trip, considering the travel style, interests, and duration.
 
 **Getting There**
-• Flight recommendations from ${baseLocation} with typical costs
-• Airport transfer options with prices
-• Travel documentation and visa requirements
+• Flight recommendations and booking tips
+• Airport transfer options  
+• Any travel documentation needed
 
 **Perfect Stay**  
-STRICT BUDGET ADHERENCE: Only recommend accommodations that match the ${budgetDescription} level.
-• ${budget >= 4 ? 'Luxury accommodations with premium amenities' : budget >= 3 ? 'Quality mid-range hotels with good amenities' : 'Budget-friendly accommodations with essential amenities'}
-• Best neighborhoods matching your budget
-• Booking strategies and timing tips
+• Accommodation recommendations (3-4 options across different price points)
+• Best neighborhoods to stay in
+• Booking tips and timing
 
 **Day-by-Day Itinerary**
-For each day, organize by time periods with engaging descriptions:
-• Morning: [Specific activity with context and why it's special]
-• Afternoon: [Activity/attraction with personal recommendations]  
-• Evening: [Restaurant and evening activity suggestions with ambiance details]
-• Night: [Optional nightlife or relaxation based on travel style]
+For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points:
+• Morning: [Activity/attraction with brief description]
+• Afternoon: [Activity/attraction with brief description]  
+• Evening: [Restaurant and activity recommendations]
+• Night: [Optional nightlife or relaxation suggestions]
 
-Write in full sentences that paint a picture of the experience, not just lists.
+Keep descriptions concise but well-written, avoid overly specific times. Focus on experiences rather than rigid schedules.
 
 **Travel Tips**
-• Local customs and cultural insights
-• Best transportation options for your budget  
-• Money-saving tips and payment methods
-• Essential packing recommendations
-• Safety and health considerations
-• Insider timing tips for attractions
+• Local customs and etiquette
+• Transportation within the destination  
+• Money and payment tips
+• What to pack
+• Safety considerations
+• Best times to visit attractions
 
-**Booking & Tips**
-Instead of "Booking Link", provide actual website URLs as hyperlinks or remove links entirely. Format as:
-• Hotels: [Hotel Name](website.com) - brief description
-• Restaurants: [Restaurant Name] - reservation details
-• Attractions: [Attraction Name](ticketing-site.com) - advance booking tips
+**Booking Links**
+• Direct links to recommended hotels
+• Restaurant reservation information
+• Attraction tickets and tours
+• Transportation booking links
 
-CRITICAL: 
-- NEVER use "[Booking Link]" text - either provide real hyperlinks or omit links
-- STRICTLY respect the budget level - luxury requests get luxury options only, budget gets budget options only
-- When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name]
-- Include estimated costs in ${defaultCurrency} throughout
+IMPORTANT: When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post. Use bullet points for all sections.
 
-Focus on creating an inspiring, budget-appropriate itinerary that feels personally crafted.`;
+Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 
       console.log('Calling OpenAI API...');
       
@@ -289,15 +268,16 @@ Focus on creating an inspiring, budget-appropriate itinerary that feels personal
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
-              content: 'You are an expert travel planner that creates detailed, personalized itineraries. CRITICAL: Never use "[Booking Link]" - either provide real hyperlinks or omit links. Strictly respect budget levels. Format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
+              content: 'You are an expert travel planner that creates detailed, practical itineraries. Always format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
             },
             { role: 'user', content: prompt }
           ],
-          max_completion_tokens: 4000
+          max_tokens: 4000,
+          temperature: 0.7
         }),
       });
 
@@ -322,6 +302,9 @@ Focus on creating an inspiring, budget-appropriate itinerary that feels personal
           start_date: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
           end_date: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
           hashtags: interests ? interests.split(', ') : null,
+          destination: destination,
+          start_date: startDate,
+          end_date: endDate,
           overall_budget: budget ? '$'.repeat(budget) : null,
           description: generatedItinerary,
           is_public: false,

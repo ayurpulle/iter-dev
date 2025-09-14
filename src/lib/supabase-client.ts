@@ -33,16 +33,15 @@ class SupabaseClientManager {
   }
 
   private setupSessionMonitoring() {
-    // Check session validity every 5 minutes instead of 30 seconds to reduce noise
+    // Check session validity every 30 seconds
     this.sessionCheckInterval = setInterval(async () => {
       const { data: { session }, error } = await this.client.auth.getSession();
       
-      // Only log and refresh if there's actually an error, not just missing session
-      if (error) {
-        console.log('Session error detected, attempting refresh...');
+      if (error || !session) {
+        console.log('Session invalid, attempting refresh...');
         await this.client.auth.refreshSession();
       }
-    }, 300000); // 5 minutes instead of 30 seconds
+    }, 30000);
 
     // Clean up on page unload
     if (typeof window !== 'undefined') {
@@ -93,6 +92,3 @@ class SupabaseClientManager {
 
 export const supabaseManager = SupabaseClientManager.getInstance();
 export const supabase = supabaseManager.getClient();
-
-// Export default for easier imports
-export default supabase;

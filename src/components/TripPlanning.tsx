@@ -86,10 +86,10 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   
   console.log('TripPlanning state:', { currentView, generatedIter, isLoading });
 
-  // Auto-save itinerary when generated - only trigger on the essentials
+  // Auto-save itinerary when generated
   useEffect(() => {
     const autoSaveItinerary = async () => {
-      if (generatedIter && !lastGeneratedData?.id && user?.id) {
+      if (generatedIter && !lastGeneratedData?.id && user) {
         console.log('Auto-saving generated itinerary');
         try {
           const result = await saveItinerary({
@@ -113,7 +113,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     };
 
     autoSaveItinerary();
-  }, [generatedIter, user?.id, lastGeneratedData?.id]); // Only the essential dependencies
+  }, [generatedIter, user, lastGeneratedData?.id]);
 
   // Listen for collaboration acceptance events
   useEffect(() => {

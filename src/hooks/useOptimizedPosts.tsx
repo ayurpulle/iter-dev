@@ -32,6 +32,8 @@ interface Trip {
   companions?: string;
   stops?: any;
   images?: string[];
+  photo_details?: any;
+  description?: string;
 }
 
 interface PostWithProfile extends Post {
@@ -101,7 +103,7 @@ export const useOptimizedPosts = () => {
           .in('user_id', userIds) : Promise.resolve({ data: [], error: null }),
         tripIds.length > 0 ? supabase
           .from('trips')
-          .select('id, title, destination, duration, distance, cost, companions, stops, images')
+          .select('id, title, destination, duration, distance, cost, companions, stops, images, photo_details, description')
           .in('id', tripIds) : Promise.resolve({ data: [], error: null })
       ]);
 
@@ -149,7 +151,9 @@ export const useOptimizedPosts = () => {
             cost,
             companions,
             stops,
-            images
+            images,
+            photo_details,
+            description
           )
         `)
         .order('created_at', { ascending: false })

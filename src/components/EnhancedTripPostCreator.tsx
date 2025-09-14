@@ -49,7 +49,6 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('');
-  const [cost, setCost] = useState('');
   const [companions, setCompanions] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   
@@ -239,6 +238,36 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
     setShowPhotoSelector(false);
   };
 
+  const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = 9 - photoDetails.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (dataUrl) {
+          setPhotoDetails(prev => [
+            ...prev,
+            {
+              url: dataUrl,
+              caption: '',
+              budget: '',
+              tagged_friends: []
+            }
+          ]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset the input
+    event.target.value = '';
+  };
+
   const handleLocationSelect = (location: Location) => {
     if (!selectedLocations.find(loc => loc.id === location.id)) {
       setSelectedLocations(prev => [...prev, location]);
@@ -303,7 +332,6 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
         title,
         description,
         country_code: selectedLocations[0]?.countryCode || '',
-        cost,
         companions,
         duration,
         distance: '', // Could calculate this from route
@@ -607,36 +635,71 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
             )}
           </CardContent>
         </Card>
-
-        {/* Overall Trip Budget */}
-        <Card>
-          <CardContent className="p-4">
-            <Label htmlFor="total-cost">Total Trip Cost</Label>
-            <Input
-              id="total-cost"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
-              placeholder="e.g., $2,500"
-            />
-          </CardContent>
-        </Card>
       </div>
 
       {/* Photo Selector Modal */}
       {showPhotoSelector && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Select Photos</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowPhotoSelector(false)}>
                   <X size={16} />
                 </Button>
               </div>
-              <PhotoSelector
-                onPhotosSelected={handlePhotosSelected}
-                maxPhotos={9}
-              />
+              
+              {/* Web-friendly photo input */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {photoDetails.map((photo, index) => (
+                    <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+                      <img 
+                        src={photo.url} 
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                {photoDetails.length < 9 && (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileInput}
+                      className="hidden"
+                      id="photo-input"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('photo-input')?.click()}
+                      className="w-full"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Photos ({photoDetails.length}/9)
+                    </Button>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={() => setShowPhotoSelector(false)}
+                  className="w-full"
+                  disabled={photoDetails.length === 0}
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

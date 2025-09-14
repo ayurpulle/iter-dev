@@ -495,14 +495,7 @@ export const StructuredItinerary = ({
 
   return (
     <div className="space-y-4">
-      {/* Trip Header */}
-      <div className="text-center">
-        <h1 className="text-xl font-semibold text-foreground">
-          Your trip to {destination || parsed.destinations[0] || 'your destination'}
-        </h1>
-      </div>
-
-      {/* Trip Overview Map - Prominent but Muted */}
+      {/* Trip Overview Map - Full Width */}
       {parsed.destinations.length > 0 && (
         <div className="bg-muted/30 rounded-lg p-4 border border-muted">
           <div className="flex items-center gap-2 mb-3">
@@ -515,7 +508,7 @@ export const StructuredItinerary = ({
         </div>
       )}
 
-      {/* Trip Summary Section */}
+      {/* Trip Summary Section - No Card Wrapper */}
       <div className="space-y-3">
         {/* Short Summary */}
         <div>
@@ -601,156 +594,146 @@ export const StructuredItinerary = ({
         )}
       </div>
 
-      {/* Dropdown Sections */}
+      {/* Dropdown Sections - Full Width */}
       <div className="space-y-3">
         {/* Day-by-Day Section */}
         {parsed.days.length > 0 && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.days} 
-              onOpenChange={() => toggleSection('days')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      Day-by-Day Itinerary
-                    </div>
-                    {expandedSections.days ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="space-y-4">
-                    {parsed.days.map((day, index) => (
-                      <div key={index} className="border-l-2 border-l-muted pl-4">
-                        <h4 className="font-medium text-foreground mb-2">{day.title}</h4>
-                        <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
-                          {renderContentWithLinks(day.content)}
-                        </div>
-                      </div>
-                    ))}
+          <Collapsible 
+            open={expandedSections.days} 
+            onOpenChange={() => toggleSection('days')}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+                <div className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Day-by-Day Itinerary
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+                  {expandedSections.days ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-4 pt-0">
+                <div className="space-y-4">
+                  {parsed.days.map((day, index) => (
+                    <div key={index} className="border-l-2 border-l-muted pl-4">
+                      <h4 className="font-medium text-foreground mb-2">{day.title}</h4>
+                      <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
+                        {renderContentWithLinks(day.content)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Getting There Section */}
         {parsed.flights && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.flights} 
-              onOpenChange={() => toggleSection('flights')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <Plane className="h-4 w-4 text-primary" />
-                      Getting There
-                    </div>
-                    {expandedSections.flights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="prose prose-sm max-w-none text-muted-foreground">
-                    {renderContentWithLinks(parsed.flights)}
+          <Collapsible 
+            open={expandedSections.flights} 
+            onOpenChange={() => toggleSection('flights')}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+                <div className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Plane className="h-4 w-4 text-primary" />
+                    Getting There
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+                  {expandedSections.flights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-4 pt-0">
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  {renderContentWithLinks(parsed.flights)}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Perfect Stay Section */}
         {parsed.accommodation && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.accommodation} 
-              onOpenChange={() => toggleSection('accommodation')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <Hotel className="h-4 w-4 text-primary" />
-                      Perfect Stay
-                    </div>
-                    {expandedSections.accommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="prose prose-sm max-w-none text-muted-foreground">
-                    {renderContentWithLinks(parsed.accommodation)}
+          <Collapsible 
+            open={expandedSections.accommodation} 
+            onOpenChange={() => toggleSection('accommodation')}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+                <div className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Hotel className="h-4 w-4 text-primary" />
+                    Perfect Stay
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+                  {expandedSections.accommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-4 pt-0">
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  {renderContentWithLinks(parsed.accommodation)}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Travel Tips Section */}
         {parsed.practicalTips && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.tips} 
-              onOpenChange={() => toggleSection('tips')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <Info className="h-4 w-4 text-primary" />
-                      Essential Travel Tips
-                    </div>
-                    {expandedSections.tips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">{renderTipsWithEmojis(parsed.practicalTips)}</div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+          <Collapsible 
+            open={expandedSections.tips} 
+            onOpenChange={() => toggleSection('tips')}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+                <div className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-primary" />
+                    Essential Travel Tips
+                  </div>
+                  {expandedSections.tips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-4 pt-0">
+                <div className="space-y-3">{renderTipsWithEmojis(parsed.practicalTips)}</div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Booking Links Section */}
         {parsed.bookingLinks && (
-          <Card>
-            <Collapsible 
-              open={expandedSections.booking} 
-              onOpenChange={() => toggleSection('booking')}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <ExternalLink className="h-4 w-4 text-primary" />
-                      Booking & Tips
-                    </div>
-                    {expandedSections.booking ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="prose prose-sm max-w-none text-muted-foreground">
-                    {renderContentWithLinks(parsed.bookingLinks)}
+          <Collapsible 
+            open={expandedSections.booking} 
+            onOpenChange={() => toggleSection('booking')}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+                <div className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4 text-primary" />
+                    Booking & Tips
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+                  {expandedSections.booking ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="p-4 pt-0">
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  {renderContentWithLinks(parsed.bookingLinks)}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
       </div>

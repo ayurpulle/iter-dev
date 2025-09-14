@@ -69,6 +69,11 @@ const App = () => {
                   <CreateTrip />
                 </ProtectedRoute>
               } />
+              <Route path="/create-trip" element={
+                <ProtectedRoute>
+                  <CreateTrip />
+                </ProtectedRoute>
+              } />
               <Route path="/trip-details" element={
                 <ProtectedRoute>
                   <TripDetails />

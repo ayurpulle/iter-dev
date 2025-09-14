@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedPosts } from "@/hooks/useSavedPosts";
@@ -17,6 +17,8 @@ import { CommentReplies } from "@/components/CommentReplies";
 import { ShareToChatDialog } from "@/components/ShareToChatDialog";
 import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
+import TripOverallDetails from "@/components/TripOverallDetails";
+import PhotoSpecificDetails from "@/components/PhotoSpecificDetails";
 
 import {
   AlertDialog,
@@ -621,27 +623,20 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
   const hasTrip = !!(post as any).trips && !!post.trip_id; // Simply check if trip exists
   const shouldShowCarousel = hasTrip || hasImages;
   
-  // Parse trip photo details if available
-  const getTripPhotoDetails = () => {
-    const trip = (post as any).trips;
+  // Parse trip photo details and set up carousel logic
+  const trip = (post as any).trips;
+  const tripPhotos = images; // Use the same images array for photos
+  
+  // Parse photo details from the database
+  const tripPhotoDetails = useMemo(() => {
     if (!trip?.photo_details) return [];
     
     try {
       let photoDetailsArray = [];
       if (typeof trip.photo_details === 'string') {
         photoDetailsArray = JSON.parse(trip.photo_details);
-      } else {
-        photoDetailsArray = trip.photo_details || [];
-      }
-      
-      // Ensure photo details align with the actual images being displayed
-      // If we have images from post.image_url, make sure we have details for each
-      if (images.length > 0 && Array.isArray(photoDetailsArray)) {
-        return images.map((imageUrl, index) => ({
-          caption: photoDetailsArray[index]?.caption || '',
-          budget: photoDetailsArray[index]?.budget || '',
-          tagged_friends: photoDetailsArray[index]?.tagged_friends || []
-        }));
+      } else if (Array.isArray(trip.photo_details)) {
+        photoDetailsArray = trip.photo_details;
       }
       
       return photoDetailsArray;
@@ -649,25 +644,15 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
       console.error('Error parsing trip photo details:', e);
       return [];
     }
-  };
-  
-  const tripPhotoDetails = getTripPhotoDetails();
+  }, [trip?.photo_details]);
+
+  // Carousel logic: Total slides = 1 (map) + photos length
+  const totalSlides = hasTrip ? 1 + tripPhotos.length : tripPhotos.length;
   const isMapView = hasTrip && currentMediaIndex === 0;
   const currentPhotoIndex = hasTrip ? currentMediaIndex - 1 : currentMediaIndex;
   const currentPhotoDetail = currentPhotoIndex >= 0 && currentPhotoIndex < tripPhotoDetails.length 
     ? tripPhotoDetails[currentPhotoIndex] 
     : null;
-  
-  // Debug logging for photo details
-  console.log('=== DEBUG UnifiedPostCard Photo Details ===');
-  console.log('Post ID:', post.id);
-  console.log('Images array:', images);
-  console.log('Raw trip photo_details:', (post as any).trips?.photo_details);
-  console.log('Parsed tripPhotoDetails:', tripPhotoDetails);
-  console.log('Current media index:', currentMediaIndex);
-  console.log('Current photo index:', currentPhotoIndex);
-  console.log('Current photo detail:', currentPhotoDetail);
-  console.log('=======================================');
 
   const getBudgetLabel = (budget: string): string => {
     const labels = {
@@ -796,32 +781,34 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
             </div>
           )}
 
-          {/* Trip Details at bottom - Fixed height */}
+          {/* Slide indicator for carousel */}
+          {shouldShowCarousel && totalSlides > 1 && (
+            <div className="flex justify-center gap-1 py-2">
+              {Array.from({ length: totalSlides }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1 w-6 rounded-full transition-colors ${
+                    index === currentMediaIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Dynamic Details Section */}
           <div className="px-4 pb-3">
-            {/* Caption/Description - Show photo-specific caption if available */}
-            {(currentPhotoDetail?.caption && !isMapView) ? (
-              <div>
-                <p className="text-sm leading-relaxed">{currentPhotoDetail.caption}</p>
-                
-                {/* Photo-specific details */}
-                <div className="flex flex-wrap gap-3 text-xs mt-2">
-                  {currentPhotoDetail.budget && (
-                    <div className="flex items-center gap-1">
-                      <DollarSign size={12} className="text-muted-foreground" />
-                      <span className="font-medium text-primary">{currentPhotoDetail.budget}</span>
-                      <span className="text-muted-foreground">({getBudgetLabel(currentPhotoDetail.budget)})</span>
-                    </div>
-                  )}
-                  
-                  {currentPhotoDetail.tagged_friends?.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Users size={12} className="text-muted-foreground" />
-                      <span className="text-muted-foreground">with {currentPhotoDetail.tagged_friends.join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {hasTrip && isMapView ? (
+              /* Overall Trip Details */
+              <TripOverallDetails trip={trip} />
+            ) : hasTrip && !isMapView && currentPhotoDetail ? (
+              /* Individual Photo Details */
+              <PhotoSpecificDetails 
+                photo={tripPhotos[currentPhotoIndex]}
+                details={currentPhotoDetail}
+                photoIndex={currentPhotoIndex}
+              />
             ) : post.content ? (
+              /* Regular post content */
               <div>
                 <p className="text-sm leading-relaxed">{captionToShow}</p>
                 {isCaptionLong && (
@@ -845,53 +832,6 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 )}
               </div>
             ) : null}
-
-            {/* Trip stats - Only show on map view or when no photo-specific content */}
-            {hasTrip && (isMapView || !currentPhotoDetail?.caption) && (
-              <Collapsible open={showDetails} onOpenChange={setShowDetails}>
-                <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="mt-2 h-6 px-1 text-muted-foreground hover:text-foreground"
-                  >
-                    <span className="text-xs">
-                      {showDetails ? "Hide trip details" : "Show trip details"}
-                    </span>
-                    {showDetails ? <ChevronUp size={12} className="ml-1" /> : <ChevronDown size={12} className="ml-1" />}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="mt-2 space-y-1">
-                    {(post as PostWithProfile).trips?.duration && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock size={14} />
-                        <span>{(post as PostWithProfile).trips.duration}</span>
-                      </div>
-                    )}
-                    {(post as PostWithProfile).trips?.distance && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MapPin size={14} />
-                        <span>{(post as PostWithProfile).trips.distance}</span>
-                      </div>
-                    )}
-                    {(post as PostWithProfile).trips?.companions && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Users size={14} />
-                        <span>{(post as PostWithProfile).trips.companions}</span>
-                      </div>
-                    )}
-                    {(post as PostWithProfile).trips?.cost && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <DollarSign size={14} className="text-muted-foreground" />
-                        <span className="font-medium text-primary">{(post as PostWithProfile).trips.cost}</span>
-                        <span className="text-muted-foreground">({getBudgetLabel((post as PostWithProfile).trips.cost)})</span>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
           </div>
 
           {/* Actions - Likes, Comments, Save */}

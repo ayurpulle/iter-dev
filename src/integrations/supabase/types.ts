@@ -563,6 +563,8 @@ export type Database = {
           id: string
           images: string[] | null
           is_public: boolean | null
+          overall_budget: string | null
+          overall_caption: string | null
           photo_count: number | null
           photo_details: Json | null
           start_date: string | null
@@ -586,6 +588,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_public?: boolean | null
+          overall_budget?: string | null
+          overall_caption?: string | null
           photo_count?: number | null
           photo_details?: Json | null
           start_date?: string | null
@@ -609,6 +613,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_public?: boolean | null
+          overall_budget?: string | null
+          overall_caption?: string | null
           photo_count?: number | null
           photo_details?: Json | null
           start_date?: string | null

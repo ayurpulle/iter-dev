@@ -75,7 +75,15 @@ export const useTrips = () => {
       console.log('tripData.route length:', tripData.route?.length);
       console.log('User ID:', user.id);
 
-      // Create trip record
+      // First, upload photos to avoid timeout in main transaction
+      let imageUrls: string[] = [];
+      if (tripData.photos.length > 0) {
+        console.log('Uploading photos first:', tripData.photos.length);
+        imageUrls = await uploadTripPhotos(tripData.photos, `temp-${Date.now()}`, user.id);
+        console.log('Photos uploaded:', imageUrls);
+      }
+
+      // Create trip record with uploaded images
       const { data: trip, error: tripError } = await supabase
         .from('trips')
         .insert({
@@ -84,12 +92,13 @@ export const useTrips = () => {
           country_code: tripData.country_code,
           cost: tripData.cost,
           companions: tripData.companions,
-          tagged_friends: tripData.taggedFriends || [], // Store tagged friend usernames
+          tagged_friends: tripData.taggedFriends || [],
           duration: tripData.duration,
-          distance: tripData.distance || '', // Make sure this doesn't cause issues if undefined
+          distance: tripData.distance || '',
           stops: tripData.route,
           photo_count: tripData.photos.length,
-          photo_details: tripData.photo_details ? JSON.stringify(tripData.photo_details) : '[]', // Store detailed photo information as JSON
+          photo_details: tripData.photo_details ? JSON.stringify(tripData.photo_details) : '[]',
+          images: imageUrls, // Include images in initial insert
           is_public: tripData.is_public || false,
           user_id: user.id
         })
@@ -103,75 +112,49 @@ export const useTrips = () => {
 
       console.log('Trip created successfully:', trip);
 
-      // Upload photos if any
-      let imageUrls: string[] = [];
-      if (tripData.photos.length > 0) {
-        console.log('Uploading photos:', tripData.photos.length);
-        imageUrls = await uploadTripPhotos(tripData.photos, trip.id, user.id);
-        console.log('Photos uploaded:', imageUrls);
-        
-        // Update trip with image URLs
-        const { error: updateError } = await supabase
-          .from('trips')
-          .update({ images: imageUrls })
-          .eq('id', trip.id);
-          
-        if (updateError) {
-          console.error('Error updating trip with images:', updateError);
-          throw updateError;
-        }
-      }
-
-      // Create trip tags for tagged friends
-      if (tripData.taggedFriends && tripData.taggedFriends.length > 0) {
-        console.log('Creating trip tags for:', tripData.taggedFriends);
-        
-        // Get user IDs for tagged usernames
-        const { data: taggedUsers, error: usersError } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .in('username', tripData.taggedFriends);
-        
-        if (usersError) {
-          console.error('Error fetching tagged users:', usersError);
-        } else if (taggedUsers && taggedUsers.length > 0) {
-          // Create trip_tags records
-          const tripTags = taggedUsers.map(taggedUser => ({
-            trip_id: trip.id,
-            user_id: user.id, // Trip creator
-            tagged_user_id: taggedUser.user_id
-          }));
-          
-          const { error: tagsError } = await supabase
-            .from('trip_tags')
-            .insert(tripTags);
-          
-          if (tagsError) {
-            console.error('Error creating trip tags:', tagsError);
-          } else {
-            console.log('Trip tags created successfully');
+      // Handle tagged friends and post creation in background (non-blocking)
+      const backgroundTasks = async () => {
+        try {
+          // Create trip tags for tagged friends
+          if (tripData.taggedFriends && tripData.taggedFriends.length > 0) {
+            console.log('Creating trip tags for:', tripData.taggedFriends);
+            
+            const { data: taggedUsers } = await supabase
+              .from('profiles')
+              .select('user_id')
+              .in('username', tripData.taggedFriends);
+            
+            if (taggedUsers && taggedUsers.length > 0) {
+              const tripTags = taggedUsers.map(taggedUser => ({
+                trip_id: trip.id,
+                user_id: user.id,
+                tagged_user_id: taggedUser.user_id
+              }));
+              
+              await supabase.from('trip_tags').insert(tripTags);
+              console.log('Trip tags created successfully');
+            }
           }
+
+          // Create a post for the trip
+          console.log('Creating post for trip');
+          await supabase
+            .from('posts')
+            .insert({
+              user_id: user.id,
+              trip_id: trip.id,
+              content: tripData.description,
+              image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+              is_private: !tripData.is_public
+            });
+          console.log('Post created successfully');
+        } catch (err) {
+          console.error('Background task error (non-critical):', err);
         }
-      }
+      };
 
-      // Always create a post for the trip
-      console.log('Creating post for trip');
-      const { error: postError } = await supabase
-        .from('posts')
-        .insert({
-          user_id: user.id,
-          trip_id: trip.id,
-          content: tripData.description,
-          image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null, // Save all images as JSON
-          is_private: !tripData.is_public // Private post if trip is not public
-        });
-
-      if (postError) {
-        console.error('Error creating post:', postError);
-        // Don't throw here as trip creation succeeded
-      } else {
-        console.log('Post created successfully');
-      }
+      // Run background tasks without waiting
+      backgroundTasks();
 
       console.log('Returning trip:', { ...trip, images: imageUrls });
       return { ...trip, images: imageUrls };

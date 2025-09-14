@@ -627,21 +627,47 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
     if (!trip?.photo_details) return [];
     
     try {
+      let photoDetailsArray = [];
       if (typeof trip.photo_details === 'string') {
-        return JSON.parse(trip.photo_details);
+        photoDetailsArray = JSON.parse(trip.photo_details);
+      } else {
+        photoDetailsArray = trip.photo_details || [];
       }
-      return trip.photo_details || [];
+      
+      // Ensure photo details align with the actual images being displayed
+      // If we have images from post.image_url, make sure we have details for each
+      if (images.length > 0 && Array.isArray(photoDetailsArray)) {
+        return images.map((imageUrl, index) => ({
+          caption: photoDetailsArray[index]?.caption || '',
+          budget: photoDetailsArray[index]?.budget || '',
+          tagged_friends: photoDetailsArray[index]?.tagged_friends || []
+        }));
+      }
+      
+      return photoDetailsArray;
     } catch (e) {
+      console.error('Error parsing trip photo details:', e);
       return [];
     }
   };
   
   const tripPhotoDetails = getTripPhotoDetails();
-  const isMapView = currentMediaIndex === 0;
+  const isMapView = hasTrip && currentMediaIndex === 0;
   const currentPhotoIndex = hasTrip ? currentMediaIndex - 1 : currentMediaIndex;
   const currentPhotoDetail = currentPhotoIndex >= 0 && currentPhotoIndex < tripPhotoDetails.length 
     ? tripPhotoDetails[currentPhotoIndex] 
     : null;
+  
+  // Debug logging for photo details
+  console.log('=== DEBUG UnifiedPostCard Photo Details ===');
+  console.log('Post ID:', post.id);
+  console.log('Images array:', images);
+  console.log('Raw trip photo_details:', (post as any).trips?.photo_details);
+  console.log('Parsed tripPhotoDetails:', tripPhotoDetails);
+  console.log('Current media index:', currentMediaIndex);
+  console.log('Current photo index:', currentPhotoIndex);
+  console.log('Current photo detail:', currentPhotoDetail);
+  console.log('=======================================');
 
   const getBudgetLabel = (budget: string): string => {
     const labels = {

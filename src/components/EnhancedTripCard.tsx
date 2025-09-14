@@ -76,32 +76,30 @@ const EnhancedTripCard: React.FC<EnhancedTripCardProps> = ({ user, trip, stats, 
   const { user: currentUser } = useAuth();
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
   
-  // Process photo details or fallback to regular photos
-  const photoDetails = trip.photo_details || trip.photos?.map(url => ({
-    url,
-    caption: '',
-    budget: '',
-    tagged_friends: []
-  })) || [];
-  
-  // Parse photo_details if it's a JSON string
+  // Parse photo_details if it's a JSON string and combine with image URLs
   const parsedPhotoDetails = (() => {
+    let photoDetailsArray = [];
+    
     if (Array.isArray(trip.photo_details)) {
-      return trip.photo_details;
-    }
-    if (typeof trip.photo_details === 'string') {
+      photoDetailsArray = trip.photo_details;
+    } else if (typeof trip.photo_details === 'string') {
       try {
-        return JSON.parse(trip.photo_details);
+        photoDetailsArray = JSON.parse(trip.photo_details);
       } catch (e) {
-        return [];
+        photoDetailsArray = [];
       }
     }
-    return trip.photos?.map(url => ({
+    
+    // Get image URLs from trip.photos or trip.images
+    const imageUrls = trip.photos || (trip as any).images || [];
+    
+    // Combine photo details with image URLs
+    return imageUrls.map((url: string, index: number) => ({
       url,
-      caption: '',
-      budget: '',
-      tagged_friends: []
-    })) || [];
+      caption: photoDetailsArray[index]?.caption || '',
+      budget: photoDetailsArray[index]?.budget || '',
+      tagged_friends: photoDetailsArray[index]?.tagged_friends || []
+    }));
   })();
   
   const { processedImages, isProcessing } = useProcessedImages(parsedPhotoDetails.map(p => p.url));

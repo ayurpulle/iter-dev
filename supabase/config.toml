@@ -61,7 +61,7 @@ enabled = true
 ip_version = "ipv4"
 
 [functions.get-mapbox-token]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-itinerary]
 verify_jwt = true

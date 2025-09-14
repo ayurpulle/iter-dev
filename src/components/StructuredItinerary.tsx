@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { generateTripSummary } from '@/utils/tripSummaryGenerator';
+import { SavedRecommendationModal } from './SavedRecommendationModal';
 
 interface FriendRecommendation {
   name: string;
@@ -49,6 +50,8 @@ export const StructuredItinerary = ({
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
   const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+  const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
+  const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   // Store original destination
 
   const availableHolidayTypes = [
@@ -367,91 +370,127 @@ export const StructuredItinerary = ({
         );
       }
 
-      // Handle friend recommendations
+      // Handle both saved recommendations and friend recommendations
+      const savedRecRegex = /\[SAVED_REC:([^:\]]+):(\d+)\]/g;
       const friendRecRegex = /\[FRIEND_REC:([^\]]+)\]/g;
-      let friendRecParts = part.split(friendRecRegex);
       
-      return friendRecParts.map((recPart, recIndex) => {
-        if (recIndex % 2 === 1) {
-          // This is a friend recommendation venue name
-          const venueName = recPart;
-          return (
-            <span key={`${index}-${recIndex}`}>
-              <span className="font-medium text-blue-700 dark:text-blue-300">{venueName}</span>
-              {renderFriendRecommendations(venueName)}
+      // First handle saved recommendations
+      let savedRecParts = part.split(savedRecRegex);
+      let processedParts: (string | JSX.Element)[] = [];
+      
+      savedRecParts.forEach((savedPart, savedIndex) => {
+        if (savedIndex % 3 === 1) {
+          // This is a saved recommendation venue name
+          const venueName = savedPart;
+          const count = savedRecParts[savedIndex + 1];
+          processedParts.push(
+            <span key={`saved-${index}-${savedIndex}`} className="inline-flex items-center gap-1">
+              <span className="font-medium text-green-700 dark:text-green-300">{venueName}</span>
+              <button 
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                onClick={() => {
+                  setSelectedVenue(venueName);
+                  setShowRecommendationModal(true);
+                }}
+                title={`Recommended from your saved posts`}
+              >
+                +{count}
+              </button>
             </span>
           );
-        } else {
-          // Process the text content for better formatting
-          return (
-            <span key={`${index}-${recIndex}`} className="whitespace-pre-wrap">
-              {recPart.split(/(\*\*[^*]+\*\*)/g).map((textPart, textIndex) => {
-                if (textPart.startsWith('**') && textPart.endsWith('**')) {
-                  const headerText = textPart.slice(2, -2);
-                  
-                  // Different styling for different types of headers
-                  if (headerText.startsWith('TRAVEL_SECTION:')) {
-                    const section = headerText.replace('TRAVEL_SECTION:', '');
-                    if (section === 'GETTING_THERE') {
-                      return (
-                        <h3 key={textIndex} className="font-bold text-lg text-blue-700 dark:text-blue-300 mt-4 mb-2 flex items-center gap-2 bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg border-l-4 border-blue-500">
-                          ✈️ Getting There
-                        </h3>
-                      );
-                    } else if (section === 'COMING_HOME') {
-                      return (
-                        <h3 key={textIndex} className="font-bold text-lg text-green-700 dark:text-green-300 mt-4 mb-2 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg border-l-4 border-green-500">
-                          🏠 Coming Home
-                        </h3>
-                      );
-                    } else if (section === 'PERFECT_STAY') {
-                      return (
-                        <h3 key={textIndex} className="font-bold text-lg text-purple-700 dark:text-purple-300 mt-4 mb-2 flex items-center gap-2 bg-purple-50 dark:bg-purple-950/30 px-4 py-2 rounded-lg border-l-4 border-purple-500">
-                          🏨 Perfect Stay
-                        </h3>
-                      );
-                    } else if (section === 'TRAVEL_RECOMMENDATIONS') {
-                      return (
-                        <h3 key={textIndex} className="font-bold text-lg text-orange-700 dark:text-orange-300 mt-4 mb-2 flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 px-4 py-2 rounded-lg border-l-4 border-orange-500">
-                          💡 Travel Recommendations
-                        </h3>
-                      );
-                    }
-                  } else if (headerText.startsWith('TIME_SECTION:')) {
-                    const timeLabel = headerText.replace('TIME_SECTION:', '');
-                    const timeEmoji = {
-                      'MORNING': '🌅',
-                      'LATE MORNING': '🌤️',
-                      'MIDDAY': '☀️',
-                      'NOON': '☀️',
-                      'AFTERNOON': '🌞',
-                      'EARLY EVENING': '🌆',
-                      'EVENING': '🌇',
-                      'NIGHT': '🌙',
-                      'BREAKFAST': '🥐',
-                      'LUNCH': '🍽️',
-                      'DINNER': '🍷'
-                    }[timeLabel] || '⏰';
-                    
+        } else if (savedIndex % 3 !== 2) {
+          // Regular text content - check for friend recommendations
+          const friendRecParts = savedPart.split(friendRecRegex);
+          friendRecParts.forEach((friendPart, friendIndex) => {
+            if (friendIndex % 2 === 1) {
+              // This is a friend recommendation venue name
+              const venueName = friendPart;
+              processedParts.push(
+                <span key={`friend-${index}-${savedIndex}-${friendIndex}`}>
+                  <span className="font-medium text-blue-700 dark:text-blue-300">{venueName}</span>
+                  {renderFriendRecommendations(venueName)}
+                </span>
+              );
+            } else {
+              processedParts.push(friendPart);
+            }
+          });
+        }
+      });
+      
+      return processedParts.map((processedPart, processedIndex) => {
+        if (typeof processedPart === 'object') {
+          return processedPart; // Already a JSX element
+        }
+        
+        return (
+          <span key={`${index}-${processedIndex}`} className="whitespace-pre-wrap">
+            {processedPart.split(/(\*\*[^*]+\*\*)/g).map((textPart, textIndex) => {
+              if (textPart.startsWith('**') && textPart.endsWith('**')) {
+                const headerText = textPart.slice(2, -2);
+                
+                // Different styling for different types of headers
+                if (headerText.startsWith('TRAVEL_SECTION:')) {
+                  const section = headerText.replace('TRAVEL_SECTION:', '');
+                  if (section === 'GETTING_THERE') {
                     return (
-                      <h4 key={textIndex} className="font-semibold text-base text-indigo-700 dark:text-indigo-300 mt-4 mb-2 flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-2 rounded-lg border-l-3 border-indigo-400">
-                        {timeEmoji} {timeLabel.charAt(0) + timeLabel.slice(1).toLowerCase()}
-                      </h4>
+                      <h3 key={textIndex} className="font-bold text-lg text-blue-700 dark:text-blue-300 mt-4 mb-2 flex items-center gap-2 bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg border-l-4 border-blue-500">
+                        ✈️ Getting There
+                      </h3>
                     );
-                  } else {
+                  } else if (section === 'COMING_HOME') {
                     return (
-                      <strong key={textIndex} className="font-semibold text-gray-900 dark:text-gray-100">
-                        {headerText}
-                      </strong>
+                      <h3 key={textIndex} className="font-bold text-lg text-green-700 dark:text-green-300 mt-4 mb-2 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg border-l-4 border-green-500">
+                        🏠 Coming Home
+                      </h3>
+                    );
+                  } else if (section === 'PERFECT_STAY') {
+                    return (
+                      <h3 key={textIndex} className="font-bold text-lg text-purple-700 dark:text-purple-300 mt-4 mb-2 flex items-center gap-2 bg-purple-50 dark:bg-purple-950/30 px-4 py-2 rounded-lg border-l-4 border-purple-500">
+                        🏨 Perfect Stay
+                      </h3>
+                    );
+                  } else if (section === 'TRAVEL_RECOMMENDATIONS') {
+                    return (
+                      <h3 key={textIndex} className="font-bold text-lg text-orange-700 dark:text-orange-300 mt-4 mb-2 flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 px-4 py-2 rounded-lg border-l-4 border-orange-500">
+                        💡 Travel Recommendations
+                      </h3>
                     );
                   }
+                } else if (headerText.startsWith('TIME_SECTION:')) {
+                  const timeLabel = headerText.replace('TIME_SECTION:', '');
+                  const timeEmoji = {
+                    'MORNING': '🌅',
+                    'LATE MORNING': '🌤️',
+                    'MIDDAY': '☀️',
+                    'NOON': '☀️',
+                    'AFTERNOON': '🌞',
+                    'EARLY EVENING': '🌆',
+                    'EVENING': '🌇',
+                    'NIGHT': '🌙',
+                    'BREAKFAST': '🥐',
+                    'LUNCH': '🍽️',
+                    'DINNER': '🍷'
+                  }[timeLabel] || '⏰';
+                  
+                  return (
+                    <h4 key={textIndex} className="font-semibold text-base text-indigo-700 dark:text-indigo-300 mt-4 mb-2 flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-2 rounded-lg border-l-3 border-indigo-400">
+                      {timeEmoji} {timeLabel.charAt(0) + timeLabel.slice(1).toLowerCase()}
+                    </h4>
+                  );
                 } else {
-                  return <span key={textIndex}>{textPart}</span>;
+                  return (
+                    <strong key={textIndex} className="font-semibold text-gray-900 dark:text-gray-100">
+                      {headerText}
+                    </strong>
+                  );
                 }
-              })}
-            </span>
-          );
-        }
+              } else {
+                return <span key={textIndex}>{textPart}</span>;
+              }
+            })}
+          </span>
+        );
       });
     });
   };
@@ -951,6 +990,15 @@ export const StructuredItinerary = ({
 
         </div>
       </div>
+      <SavedRecommendationModal
+        isOpen={showRecommendationModal}
+        onClose={() => {
+          setShowRecommendationModal(false);
+          setSelectedVenue(null);
+        }}
+        venueName={selectedVenue || ''}
+        recommendations={selectedVenue ? (friendRecommendations[selectedVenue] || []) : []}
+      />
     </div>
   );
 };

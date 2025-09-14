@@ -34,10 +34,107 @@ serve(async (req) => {
       const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations, existingItinerary, changeRequest } = requestData;
       console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext, hasExistingItinerary: !!existingItinerary, changeRequest });
 
-      // Search for relevant saved posts from the user's network with venue extraction
-      console.log('Searching for relevant posts and friend recommendations...');
+      // Get user's saved posts to use as review bank
+      console.log('Fetching user saved posts for review bank...');
       
-      // Get friends first
+      const { data: savedItems, error: savedItemsError } = await supabaseClient
+        .from('saved_items')
+        .select(`
+          *,
+          posts!saved_items_item_id_fkey (
+            *,
+            profiles!posts_user_id_profiles_fkey (name, username, avatar),
+            trips (title, destination, stops)
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('item_type', 'post');
+
+      if (savedItemsError) {
+        console.error('Error fetching saved posts:', savedItemsError);
+      }
+
+      console.log(`Found ${savedItems?.length || 0} saved posts for review bank`);
+
+      // Extract venue recommendations from user's saved posts
+      const reviewBank: { [venue: string]: any[] } = {};
+      const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter(word => word.length > 2);
+      
+      if (savedItems?.length) {
+        savedItems.forEach(savedItem => {
+          const post = savedItem.posts;
+          if (!post || !post.content) return;
+
+          const postContent = post.content.toLowerCase();
+          const tripTitle = post.trips?.title?.toLowerCase() || '';
+          
+          // Check if post is relevant to destination
+          const isRelevant = destinationKeywords.some(keyword => 
+            postContent.includes(keyword) || tripTitle.includes(keyword)
+          );
+
+          if (!isRelevant) return;
+
+          // Extract venues from post content using enhanced patterns
+          const content = post.content;
+          const venuePatterns = [
+            /(?:stayed at|hotel|accommodation)[\s:]+([^.!?]+)/gi,
+            /(?:ate at|restaurant|dinner at|lunch at|food at)[\s:]+([^.!?]+)/gi,
+            /(?:visited|went to|saw|museum|gallery|attraction)[\s:]+([^.!?]+)/gi,
+            /(?:bar|pub|drinks at|club)[\s:]+([^.!?]+)/gi,
+            /(?:loved|amazing|incredible|beautiful|must-visit)[\s:]*([^.!?]+)/gi,
+            /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Restaurant|Hotel|Bar|Cafe|Museum|Gallery|Park|Beach|Market|Church|Temple|Palace|Tower|Bridge)))(?:\s|$|[,.!?])/g
+          ];
+          
+          // Also extract from photo details if available
+          let allContent = content;
+          if (post.trips?.stops) {
+            try {
+              const stops = JSON.parse(post.trips.stops);
+              if (Array.isArray(stops)) {
+                stops.forEach(stop => {
+                  if (stop.photo_details) {
+                    stop.photo_details.forEach(detail => {
+                      if (detail.caption) {
+                        allContent += ' ' + detail.caption;
+                      }
+                      if (detail.location) {
+                        allContent += ' ' + detail.location;
+                      }
+                    });
+                  }
+                });
+              }
+            } catch (e) {
+              console.warn('Could not parse trip stops for venue extraction');
+            }
+          }
+          
+          venuePatterns.forEach(pattern => {
+            const matches = allContent.matchAll(pattern);
+            for (const match of matches) {
+              let venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
+              if (venueName && venueName.length > 3 && venueName.length < 60) {
+                venueName = venueName.replace(/[^\w\s\-\.]/g, '').trim();
+                
+                if (!reviewBank[venueName]) {
+                  reviewBank[venueName] = [];
+                }
+                
+                reviewBank[venueName].push({
+                  name: post.profiles?.name || post.profiles?.username || 'Anonymous',
+                  avatar: post.profiles?.avatar,
+                  review: content.substring(0, 150) + (content.length > 150 ? '...' : ''),
+                  visitDate: new Date(post.created_at).toLocaleDateString(),
+                  postId: post.id
+                });
+              }
+            }
+          });
+        });
+      }
+
+      // Get friends' posts as additional context (legacy approach for compatibility)
       const { data: friends } = await supabaseClient
         .from('friends')
         .select('user_id, friend_id')
@@ -48,8 +145,7 @@ serve(async (req) => {
         f.user_id === userId ? f.friend_id : f.user_id
       ) || [];
 
-      // Search posts from friends about the destination
-      const { data: posts, error: postsError } = await supabaseClient
+      const { data: friendsPosts, error: friendsPostsError } = await supabaseClient
         .from('posts')
         .select(`
           *,
@@ -58,56 +154,23 @@ serve(async (req) => {
         .in('user_id', friendIds)
         .ilike('content', `%${destination}%`)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(5);
 
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-      }
+      console.log(`Found ${friendsPosts?.length || 0} relevant posts from friends`);
 
-      console.log(`Found ${posts?.length || 0} relevant posts from friends`);
+      // Prepare context from saved posts review bank
+      const reviewBankContext = Object.keys(reviewBank).length > 0 
+        ? `\n\nREVIEW BANK (from your saved posts):\n${Object.entries(reviewBank).map(([venue, recs]) => 
+            `- ${venue}: ${recs.map(rec => `"${rec.review}" - ${rec.name}`).join('; ')}`
+          ).join('\n')}`
+        : '';
 
-      // Prepare context from saved posts (use legacy approach if no RAG context provided)
-      const postsContext = posts?.map(post => 
+      const friendsPostsContext = friendsPosts?.map(post => 
         `${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
-      ).join('\n\n') || 'No relevant saved posts found.';
+      ).join('\n\n') || '';
 
-      // Use provided friend recommendations from RAG, or extract them here as fallback
-      const finalFriendRecommendations = friendRecommendations || {};
-      
-      if (!friendRecommendations && posts?.length) {
-        posts.forEach(post => {
-          const profile = post.profiles;
-          const content = post.content || '';
-          
-          // Simple venue extraction - look for common venue indicators
-          const venuePatterns = [
-            /(?:stayed at|hotel|accommodation)[\s:]+([^.!?]+)/gi,
-            /(?:ate at|restaurant|dinner at|lunch at)[\s:]+([^.!?]+)/gi,
-            /(?:visited|museum|gallery)[\s:]+([^.!?]+)/gi,
-            /(?:bar|pub|drinks at)[\s:]+([^.!?]+)/gi,
-          ];
-          
-          venuePatterns.forEach(pattern => {
-            const matches = content.matchAll(pattern);
-            for (const match of matches) {
-              const venueName = match[1]?.trim().split(/[,\n]/)[0].trim();
-              if (venueName && venueName.length > 3 && venueName.length < 50) {
-                const cleanVenueName = venueName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-                if (!finalFriendRecommendations[cleanVenueName]) {
-                  finalFriendRecommendations[cleanVenueName] = [];
-                }
-                
-                finalFriendRecommendations[cleanVenueName].push({
-                  name: profile?.name || profile?.username || 'Anonymous',
-                  avatar: profile?.avatar,
-                  review: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-                  visitDate: new Date(post.created_at).toLocaleDateString(),
-                });
-              }
-            }
-          });
-        });
-      }
+      // Use provided friend recommendations from RAG, or combine review bank with extracted ones
+      const finalFriendRecommendations = friendRecommendations || reviewBank;
 
       // Handle OpenAI API quota issues gracefully
       if (!openAIApiKey) {
@@ -143,7 +206,7 @@ ${travelStyle ? `- Travel style: ${travelStyle}` : ''}`;
 
 ${ragContext}` : `${basePrompt}
 
-${postsContext !== 'No relevant saved posts found.' ? `\nFriends who've been there say:\n${postsContext}\n` : ''}`;
+${reviewBankContext}${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsContext}\n` : ''}`;
 
       const prompt = `${ragPrompt}
 
@@ -190,7 +253,9 @@ Guidelines:
 - Write in complete sentences and paragraphs, never use bullet points or asterisks
 - Sound like a knowledgeable friend, not a travel guide
 - Include specific prices naturally in conversation
+- When mentioning places from your saved posts (review bank), add [SAVED_REC:place_name:count] where count is the number of saved posts mentioning it
 - When mentioning places friends visited, add [FRIEND_REC:place_name] after the venue name
+- Prioritize venues from your saved posts review bank as these are personally curated recommendations
 - Only include links if they're from major, trusted booking sites
 - Make each day's personality shine through the writing style
 - Focus on the experience and feelings, not just logistics`;

@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink, Info, Calendar, Edit3 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plane, Hotel, MapPin, Clock, DollarSign, ExternalLink, Info, Calendar, Edit3, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InteractiveItineraryMap } from './InteractiveItineraryMap';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { generateTripSummary } from '@/utils/tripSummaryGenerator';
 
@@ -26,7 +27,9 @@ interface StructuredItineraryProps {
   startDate?: Date;
   endDate?: Date;
   holidayTypes?: string[];
+  budget?: string;
   onUpdateDates?: (startDate: Date, endDate: Date) => void;
+  onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: string }) => void;
 }
 
 export const StructuredItinerary = ({ 
@@ -36,9 +39,15 @@ export const StructuredItinerary = ({
   startDate,
   endDate,
   holidayTypes,
-  onUpdateDates
+  budget,
+  onUpdateDates,
+  onUpdateItinerary
 }: StructuredItineraryProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
+  const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
+  const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
+  const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
+  const [localBudget, setLocalBudget] = useState<string>(budget || 'moderate');
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -233,13 +242,52 @@ export const StructuredItinerary = ({
         .replace(/\n{3,}/g, '\n\n');
     };
 
-    // Only render actual working links, not placeholder text
-    const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com)[^\s]*)/g;
+    // Enhanced link detection for various travel sites and hotel names
+    const urlRegex = /(https?:\/\/(?:www\.)?(?:booking\.com|skyscanner\.com|getyourguide\.com|airbnb\.com|expedia\.com|hotels\.com|tripadvisor\.com|marriott\.com|hilton\.com|hyatt\.com|ihg\.com|accor\.com)[^\s]*)/g;
+    
+    // Hotel name patterns that should become booking links
+    const hotelPatterns = /\b([A-Z][a-z]*(?:\s+[A-Z][a-z]*)*\s+(?:Hotel|Resort|Inn|Lodge|Suites?|Marriott|Hilton|Hyatt|Sheraton|Westin|Ritz-Carlton|Four Seasons|St\. Regis|Edition|Luxury Collection))\b/g;
     
     const processedContent = cleanContent(formatTravelContent(formatTimeBasedContent(content)));
-    const parts = processedContent.split(urlRegex);
     
-    return parts.map((part, index) => {
+    // First split by URLs, then handle hotel names in non-URL parts
+    const urlParts = processedContent.split(urlRegex);
+    const finalParts: (string | JSX.Element)[] = [];
+    
+    urlParts.forEach((part, index) => {
+      if (urlRegex.test(part)) {
+        finalParts.push(part); // Keep URL as-is for processing later
+      } else {
+        // Process hotel names in this text part
+        const hotelParts = part.split(hotelPatterns);
+        hotelParts.forEach((hotelPart, hotelIndex) => {
+          if (hotelIndex % 2 === 1) {
+            // This is a hotel name - create a booking link
+            const searchQuery = encodeURIComponent(hotelPart + ' ' + (destination || 'hotel'));
+            finalParts.push(
+              <a
+                key={`hotel-${index}-${hotelIndex}`}
+                href={`https://www.booking.com/search.html?ss=${searchQuery}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2 py-1 mx-1 text-xs font-medium rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors underline decoration-purple-500 decoration-1 underline-offset-2"
+              >
+                {hotelPart}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            );
+          } else {
+            finalParts.push(hotelPart);
+          }
+        });
+      }
+    });
+    
+    return finalParts.map((part, index) => {
+      if (typeof part === 'object') {
+        return part; // Already a JSX element
+      }
+      
       if (urlRegex.test(part)) {
         const linkText = part.includes('booking.com') ? 'Book Hotel' : 
                         part.includes('skyscanner') ? 'Find Flights' :
@@ -493,109 +541,180 @@ export const StructuredItinerary = ({
 
   const airportCodes = getAirportCodes(destination || parsed.destinations[0] || '');
 
+  const hasChanges = () => {
+    return localStartDate !== startDate || 
+           localEndDate !== endDate ||
+           JSON.stringify(localHolidayTypes) !== JSON.stringify(holidayTypes) ||
+           localBudget !== budget;
+  };
+
+  const handleUpdate = () => {
+    if (onUpdateItinerary && hasChanges()) {
+      onUpdateItinerary({
+        startDate: localStartDate,
+        endDate: localEndDate,
+        holidayTypes: localHolidayTypes,
+        budget: localBudget
+      });
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Trip Overview Map - Full Width */}
-      {parsed.destinations.length > 0 && (
-        <div className="bg-muted/30 rounded-lg p-4 border border-muted">
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium text-muted-foreground">Trip Overview</h3>
-          </div>
-          <div className="rounded-md overflow-hidden">
-            <InteractiveItineraryMap destinations={parsed.destinations} />
-          </div>
+    <div className="-mx-6 lg:-mx-8">
+      {/* Header with Update Button */}
+      <div className="px-6 lg:px-8 mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Your trip to {destination || parsed.destinations[0] || 'Destination'}</h2>
+          {hasChanges() && (
+            <Button onClick={handleUpdate} size="sm" className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Update
+            </Button>
+          )}
         </div>
-      )}
-
-      {/* Trip Summary Section - No Card Wrapper */}
-      <div className="space-y-3">
-        {/* Short Summary */}
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {tripSummary}
-          </p>
-        </div>
-        
-        {/* Editable Dates */}
-        {(startDate || endDate) && (
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Dates:</span>
-            <div className="flex items-center gap-2">
-              {startDate && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
-                      {format(startDate, 'MMM d, yyyy')}
-                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(date) => date && onUpdateDates?.(date, endDate || date)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-              
-              {startDate && endDate && <span className="text-muted-foreground">to</span>}
-              
-              {endDate && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
-                      {format(endDate, 'MMM d, yyyy')}
-                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={endDate}
-                      onSelect={(date) => date && onUpdateDates?.(startDate || date, date)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Airport Codes with Skyscanner Links */}
-        {airportCodes.length > 0 && (
-          <div className="flex items-center gap-2 text-sm">
-            <Plane className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Best airports:</span>
-            <div className="flex items-center gap-1">
-              {airportCodes.map((code, index) => (
-                <React.Fragment key={code}>
-                  <a
-                    href={`https://www.skyscanner.com/flights-to/${code.toLowerCase()}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/80 underline font-medium"
-                  >
-                    {code}
-                  </a>
-                  {index < airportCodes.length - 1 && (
-                    <span className="text-muted-foreground">•</span>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Dropdown Sections - Full Width */}
-      <div className="space-y-3">
+      <div className="space-y-4 px-6 lg:px-8">
+        {/* Trip Overview Map - Full Width */}
+        {parsed.destinations.length > 0 && (
+          <div className="bg-muted/20 rounded-lg p-4 border border-muted/50">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">Trip Overview</h3>
+            </div>
+            <div className="rounded-md overflow-hidden">
+              <InteractiveItineraryMap destinations={parsed.destinations} />
+            </div>
+          </div>
+        )}
+
+        {/* Trip Summary Section */}
+        <div className="space-y-3">
+          {/* Short Summary */}
+          <div>
+            <p className="text-sm text-muted-foreground">
+              {generateTripSummary({
+                destination: destination || parsed.destinations[0] || 'Trip',
+                startDate: localStartDate,
+                endDate: localEndDate,
+                holidayTypes: localHolidayTypes
+              })}
+            </p>
+          </div>
+          
+          {/* Row 1: Editable Dates */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Dates:</span>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
+                      {localStartDate ? format(localStartDate, 'MMM d, yyyy') : 'Start date'}
+                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={localStartDate}
+                      onSelect={(date) => setLocalStartDate(date)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <span className="text-muted-foreground">to</span>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
+                      {localEndDate ? format(localEndDate, 'MMM d, yyyy') : 'End date'}
+                      <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={localEndDate}
+                      onSelect={(date) => setLocalEndDate(date)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Airport Codes with Skyscanner Links */}
+            {airportCodes.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Plane className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Airports:</span>
+                <div className="flex items-center gap-1">
+                  {airportCodes.map((code, index) => (
+                    <React.Fragment key={code}>
+                      <a
+                        href={`https://www.skyscanner.com/flights-to/${code.toLowerCase()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80 underline font-medium"
+                      >
+                        {code}
+                      </a>
+                      {index < airportCodes.length - 1 && (
+                        <span className="text-muted-foreground">•</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: Holiday Type and Budget */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Type:</span>
+              <Select value={localHolidayTypes[0] || 'cultural'} onValueChange={(value) => setLocalHolidayTypes([value])}>
+                <SelectTrigger className="w-auto h-auto p-1 border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cultural">Cultural</SelectItem>
+                  <SelectItem value="adventure">Adventure</SelectItem>
+                  <SelectItem value="relaxation">Relaxation</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                  <SelectItem value="romantic">Romantic</SelectItem>
+                  <SelectItem value="family">Family</SelectItem>
+                  <SelectItem value="foodie">Foodie</SelectItem>
+                  <SelectItem value="wildlife">Wildlife</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Budget:</span>
+              <Select value={localBudget} onValueChange={setLocalBudget}>
+                <SelectTrigger className="w-auto h-auto p-1 border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="budget">Budget</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="luxury">Luxury</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Dropdown Sections - Full Width */}
+        <div className="space-y-3">
         {/* Day-by-Day Section */}
         {parsed.days.length > 0 && (
           <Collapsible 
@@ -736,6 +855,7 @@ export const StructuredItinerary = ({
           </Collapsible>
         )}
 
+        </div>
       </div>
     </div>
   );

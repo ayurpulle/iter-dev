@@ -14,7 +14,7 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/")}
         >
           <Home size={30} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground"} />
@@ -23,7 +23,7 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/map")}
         >
           <Globe size={30} className={location.pathname === "/map" ? "text-primary" : "text-muted-foreground"} />
@@ -32,7 +32,7 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-3 relative"
+          className="flex flex-col items-center gap-1 h-auto p-2 relative"
           onClick={() => navigate("/create")}
         >
           <PlusCircle size={30} className={location.pathname === "/create" ? "text-primary" : "text-muted-foreground"} />
@@ -41,7 +41,7 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/search")}
         >
           <Plane size={30} className={location.pathname === "/search" ? "text-primary" : "text-muted-foreground"} />
@@ -50,7 +50,7 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-2"
           onClick={() => navigate("/account")}
         >
           <User size={30} className={location.pathname === "/account" ? "text-primary" : "text-muted-foreground"} />

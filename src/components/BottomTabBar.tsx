@@ -13,7 +13,7 @@ const BottomTabBar = () => {
       <div className="flex items-center justify-between max-w-md mx-auto">
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/")}
         >
@@ -22,7 +22,7 @@ const BottomTabBar = () => {
         
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/map")}
         >
@@ -31,7 +31,7 @@ const BottomTabBar = () => {
         
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3 relative"
           onClick={() => navigate("/create")}
         >
@@ -40,7 +40,7 @@ const BottomTabBar = () => {
         
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/search")}
         >
@@ -49,7 +49,7 @@ const BottomTabBar = () => {
         
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/account")}
         >

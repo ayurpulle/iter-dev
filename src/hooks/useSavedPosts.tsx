@@ -53,28 +53,37 @@ export const useSavedPosts = () => {
       const savedPostsWithDetails: SavedPost[] = [];
       
       for (const savedItem of savedItemsData || []) {
-        const { data: postData, error: postError } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            profiles!posts_user_id_profiles_fkey (
-              name,
-              username,
-              avatar
-            ),
-            trips (
-              title,
-              stops
-            )
-          `)
-          .eq('id', savedItem.item_id)
-          .single();
+        try {
+          const { data: postData, error: postError } = await supabase
+            .from('posts')
+            .select(`
+              *,
+              profiles!posts_user_id_profiles_fkey (
+                name,
+                username,
+                avatar
+              ),
+              trips (
+                title,
+                stops
+              )
+            `)
+            .eq('id', savedItem.item_id)
+            .maybeSingle(); // Use maybeSingle() instead of single() to handle missing posts
 
-        if (!postError && postData) {
-          savedPostsWithDetails.push({
-            ...savedItem,
-            posts: postData
-          } as SavedPost);
+          // Only add to results if the post still exists
+          if (!postError && postData) {
+            savedPostsWithDetails.push({
+              ...savedItem,
+              posts: postData
+            } as SavedPost);
+          } else if (postError) {
+            console.warn(`Post ${savedItem.item_id} not found or error:`, postError);
+            // Optionally, you could clean up the saved_items entry here
+          }
+        } catch (err) {
+          console.warn(`Error fetching post ${savedItem.item_id}:`, err);
+          // Continue with other posts instead of failing completely
         }
       }
 

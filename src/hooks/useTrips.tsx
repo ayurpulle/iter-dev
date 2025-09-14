@@ -28,7 +28,7 @@ export const useTrips = () => {
   const [error, setError] = useState<string | null>(null);
 
   const uploadTripPhotos = async (photos: string[], tripId: string, userId: string) => {
-    const uploadedUrls: string[] = [];
+    const uploadedResults: Array<{url: string | null, originalIndex: number}> = [];
     
     // Process photos with proper error handling and retries
     for (let i = 0; i < photos.length; i++) {
@@ -41,6 +41,7 @@ export const useTrips = () => {
         // Limit file size to prevent timeouts
         if (blob.size > 5 * 1024 * 1024) { // 5MB limit
           console.warn(`Photo ${i + 1} is too large (${blob.size} bytes), skipping`);
+          uploadedResults.push({url: null, originalIndex: i});
           continue;
         }
         
@@ -56,6 +57,7 @@ export const useTrips = () => {
           
         if (error) {
           console.error(`Error uploading photo ${i + 1}:`, error);
+          uploadedResults.push({url: null, originalIndex: i});
           continue; // Skip this photo but continue with others
         }
         
@@ -64,16 +66,17 @@ export const useTrips = () => {
           .from('trip-photos')
           .getPublicUrl(filePath);
           
-        uploadedUrls.push(publicUrl);
+        uploadedResults.push({url: publicUrl, originalIndex: i});
         console.log(`Photo ${i + 1} uploaded successfully`);
       } catch (err) {
         console.error(`Error processing photo ${i + 1}:`, err);
+        uploadedResults.push({url: null, originalIndex: i});
         // Continue with other photos even if one fails
       }
     }
     
-    console.log(`Successfully uploaded ${uploadedUrls.length} out of ${photos.length} photos`);
-    return uploadedUrls;
+    console.log(`Successfully uploaded ${uploadedResults.filter(r => r.url).length} out of ${photos.length} photos`);
+    return uploadedResults;
   };
 
   const createTrip = async (tripData: TripData) => {
@@ -92,26 +95,31 @@ export const useTrips = () => {
 
       // First, upload photos in smaller batches to avoid timeout
       let imageUrls: string[] = [];
+      let uploadResults: Array<{url: string | null, originalIndex: number}> = [];
       if (tripData.photos.length > 0) {
         console.log('Uploading photos in batches:', tripData.photos.length);
         const tempId = `temp-${Date.now()}`;
         
-        // Upload photos in batches of 3 to avoid timeout
-        const batchSize = 3;
-        for (let i = 0; i < tripData.photos.length; i += batchSize) {
-          const batch = tripData.photos.slice(i, i + batchSize);
-          const batchUrls = await uploadTripPhotos(batch, `${tempId}-batch-${i}`, user.id);
-          imageUrls.push(...batchUrls);
-        }
+        // Upload photos sequentially to maintain order for photo details mapping
+        uploadResults = await uploadTripPhotos(tripData.photos, tempId, user.id);
+        imageUrls = uploadResults.filter(result => result.url).map(result => result.url!);
         console.log('Photos uploaded:', imageUrls);
       }
 
-      // Simplify photo details to avoid large JSON
-      const simplifiedPhotoDetails = tripData.photo_details?.map(detail => ({
-        caption: detail.caption || '',
-        budget: detail.budget || '',
-        tagged_friends: detail.tagged_friends || []
-      })) || [];
+      // Map photo details to match successfully uploaded images
+      const simplifiedPhotoDetails: any[] = [];
+      if (tripData.photo_details && uploadResults.length > 0) {
+        // Create photo details array matching the successfully uploaded images
+        uploadResults.forEach((result) => {
+          if (result.url && tripData.photo_details[result.originalIndex]) {
+            simplifiedPhotoDetails.push({
+              caption: tripData.photo_details[result.originalIndex].caption || '',
+              budget: tripData.photo_details[result.originalIndex].budget || '',
+              tagged_friends: tripData.photo_details[result.originalIndex].tagged_friends || []
+            });
+          }
+        });
+      }
 
       // Create trip record with minimal data first
       const { data: trip, error: tripError } = await supabase

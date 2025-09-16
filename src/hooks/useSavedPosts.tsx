@@ -57,7 +57,7 @@ export const useSavedPosts = () => {
           .from('posts')
           .select(`
             *,
-            profiles!posts_user_id_profiles_fkey (
+            profiles (
               name,
               username,
               avatar

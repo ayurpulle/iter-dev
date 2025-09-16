@@ -70,8 +70,9 @@ serve(async (req) => {
         const { data: posts, error: postsError } = await supabaseClient
           .from('posts')
           .select(`
-            *,
-            profiles (name, username, avatar),
+            id,
+            content,
+            user_id,
             trips (title, destination, stops)
           `)
           .in('id', postIds);
@@ -191,8 +192,9 @@ serve(async (req) => {
       const { data: friendsPosts, error: friendsPostsError } = await supabaseClient
         .from('posts')
         .select(`
-          *,
-          profiles (name, username, avatar)
+          id,
+          content,
+          user_id
         `)
         .in('user_id', friendIds)
         .ilike('content', `%${destination}%`)

@@ -753,11 +753,23 @@ export const StructuredItinerary = ({
 
   const handleUpdate = async () => {
     console.log('handleUpdate called, hasChanges:', hasChanges());
-    if (!hasChanges()) return;
+    if (!hasChanges()) {
+      console.log('No changes detected, aborting update');
+      return;
+    }
     
     console.log('Update button clicked, making update request');
     
     try {
+      console.log('Making API call to update-itinerary with:', {
+        itineraryId: iterData?.id,
+        destination: originalDestination,
+        startDate: localStartDate?.toISOString(),
+        endDate: localEndDate?.toISOString(),
+        budget: localBudget,
+        interests: localHolidayTypes.join(', ')
+      });
+      
       const { data, error } = await supabase.functions.invoke('update-itinerary', {
         body: {
           itineraryId: iterData?.id,
@@ -772,6 +784,8 @@ export const StructuredItinerary = ({
           currentContent: iterData?.itinerary_content || itinerary
         }
       });
+
+      console.log('API response received:', { data, error });
 
       if (error) {
         throw error;

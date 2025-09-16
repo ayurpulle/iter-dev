@@ -286,16 +286,15 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: 'gpt-5-2025-08-07',
           messages: [
             { 
               role: 'system', 
-              content: 'You are an expert travel planner that creates detailed, practical itineraries. Always format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
+              content: 'You are an expert travel planner that creates detailed, practical itineraries with proper day grouping based on trip duration. Always format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
             },
             { role: 'user', content: prompt }
           ],
-          max_tokens: 4000,
-          temperature: 0.7
+          max_completion_tokens: 4000,
         }),
       });
 

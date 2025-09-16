@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 // Removed import of generateTripSummary as we now use dynamic summary generation
 import { SavedRecommendationModal } from './SavedRecommendationModal';
 import { ItineraryUpdateDropdown } from './ItineraryUpdateDropdown';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface FriendRecommendation {
   name: string;
@@ -740,14 +742,41 @@ export const StructuredItinerary = ({
            localBudget !== currentBudgetNumber;
   };
 
-  const handleUpdate = () => {
-    if (onUpdateItinerary && hasChanges()) {
-      onUpdateItinerary({
-        startDate: localStartDate,
-        endDate: localEndDate,
-        holidayTypes: localHolidayTypes,
-        budget: localBudget,
-        destination: originalDestination // Preserve original destination
+  const handleUpdate = async () => {
+    if (!hasChanges()) return;
+    
+    const { toast } = useToast();
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('update-itinerary', {
+        body: {
+          itineraryId: iterData?.id,
+          destination: originalDestination,
+          startDate: localStartDate?.toISOString(),
+          endDate: localEndDate?.toISOString(),
+          budget: localBudget,
+          interests: localHolidayTypes.join(', '),
+          travelStyle: '',
+          currentContent: iterData?.itinerary_content || itinerary
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Itinerary Update Started",
+        description: `Your ${originalDestination} itinerary is being updated. You'll receive a notification when it's ready!`,
+        duration: 5000,
+      });
+      
+    } catch (error) {
+      console.error('Error updating itinerary:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update itinerary. Please try again.",
+        variant: "destructive"
       });
     }
   };

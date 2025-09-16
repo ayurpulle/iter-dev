@@ -118,7 +118,7 @@ Respond conversationally and focus on what the user specifically asked for. If e
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful travel expert who can edit and improve travel itineraries based on user feedback. Be conversational and helpful.'
+            content: 'You are a helpful travel expert who can edit and improve travel itineraries based on user feedback. Be conversational and helpful. Always provide structured itineraries with proper day grouping and consistent formatting.'
           },
           {
             role: 'user',

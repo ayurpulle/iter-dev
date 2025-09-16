@@ -336,7 +336,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           formData.inspirationFolder
         );
 
-        const { data, error } = await supabase.functions.invoke('edit-itinerary', {
+        const { data, error } = await supabase.functions.invoke('update-itinerary', {
           body: {
             itineraryId: editingItinerary.id,
             destination: formData.destination,

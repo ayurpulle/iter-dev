@@ -129,7 +129,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         messages: [
           {
             role: 'system',
-            content: 'You are an expert travel planner who creates detailed, personalized itineraries. Always follow the exact format requested and provide specific, actionable recommendations.'
+            content: 'You are an expert travel planner who creates detailed, personalized itineraries. Always follow the exact format requested and provide specific, actionable recommendations with proper day grouping based on trip duration.'
           },
           {
             role: 'user',

@@ -64,6 +64,14 @@ export const StructuredItinerary = ({
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
+  
+  // Date validation: ensure start date is not after end date
+  const validateDates = (start: Date | undefined, end: Date | undefined) => {
+    if (start && end && start > end) {
+      return false;
+    }
+    return true;
+  };
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
   const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
@@ -214,8 +222,25 @@ export const StructuredItinerary = ({
   };
 
   const parseItinerary = () => {
+    console.log('Parsing itinerary content:', itinerary?.substring(0, 200));
+    
+    if (!itinerary || typeof itinerary !== 'string') {
+      console.error('Invalid itinerary content:', itinerary);
+      return {
+        summary: '',
+        gettingThere: '',
+        perfectStay: '',
+        days: [],
+        travelTips: '',
+        bookingLinks: '',
+        destinations: [destination || 'Destination']
+      };
+    }
+    
     // Split into main sections based on headers
     const sections = itinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*)/);
+    console.log('Parsed sections:', sections.length);
+    
     const parsed = {
       summary: '',
       gettingThere: '',
@@ -807,7 +832,15 @@ export const StructuredItinerary = ({
                     <CalendarComponent
                       mode="single"
                       selected={localStartDate}
-                      onSelect={(date) => setLocalStartDate(date)}
+                       onSelect={(date) => {
+                         if (date && localEndDate && date > localEndDate) {
+                           // If new start date is after end date, adjust end date
+                           setLocalEndDate(date);
+                           setLocalStartDate(date);
+                         } else {
+                           setLocalStartDate(date);
+                         }
+                       }}
                       initialFocus
                       className="pointer-events-auto"
                     />
@@ -827,7 +860,16 @@ export const StructuredItinerary = ({
                     <CalendarComponent
                       mode="single"
                       selected={localEndDate}
-                      onSelect={(date) => setLocalEndDate(date)}
+                       onSelect={(date) => {
+                         if (date && localStartDate && date < localStartDate) {
+                           // If new end date is before start date, adjust start date
+                           setLocalStartDate(date);
+                           setLocalEndDate(date);
+                         } else {
+                           setLocalEndDate(date);
+                         }
+                       }}
+                       disabled={(date) => localStartDate ? date < localStartDate : false}
                       initialFocus
                       className="pointer-events-auto"
                     />

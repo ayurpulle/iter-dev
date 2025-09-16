@@ -402,7 +402,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         startDate: formData.startDate?.toISOString(),
         endDate: formData.endDate?.toISOString(),
         budget: formData.budget > 0 ? formData.budget : null,
-        interests: formData.holidayTypes.join(', '),
+          interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
         travelStyle: formData.notes,
         ragContext: ragContext,
         friendRecommendations: ragFriendRecs
@@ -414,7 +414,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           startDate: formData.startDate?.toISOString(),
           endDate: formData.endDate?.toISOString(),
           budget: formData.budget > 0 ? formData.budget : null,
-          interests: formData.holidayTypes.join(', '),
+          interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
           travelStyle: formData.notes,
           ragContext: ragContext,
           friendRecommendations: ragFriendRecs
@@ -441,9 +441,13 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           duration: 5000,
         });
         
-        // Clear the form and show a processing state
+        // Store generation data including budget and holiday types for later use
         setLastGeneratedData({ 
-          destination: data.destination, 
+          destination: data.destination || formData.destination,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          holidayTypes: formData.holidayTypes || [],
+          budget: formData.budget || 3,
           message: data.message,
           status: 'processing'
         });

@@ -16,14 +16,14 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import MapView from "./pages/MapView";
 import CreateTrip from "./pages/CreateTrip";
-import TripDetails from "./pages/TripDetails";
+
 import Search from "./pages/Search";
 import GlobalSearch from "./pages/GlobalSearch";
 import Chat from "./pages/Chat";
 
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
-import Profile from "./pages/Profile";
+
 import Settings from "./pages/Settings";
 import PostDetail from "./pages/PostDetail";
 import NotFound from "./pages/NotFound";
@@ -69,11 +69,6 @@ const App = () => {
                   <CreateTrip />
                 </ProtectedRoute>
               } />
-              <Route path="/trip-details" element={
-                <ProtectedRoute>
-                  <TripDetails />
-                </ProtectedRoute>
-              } />
               <Route path="/search" element={
                 <ProtectedRoute>
                   <Search />
@@ -102,11 +97,6 @@ const App = () => {
               <Route path="/account" element={
                 <ProtectedRoute>
                   <Account />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

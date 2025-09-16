@@ -11,7 +11,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { generateTripSummary } from '@/utils/tripSummaryGenerator';
+// Removed import of generateTripSummary as we now use dynamic summary generation
 import { SavedRecommendationModal } from './SavedRecommendationModal';
 
 interface FriendRecommendation {
@@ -91,20 +91,54 @@ export const StructuredItinerary = ({
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
-  // Generate actual brief summary
+  // Generate dynamic, engaging trip summary
   const generateBriefSummary = () => {
     const dest = destination || parsed.destinations[0] || 'your destination';
     const days = localStartDate && localEndDate 
       ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
       : null;
     
-    const typeStr = localHolidayTypes.length > 0 ? localHolidayTypes[0].toLowerCase() : 'cultural';
+    const primaryType = localHolidayTypes.length > 0 ? localHolidayTypes[0] : 'Cultural & Historical';
     const budgetStr = getBudgetDescription(localBudget).toLowerCase();
     
+    // Dynamic descriptions based on trip type and destination
+    const getTypeDescription = (type: string, destination: string) => {
+      const descriptions = {
+        'Adventure & Outdoor': ['thrilling outdoor adventures', 'exciting wilderness experiences', 'adrenaline-filled activities'],
+        'Beach & Relaxation': ['peaceful coastal retreats', 'sun-soaked relaxation', 'tranquil beachside escapes'],
+        'City Break': ['vibrant urban exploration', 'cosmopolitan city adventures', 'dynamic metropolitan experiences'],
+        'Cultural & Historical': ['rich cultural discoveries', 'fascinating historical journeys', 'immersive heritage experiences'],
+        'Food & Wine': ['culinary delights and tastings', 'gastronomic adventures', 'epicurean discoveries'],
+        'Romantic Getaway': ['romantic escapades', 'intimate getaway moments', 'enchanting couple experiences'],
+        'Family Holiday': ['memorable family adventures', 'fun-filled family experiences', 'delightful family discoveries'],
+        'Solo Travel': ['personal discovery journeys', 'independent exploration adventures', 'solo wandering experiences'],
+        'Backpacking': ['authentic backpacking adventures', 'budget-friendly exploration', 'grassroots travel experiences'],
+        'Luxury & Spa': ['luxurious indulgences', 'premium comfort experiences', 'lavish relaxation retreats']
+      };
+      
+      const typeDescs = descriptions[type as keyof typeof descriptions] || descriptions['Cultural & Historical'];
+      return typeDescs[Math.floor(Math.random() * typeDescs.length)];
+    };
+
+    const getDestinationFlavor = (dest: string) => {
+      const cityFlavorWords = ['vibrant', 'captivating', 'enchanting', 'stunning', 'magnificent'];
+      const countryFlavorWords = ['beautiful', 'remarkable', 'extraordinary', 'incredible', 'spectacular'];
+      
+      const isCity = dest.includes(',') || ['York', 'Tokyo', 'Paris', 'London', 'Rome'].some(city => dest.includes(city));
+      const flavorWords = isCity ? cityFlavorWords : countryFlavorWords;
+      return flavorWords[Math.floor(Math.random() * flavorWords.length)];
+    };
+
+    const typeDescription = getTypeDescription(primaryType, dest);
+    const destFlavor = getDestinationFlavor(dest);
+    
     if (days) {
-      return `A ${days}-day ${typeStr} ${budgetStr} adventure in ${dest}. Experience the best attractions, dining, and culture this destination has to offer.`;
+      const dayWord = days === 1 ? 'day' : days <= 7 ? 'day' : 'week';
+      const duration = days <= 7 ? `${days}-${dayWord}` : `${Math.ceil(days/7)}-week`;
+      
+      return `Embark on a ${duration} journey of ${typeDescription} in ${destFlavor} ${dest}. Discover hidden gems, authentic experiences, and create unforgettable memories in this ${budgetStr} escape.`;
     } else {
-      return `A ${typeStr} ${budgetStr} journey to ${dest}. Discover amazing attractions, local cuisine, and unforgettable experiences.`;
+      return `Discover the magic of ${destFlavor} ${dest} through ${typeDescription}. Uncover local secrets, savor authentic moments, and experience the true essence of this remarkable destination.`;
     }
   };
 
@@ -269,15 +303,23 @@ export const StructuredItinerary = ({
   };
 
   const renderContentWithLinks = (content: string) => {
-    // Enhanced time-based section formatting
+    // Enhanced time-based section formatting - remove asterisks and use proper formatting
     const formatTimeBasedContent = (text: string) => {
-      // Match time-based patterns like "Morning", "Afternoon", "Evening", "Lunch", "Dinner", etc.
-      const timePattern = /(?:^|\n)((?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[:\-\s]*)/gmi;
+      // Remove asterisks around time labels and replace with bold formatting
+      const timePattern = /\*([^*]+(?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[^*]*)\*/gmi;
       
-      return text.replace(timePattern, (match, timeLabel) => {
+      // First handle asterisk-wrapped time labels
+      let formatted = text.replace(timePattern, '**$1**');
+      
+      // Then handle standalone time labels
+      const standaloneTimePattern = /(?:^|\n)((?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[:\-\s]*)/gmi;
+      
+      formatted = formatted.replace(standaloneTimePattern, (match, timeLabel) => {
         const cleanLabel = timeLabel.replace(/[::\-\s]*$/, '').trim();
         return `\n**TIME_SECTION:${cleanLabel.toUpperCase()}**\n`;
       });
+
+      return formatted;
     };
 
     // Format travel-related content with better headers
@@ -434,9 +476,14 @@ export const StructuredItinerary = ({
           return processedPart; // Already a JSX element
         }
         
+        // Clean up asterisk formatting and replace with proper bold
+        const cleanText = typeof processedPart === 'string' 
+          ? processedPart.replace(/\*([^*]+)\*/g, '**$1**') // Convert single asterisks to double for bold
+          : processedPart;
+
         return (
           <span key={`${index}-${processedIndex}`} className="whitespace-pre-wrap">
-            {processedPart.split(/(\*\*[^*]+\*\*)/g).map((textPart, textIndex) => {
+            {(typeof cleanText === 'string' ? cleanText : processedPart.toString()).split(/(\*\*[^*]+\*\*)/g).map((textPart, textIndex) => {
               if (textPart.startsWith('**') && textPart.endsWith('**')) {
                 const headerText = textPart.slice(2, -2);
                 
@@ -497,7 +544,14 @@ export const StructuredItinerary = ({
                   );
                 }
               } else {
-                return <span key={textIndex}>{textPart}</span>;
+                // Handle any remaining single asterisks for bold formatting
+                const textWithBold = textPart.split(/(\*[^*]+\*)/g).map((subPart, subIndex) => {
+                  if (subPart.startsWith('*') && subPart.endsWith('*') && subPart.length > 2) {
+                    return <strong key={subIndex} className="font-semibold">{subPart.slice(1, -1)}</strong>;
+                  }
+                  return subPart;
+                });
+                return <span key={textIndex}>{textWithBold}</span>;
               }
             })}
           </span>
@@ -616,13 +670,7 @@ export const StructuredItinerary = ({
     }
   }, [startDate, endDate, holidayTypes, budget]);
   
-  // Generate smart trip summary
-  const tripSummary = generateTripSummary({
-    destination: destination || parsed.destinations[0] || 'Trip',
-    startDate,
-    endDate,
-    holidayTypes
-  });
+  // Use dynamic trip summary instead of the old formulaic one
 
   // Get airport codes for destination
   const getAirportCodes = (destination: string): string[] => {
@@ -866,13 +914,13 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('days')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+              <div className="w-full cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors rounded-lg p-4 border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
                 <div className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    Day-by-Day Itinerary
+                    <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="font-semibold text-blue-800 dark:text-blue-200">Day-by-Day Itinerary</span>
                   </div>
-                  {expandedSections.days ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.days ? <ChevronUp className="h-4 w-4 text-blue-600 dark:text-blue-400" /> : <ChevronDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                 </div>
               </div>
             </CollapsibleTrigger>
@@ -900,13 +948,13 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('gettingThere')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+              <div className="w-full cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors rounded-lg p-4 border border-emerald-200 dark:border-emerald-800 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
                 <div className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
-                    <Plane className="h-4 w-4 text-primary" />
-                    Getting There
+                    <Plane className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-semibold text-emerald-800 dark:text-emerald-200">Getting There</span>
                   </div>
-                  {expandedSections.gettingThere ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.gettingThere ? <ChevronUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <ChevronDown className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
                 </div>
               </div>
             </CollapsibleTrigger>
@@ -927,13 +975,13 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('perfectStay')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+              <div className="w-full cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-colors rounded-lg p-4 border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
                 <div className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
-                    <Hotel className="h-4 w-4 text-primary" />
-                    Perfect Stay
+                    <Hotel className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">Perfect Stay</span>
                   </div>
-                  {expandedSections.perfectStay ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.perfectStay ? <ChevronUp className="h-4 w-4 text-purple-600 dark:text-purple-400" /> : <ChevronDown className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
                 </div>
               </div>
             </CollapsibleTrigger>
@@ -954,13 +1002,13 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('travelTips')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+              <div className="w-full cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors rounded-lg p-4 border border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/20">
                 <div className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
-                    <Info className="h-4 w-4 text-primary" />
-                    Essential Travel Tips
+                    <Info className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    <span className="font-semibold text-orange-800 dark:text-orange-200">Essential Travel Tips</span>
                   </div>
-                  {expandedSections.travelTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.travelTips ? <ChevronUp className="h-4 w-4 text-orange-600 dark:text-orange-400" /> : <ChevronDown className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
                 </div>
               </div>
             </CollapsibleTrigger>
@@ -981,13 +1029,13 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('booking')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-4 border border-muted">
+              <div className="w-full cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors rounded-lg p-4 border border-rose-200 dark:border-rose-800 bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-950/30 dark:to-rose-900/20">
                 <div className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-primary" />
-                    Booking & Tips
+                    <ExternalLink className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    <span className="font-semibold text-rose-800 dark:text-rose-200">Booking & Tips</span>
                   </div>
-                  {expandedSections.booking ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {expandedSections.booking ? <ChevronUp className="h-4 w-4 text-rose-600 dark:text-rose-400" /> : <ChevronDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
                 </div>
               </div>
             </CollapsibleTrigger>

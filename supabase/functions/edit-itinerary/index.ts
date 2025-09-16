@@ -39,7 +39,7 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { itineraryContent, editRequest, destination, conversationHistory } = await req.json();
+    const { itineraryContent, editRequest, destination, conversationHistory, budget, interests, travelStyle } = await req.json();
     
     console.log('Received edit request:', {
       editRequest,
@@ -86,6 +86,11 @@ ${conversationContext}
 USER REQUEST:
 ${editRequest}
 
+ORIGINAL TRIP PARAMETERS:
+- Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'} (1=budget, 5=ultra-luxury)
+- Travel Interests: ${interests || 'General travel'}
+- Travel Style: ${travelStyle || 'Balanced exploration'}
+
 IMPORTANT FORMATTING RULES:
 1. For trips ≤7 days: Use "Day 1:", "Day 2:", etc. for each day
 2. For trips 7-14 days: Group into "Days 1-2:", "Days 3-4:", etc.
@@ -93,6 +98,7 @@ IMPORTANT FORMATTING RULES:
 4. Use clean formatting without asterisks around words like *night* - use **night** for bold instead
 5. Create an engaging, personalized Trip Summary (not formulaic)
 6. Keep tone casual but helpful with good grammar
+7. Ensure all recommendations match the specified budget level and travel interests
 
 If you're updating the itinerary, maintain this structure:
 - **Trip Summary** (Generate a unique, engaging 2-3 sentence summary)
@@ -102,7 +108,7 @@ If you're updating the itinerary, maintain this structure:
 - **Travel Tips**
 - **Booking Links**
 
-Respond conversationally and focus on what the user specifically asked for. If extending trip duration, adjust the day grouping accordingly.
+When making changes, consider the original budget and travel interests to ensure consistency. Respond conversationally and focus on what the user specifically asked for. If extending trip duration, adjust the day grouping accordingly.
 `;
 
     console.log('Calling OpenAI API for itinerary editing...');
@@ -114,7 +120,7 @@ Respond conversationally and focus on what the user specifically asked for. If e
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
@@ -125,7 +131,7 @@ Respond conversationally and focus on what the user specifically asked for. If e
             content: prompt
           }
         ],
-        max_completion_tokens: 3000,
+        max_tokens: 3000,
       }),
     });
 

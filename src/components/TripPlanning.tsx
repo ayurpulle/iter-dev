@@ -664,7 +664,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     endDate: changes.endDate?.toISOString(),
                     budget: changes.budget,
                     interests: changes.holidayTypes?.join(', ') || '',
-                    travelStyle: '',
+                    travelStyle: changes.holidayTypes?.join(', ') || '',
                     ragContext: '',
                     friendRecommendations: {},
                     currentContent: viewingIter.itinerary_content

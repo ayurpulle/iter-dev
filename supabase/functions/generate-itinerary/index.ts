@@ -71,7 +71,7 @@ serve(async (req) => {
           .from('posts')
           .select(`
             *,
-            profiles!posts_user_id_fkey (name, username, avatar),
+            profiles (name, username, avatar),
             trips (title, destination, stops)
           `)
           .in('id', postIds);
@@ -192,7 +192,7 @@ serve(async (req) => {
         .from('posts')
         .select(`
           *,
-          profiles:user_id(name, username, avatar)
+          profiles (name, username, avatar)
         `)
         .in('user_id', friendIds)
         .ilike('content', `%${destination}%`)
@@ -354,10 +354,10 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'itinerary_ready',
+          type: 'itinerary_generated',
           title: 'Your Itinerary is Ready!',
           message: `Your ${destination} itinerary has been generated and is ready to view.`,
-          data: { 
+          data: {
             trip_id: savedTrip.id,
             destination: destination,
             friend_recommendations: finalFriendRecommendations
@@ -390,7 +390,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'itinerary_error',
+          type: 'error',
           title: 'Itinerary Generation Failed',
           message: 'We encountered an issue generating your itinerary. Please try again.',
           data: { error: error.message }

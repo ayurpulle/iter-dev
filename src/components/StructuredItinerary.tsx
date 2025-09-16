@@ -77,6 +77,7 @@ export const StructuredItinerary = ({
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
   const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
+  const { toast } = useToast();
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   // Store original destination
 
@@ -745,7 +746,7 @@ export const StructuredItinerary = ({
   const handleUpdate = async () => {
     if (!hasChanges()) return;
     
-    const { toast } = useToast();
+    console.log('Update button clicked, making update request');
     
     try {
       const { data, error } = await supabase.functions.invoke('update-itinerary', {

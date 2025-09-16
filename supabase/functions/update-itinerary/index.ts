@@ -193,7 +193,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
     await supabase.functions.invoke('create-notification', {
       body: {
         userId: userId,
-        type: 'itinerary_updated',
+        type: 'message',
         title: 'Itinerary Updated',
         message: `Your ${requestData.destination} itinerary has been successfully updated!`,
         data: { itineraryId: requestData.itineraryId }
@@ -212,7 +212,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
     await supabase.functions.invoke('create-notification', {
       body: {
         userId: userId,
-        type: 'itinerary_error',
+        type: 'error',
         title: 'Itinerary Update Failed',
         message: `Failed to update your ${requestData.destination} itinerary. Please try again.`,
         data: { itineraryId: requestData.itineraryId, error: error.message }

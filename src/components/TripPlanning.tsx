@@ -95,12 +95,12 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           const result = await saveItinerary({
             title: `${lastGeneratedData?.destination || formData.destination} Trip`,
             destination: lastGeneratedData?.destination || formData.destination,
-            start_date: formData.startDate,
-            end_date: formData.endDate,
-            budget: formData.budget,
-          interests: formData.holidayTypes,
-          itinerary_content: generatedIter,
-          friend_recommendations: friendRecommendations
+            start_date: lastGeneratedData?.startDate || formData.startDate,
+            end_date: lastGeneratedData?.endDate || formData.endDate,
+            budget: lastGeneratedData?.budget || formData.budget,
+            interests: lastGeneratedData?.holidayTypes || formData.holidayTypes,
+            itinerary_content: generatedIter,
+            friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
           
           if (result) {
@@ -448,6 +448,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           endDate: formData.endDate,
           holidayTypes: formData.holidayTypes || [],
           budget: formData.budget || 3,
+          notes: formData.notes,
           message: data.message,
           status: 'processing'
         });

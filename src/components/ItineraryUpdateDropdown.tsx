@@ -74,28 +74,20 @@ export const ItineraryUpdateDropdown = ({
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className={`flex items-center gap-1 px-3 py-1 h-8 text-xs ${className}`}>
-          <RefreshCw className="h-3 w-3" />
-          Update
-          <ChevronDown className="h-3 w-3" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={onUpdate} className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Update with Changes
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <div className="w-full">
-            <IterEditDialog 
-              iterData={iterData} 
-              onIterUpdated={onIterUpdated}
-            />
-          </div>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex gap-2">
+      <Button 
+        onClick={onUpdate} 
+        variant="outline" 
+        size="sm" 
+        className={`flex items-center gap-1 px-3 py-1 h-8 text-xs ${className}`}
+      >
+        <RefreshCw className="h-3 w-3" />
+        Update with Changes
+      </Button>
+      <IterEditDialog 
+        iterData={iterData} 
+        onIterUpdated={onIterUpdated}
+      />
+    </div>
   );
 };

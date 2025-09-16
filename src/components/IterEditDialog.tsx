@@ -109,7 +109,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="w-full">
           <Edit className="h-4 w-4 mr-2" />
           Edit
         </Button>

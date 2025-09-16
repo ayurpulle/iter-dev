@@ -115,8 +115,14 @@ export const StructuredItinerary = ({
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
-  // Generate dynamic, engaging trip summary
-  const generateBriefSummary = () => {
+  // Extract or generate dynamic trip summary from itinerary
+  const getItinerarySummary = () => {
+    // First try to extract from the actual itinerary content
+    if (parsed.summary && parsed.summary.trim()) {
+      return parsed.summary.trim();
+    }
+    
+    // Fallback to dynamic generation if no summary in content
     const dest = destination || parsed.destinations[0] || 'your destination';
     const days = localStartDate && localEndDate 
       ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -125,44 +131,11 @@ export const StructuredItinerary = ({
     const primaryType = localHolidayTypes.length > 0 ? localHolidayTypes[0] : 'Cultural & Historical';
     const budgetStr = getBudgetDescription(localBudget).toLowerCase();
     
-    // Dynamic descriptions based on trip type and destination
-    const getTypeDescription = (type: string, destination: string) => {
-      const descriptions = {
-        'Adventure & Outdoor': ['thrilling outdoor adventures', 'exciting wilderness experiences', 'adrenaline-filled activities'],
-        'Beach & Relaxation': ['peaceful coastal retreats', 'sun-soaked relaxation', 'tranquil beachside escapes'],
-        'City Break': ['vibrant urban exploration', 'cosmopolitan city adventures', 'dynamic metropolitan experiences'],
-        'Cultural & Historical': ['rich cultural discoveries', 'fascinating historical journeys', 'immersive heritage experiences'],
-        'Food & Wine': ['culinary delights and tastings', 'gastronomic adventures', 'epicurean discoveries'],
-        'Romantic Getaway': ['romantic escapades', 'intimate getaway moments', 'enchanting couple experiences'],
-        'Family Holiday': ['memorable family adventures', 'fun-filled family experiences', 'delightful family discoveries'],
-        'Solo Travel': ['personal discovery journeys', 'independent exploration adventures', 'solo wandering experiences'],
-        'Backpacking': ['authentic backpacking adventures', 'budget-friendly exploration', 'grassroots travel experiences'],
-        'Luxury & Spa': ['luxurious indulgences', 'premium comfort experiences', 'lavish relaxation retreats']
-      };
-      
-      const typeDescs = descriptions[type as keyof typeof descriptions] || descriptions['Cultural & Historical'];
-      return typeDescs[Math.floor(Math.random() * typeDescs.length)];
-    };
-
-    const getDestinationFlavor = (dest: string) => {
-      const cityFlavorWords = ['vibrant', 'captivating', 'enchanting', 'stunning', 'magnificent'];
-      const countryFlavorWords = ['beautiful', 'remarkable', 'extraordinary', 'incredible', 'spectacular'];
-      
-      const isCity = dest.includes(',') || ['York', 'Tokyo', 'Paris', 'London', 'Rome'].some(city => dest.includes(city));
-      const flavorWords = isCity ? cityFlavorWords : countryFlavorWords;
-      return flavorWords[Math.floor(Math.random() * flavorWords.length)];
-    };
-
-    const typeDescription = getTypeDescription(primaryType, dest);
-    const destFlavor = getDestinationFlavor(dest);
-    
     if (days) {
-      const dayWord = days === 1 ? 'day' : days <= 7 ? 'day' : 'week';
-      const duration = days <= 7 ? `${days}-${dayWord}` : `${Math.ceil(days/7)}-week`;
-      
-      return `Embark on a ${duration} journey of ${typeDescription} in ${destFlavor} ${dest}. Discover hidden gems, authentic experiences, and create unforgettable memories in this ${budgetStr} escape.`;
+      const duration = days <= 7 ? `${days}-day` : days <= 14 ? `${days}-day` : `${Math.ceil(days/7)}-week`;
+      return `Embark on a ${duration} ${primaryType.toLowerCase()} adventure in ${dest}. This ${budgetStr} itinerary combines authentic experiences with carefully curated recommendations to create unforgettable memories.`;
     } else {
-      return `Discover the magic of ${destFlavor} ${dest} through ${typeDescription}. Uncover local secrets, savor authentic moments, and experience the true essence of this remarkable destination.`;
+      return `Discover the essence of ${dest} through this ${primaryType.toLowerCase()} journey. Experience the destination's unique character with ${budgetStr} recommendations tailored to your interests.`;
     }
   };
 
@@ -297,33 +270,33 @@ export const StructuredItinerary = ({
             const match = content.match(regex);
             const dayContent = match?.[1] || '';
             
-            // Handle both single days and day ranges
+            // Parse day patterns
             const singleDayMatch = dayMatch.match(/Day (\d+)/i);
             const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
             
-            let dayNumber, dayTitle;
+            let dayNum, dayTitle;
             
             if (dayRangeMatch) {
               // For day ranges like "Days 1-2"
-              dayNumber = dayRangeMatch[1];
+              dayNum = dayRangeMatch[1];
               dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
               if (!dayTitle) {
                 dayTitle = `Days ${dayRangeMatch[1]}-${dayRangeMatch[2]}`;
               }
             } else if (singleDayMatch) {
               // For single days like "Day 1"
-              dayNumber = singleDayMatch[1];
+              dayNum = singleDayMatch[1];
               dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
               if (!dayTitle) {
-                dayTitle = `Day ${dayNumber}`;
+                dayTitle = `Day ${dayNum}`;
               }
             }
             
-            console.log(`Parsing Day ${dayNumber}:`, { dayTitle, contentLength: dayContent.length });
+            console.log(`Parsing Day ${dayNum}:`, { dayTitle, contentLength: dayContent.length });
             
-            if (dayNumber) {
+            if (dayNum) {
               parsed.days.push({
-                number: dayNumber,
+                number: dayNum,
                 title: dayTitle,
                 content: dayContent.trim()
               });
@@ -346,11 +319,16 @@ export const StructuredItinerary = ({
   const renderContentWithLinks = (content: string) => {
     // Enhanced time-based section formatting - remove asterisks and use proper formatting
     const formatTimeBasedContent = (text: string) => {
-      // Remove asterisks around time labels and replace with bold formatting
-      const timePattern = /\*([^*]+(?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[^*]*)\*/gmi;
+      // Clean up single asterisks around random words first
+      let formatted = text
+        .replace(/\*([^*\s]+)\*/g, '**$1**') // Convert single asterisks to double for consistency
+        .replace(/\*{3,}/g, '**'); // Clean up multiple asterisks
       
-      // First handle asterisk-wrapped time labels
-      let formatted = text.replace(timePattern, '**$1**');
+      // Remove asterisks around time labels and replace with bold formatting
+      const timePattern = /\*{1,2}([^*]+(?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[^*]*)\*{1,2}/gmi;
+      
+      // Handle asterisk-wrapped time labels
+      formatted = formatted.replace(timePattern, '**$1**');
       
       // Then handle standalone time labels
       const standaloneTimePattern = /(?:^|\n)((?:Morning|Afternoon|Evening|Lunch|Dinner|Breakfast|Night|Late Morning|Early Evening|Midday|Noon)[:\-\s]*)/gmi;
@@ -517,9 +495,12 @@ export const StructuredItinerary = ({
           return processedPart; // Already a JSX element
         }
         
-        // Clean up asterisk formatting and replace with proper bold
+        // Clean up asterisk formatting properly
         const cleanText = typeof processedPart === 'string' 
-          ? processedPart.replace(/\*([^*]+)\*/g, '**$1**') // Convert single asterisks to double for bold
+          ? processedPart
+              .replace(/\*([^*\s][^*]*[^*\s])\*/g, '**$1**') // Convert single asterisks to double for proper bold
+              .replace(/\*(\w+)\*/g, '**$1**') // Handle single words
+              .replace(/\*{3,}/g, '**') // Clean up multiple asterisks
           : processedPart;
 
         return (
@@ -810,9 +791,9 @@ export const StructuredItinerary = ({
         <div className="space-y-3">
           {/* Short Summary */}
           <div>
-            <p className="text-sm text-muted-foreground">
-              {generateBriefSummary()}
-            </p>
+          <p className="text-sm text-muted-foreground">
+            {getItinerarySummary()}
+          </p>
           </div>
           
           {/* Row 1: Editable Dates */}

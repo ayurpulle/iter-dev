@@ -96,13 +96,22 @@ Structure your response with these exact sections:
 [Accommodation recommendations that match the budget level and location preferences]
 
 **Day-by-Day Itinerary**
-[Detailed daily plans with morning, afternoon, and evening activities]
+[IMPORTANT: Follow day grouping rules:
+- For trips ≤7 days: Use "Day 1:", "Day 2:", etc.
+- For trips 7-14 days: Group as "Days 1-2:", "Days 3-4:", etc.
+- For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.]
 
 **Travel Tips**
 [Practical advice specific to the destination, budget level, and travel style]
 
 **Booking Links**
 [Relevant booking recommendations and tips for reservations]
+
+FORMATTING REQUIREMENTS:
+- Create a unique, engaging Trip Summary (not formulaic)
+- Use clean formatting without asterisks around single words like *night* - use **night** for bold instead
+- Keep tone casual but helpful with good grammar
+- Follow day grouping rules based on trip duration
 
 Keep the same engaging, personal tone while updating the content to match the new parameters. Include specific recommendations for restaurants, activities, and experiences that align with the specified budget and interests.
 `;
@@ -116,7 +125,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -127,8 +136,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
             content: prompt
           }
         ],
-        max_tokens: 4000,
-        temperature: 0.7,
+        max_completion_tokens: 4000,
       }),
     });
 

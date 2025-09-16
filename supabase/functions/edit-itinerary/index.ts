@@ -52,6 +52,23 @@ serve(async (req) => {
       throw new Error('Missing required fields: itineraryContent, editRequest, or destination');
     }
 
+    // Calculate trip duration for proper day grouping
+    const calculateDayGrouping = (content: string) => {
+      const dayMatches = content.match(/(?:Day|Days)\s+\d+/gi);
+      if (!dayMatches) return 'day-by-day';
+      
+      const maxDay = Math.max(...dayMatches.map(match => {
+        const numbers = match.match(/\d+/g);
+        return numbers ? parseInt(numbers[numbers.length - 1]) : 1;
+      }));
+      
+      if (maxDay <= 7) return 'day-by-day';
+      if (maxDay <= 14) return '2-3-days';
+      return 'weekly';
+    };
+
+    const currentGrouping = calculateDayGrouping(itineraryContent);
+
     // Construct prompt for OpenAI
     const conversationContext = conversationHistory && conversationHistory.length > 0 
       ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
@@ -69,17 +86,23 @@ ${conversationContext}
 USER REQUEST:
 ${editRequest}
 
-Please respond conversationally to the user's request. If they want to modify the itinerary, provide the updated version. If they just want information or suggestions, provide a helpful response.
+IMPORTANT FORMATTING RULES:
+1. For trips ≤7 days: Use "Day 1:", "Day 2:", etc. for each day
+2. For trips 7-14 days: Group into "Days 1-2:", "Days 3-4:", etc.
+3. For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.
+4. Use clean formatting without asterisks around words like *night* - use **night** for bold instead
+5. Create an engaging, personalized Trip Summary (not formulaic)
+6. Keep tone casual but helpful with good grammar
 
-If you're updating the itinerary, please maintain the same structure:
-- **Trip Summary**
+If you're updating the itinerary, maintain this structure:
+- **Trip Summary** (Generate a unique, engaging 2-3 sentence summary)
 - **Getting There**
 - **Perfect Stay**
-- **Day-by-Day Itinerary**
+- **Day-by-Day Itinerary** (or grouped days based on duration)
 - **Travel Tips**
 - **Booking Links**
 
-Be helpful, personable, and focus on what the user specifically asked for.
+Respond conversationally and focus on what the user specifically asked for. If extending trip duration, adjust the day grouping accordingly.
 `;
 
     console.log('Calling OpenAI API for itinerary editing...');
@@ -91,7 +114,7 @@ Be helpful, personable, and focus on what the user specifically asked for.
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -102,8 +125,7 @@ Be helpful, personable, and focus on what the user specifically asked for.
             content: prompt
           }
         ],
-        max_tokens: 3000,
-        temperature: 0.7,
+        max_completion_tokens: 3000,
       }),
     });
 
@@ -121,13 +143,26 @@ Be helpful, personable, and focus on what the user specifically asked for.
     // Check if the response contains a complete itinerary (has the key sections)
     const hasItineraryStructure = aiResponse.includes('**Trip Summary**') || 
                                  aiResponse.includes('**Getting There**') || 
-                                 aiResponse.includes('**Day-by-Day Itinerary**');
+                                 aiResponse.includes('**Day-by-Day Itinerary**') ||
+                                 aiResponse.includes('Day 1') ||
+                                 aiResponse.includes('Days 1') ||
+                                 aiResponse.includes('Week 1');
 
     let updatedItinerary = null;
     let newDestination = null;
 
     if (hasItineraryStructure) {
       updatedItinerary = aiResponse;
+      
+      // Extract trip duration changes to update destination if needed
+      const dayMatches = aiResponse.match(/(?:Day|Days)\s+\d+/gi);
+      let maxDay = 1;
+      if (dayMatches) {
+        maxDay = Math.max(...dayMatches.map(match => {
+          const numbers = match.match(/\d+/g);
+          return numbers ? parseInt(numbers[numbers.length - 1]) : 1;
+        }));
+      }
       
       // Check if destination changed in the new itinerary
       const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);

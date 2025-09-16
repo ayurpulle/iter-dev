@@ -356,7 +356,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'itinerary_generated',
+          type: 'system_message',
           title: 'Your Itinerary is Ready!',
           message: `Your ${destination} itinerary has been generated and is ready to view.`,
           data: {
@@ -392,7 +392,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'error',
+          type: 'system_message',
           title: 'Itinerary Generation Failed',
           message: 'We encountered an issue generating your itinerary. Please try again.',
           data: { error: error.message }

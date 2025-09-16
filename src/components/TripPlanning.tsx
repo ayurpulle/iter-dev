@@ -355,19 +355,22 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           formData.inspirationFolder
         );
 
+        // Serialize data for update-itinerary call
+        const updateData = {
+          itineraryId: editingItinerary.id,
+          destination: formData.destination,
+          startDate: formData.startDate?.toISOString() || null,
+          endDate: formData.endDate?.toISOString() || null,
+          budget: formData.budget > 0 ? formData.budget : null,
+          interests: formData.holidayTypes.join(', '),
+          travelStyle: formData.notes || '',
+          ragContext: typeof ragContext === 'string' ? ragContext : '',
+          friendRecommendations: ragFriendRecs ? JSON.parse(JSON.stringify(ragFriendRecs)) : {},
+          currentContent: editingItinerary.itinerary_content
+        };
+
         const { data, error } = await supabase.functions.invoke('update-itinerary', {
-          body: {
-            itineraryId: editingItinerary.id,
-            destination: formData.destination,
-            startDate: formData.startDate?.toISOString(),
-            endDate: formData.endDate?.toISOString(),
-            budget: formData.budget > 0 ? formData.budget : null,
-            interests: formData.holidayTypes.join(', '),
-            travelStyle: formData.notes,
-            ragContext: ragContext,
-            friendRecommendations: ragFriendRecs,
-            currentContent: editingItinerary.itinerary_content
-          }
+          body: updateData
         });
 
         if (error) {
@@ -416,80 +419,74 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         formData.inspirationFolder
       );
 
-      console.log('Calling generate-itinerary edge function with:', {
+      // Serialize all data to prevent DataCloneError
+      const serializedData = {
         destination: formData.destination,
-        startDate: formData.startDate?.toISOString(),
-        endDate: formData.endDate?.toISOString(),
+        startDate: formData.startDate?.toISOString() || null,
+        endDate: formData.endDate?.toISOString() || null,
         budget: formData.budget > 0 ? formData.budget : null,
-          interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
-        travelStyle: formData.notes,
-        ragContext: ragContext,
-        friendRecommendations: ragFriendRecs
-      });
+        interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
+        travelStyle: formData.notes || '',
+        ragContext: typeof ragContext === 'string' ? ragContext : '',
+        friendRecommendations: ragFriendRecs ? JSON.parse(JSON.stringify(ragFriendRecs)) : {}
+      };
+
+      console.log('Calling generate-itinerary edge function with serialized data:', serializedData);
 
       const { data, error } = await supabase.functions.invoke('generate-itinerary', {
-        body: {
-          destination: formData.destination,
-          startDate: formData.startDate?.toISOString(),
-          endDate: formData.endDate?.toISOString(),
-          budget: formData.budget > 0 ? formData.budget : null,
-          interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
-          travelStyle: formData.notes,
-          ragContext: ragContext,
-          friendRecommendations: ragFriendRecs
-        }
+        body: serializedData
       });
 
       console.log('Edge function response:', { data, error });
 
       if (error) {
         console.error('Error generating iter:', error);
-        toast({
-          title: "Generation Failed",
-          description: error.message || "Failed to start itinerary generation. Please try again.",
-          variant: "destructive"
-        });
-        return;
+        throw new Error(error.message || 'Generation failed');
       }
 
-      // Show success message for background processing
-      if (data.status === 'processing') {
-        toast({
-          title: "Itinerary Generation Started",
-          description: `Your ${data.destination} itinerary is being generated in the background. You'll receive a notification when it's ready!`,
-          duration: 5000,
-        });
-        
-        // Update generation data with response data while preserving form data
-        setLastGeneratedData(prev => ({ 
+      // Handle different response types
+      if (data?.status === 'processing') {
+        // Background processing started successfully
+        setLastGeneratedData(prev => ({
           ...prev,
           destination: data.destination || formData.destination,
           message: data.message,
           status: 'processing'
         }));
         
-        console.log('Form data sent to generation:', {
-          destination: formData.destination,
-          budget: formData.budget,
-          holidayTypes: formData.holidayTypes,
-          dates: { start: formData.startDate, end: formData.endDate }
+        toast({
+          title: "Generation Started",
+          description: data.message || `Your ${data.destination} itinerary is being generated. You'll receive a notification when it's ready!`,
+          duration: 5000,
         });
+      } else if (data?.itinerary) {
+        // Immediate response with itinerary
+        setGeneratedIter(data.itinerary);
+        setLastGeneratedData(prev => ({
+          ...prev,
+          itinerary: data.itinerary,
+          status: 'completed'
+        }));
         
-        console.log('Form data sent to generation:', {
-          destination: formData.destination,
-          budget: formData.budget,
-          holidayTypes: formData.holidayTypes,
-          dates: { start: formData.startDate, end: formData.endDate }
+        toast({
+          title: "Itinerary Generated",
+          description: "Your itinerary has been created successfully!",
         });
       }
-
+      
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Generation error:', error);
+      
+      // Always provide user feedback
       toast({
         title: "Generation Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      
+      // Reset state on error
+      setLastGeneratedData(null);
+      
     } finally {
       setIsLoading(false);
     }

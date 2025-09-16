@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -69,6 +69,25 @@ export const StructuredItinerary = ({
     destination 
   });
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
+  // Normalize budget to number consistently
+  const normalizedBudget = useMemo(() => {
+    if (typeof budget === 'string' && budget.length > 0) {
+      const parsed = parseInt(budget);
+      return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed)); // Clamp between 1-5, default 3
+    }
+    return 3; // Default budget level
+  }, [budget]);
+
+  // Normalize holiday types consistently  
+  const normalizedHolidayTypes = useMemo(() => {
+    if (Array.isArray(holidayTypes)) return holidayTypes;
+    return [];
+  }, [holidayTypes]);
+
+  // Validate required data before rendering
+  const safeDestination = destination || iterData?.destination || 'Unknown Destination';
+  const hasValidIterData = iterData && iterData.id;
+
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
   
@@ -79,13 +98,25 @@ export const StructuredItinerary = ({
     }
     return true;
   };
-  const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
-  const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
+  
+  const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(normalizedHolidayTypes);
+  const [localBudget, setLocalBudget] = useState<number>(normalizedBudget);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
-  console.log('StructuredItinerary component rendering, about to call useToast');
-  const toastObj = useToast();
-  const toast = toastObj?.toast;
-  console.log('useToast hook called successfully, toast function:', typeof toast);
+  // Always call useToast at top level (React hook rules)
+  const { toast } = useToast();
+
+  // Utility function to safely use toast
+  const safeToast = useCallback((message: Parameters<typeof toast>[0]) => {
+    try {
+      if (typeof toast === 'function') {
+        toast(message);
+      } else {
+        console.warn('Toast function not available:', message);
+      }
+    } catch (error) {
+      console.error('Toast error:', error, message);
+    }
+  }, [toast]);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   // Store original destination
 
@@ -695,13 +726,15 @@ export const StructuredItinerary = ({
   React.useEffect(() => {
     setLocalStartDate(startDate);
     setLocalEndDate(endDate);
-    if (holidayTypes && holidayTypes.length > 0) {
-      setLocalHolidayTypes(holidayTypes);
-    }
-    if (budget) {
-      setLocalBudget(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
-    }
-  }, [startDate, endDate, holidayTypes, budget]);
+  }, [startDate, endDate]);
+
+  React.useEffect(() => {
+    setLocalHolidayTypes(normalizedHolidayTypes);
+  }, [normalizedHolidayTypes]);
+
+  React.useEffect(() => {
+    setLocalBudget(normalizedBudget);
+  }, [normalizedBudget]);
   
   // Use dynamic trip summary instead of the old formulaic one
 
@@ -751,8 +784,21 @@ export const StructuredItinerary = ({
            localBudget !== currentBudgetNumber;
   };
 
-  const handleUpdate = async () => {
+  // Add data validation and better error handling
+  const handleUpdate = useCallback(async () => {
     console.log('handleUpdate called, hasChanges:', hasChanges());
+    
+      // Validate iterData exists before API calls
+    if (!hasValidIterData) {
+      console.error('Cannot update: Missing itinerary data or ID');
+      safeToast({
+        title: "Error",
+        description: "Cannot update itinerary - missing data",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!hasChanges()) {
       console.log('No changes detected, aborting update');
       return;
@@ -761,77 +807,82 @@ export const StructuredItinerary = ({
     console.log('Update button clicked, making update request');
     
     try {
-      console.log('Making API call to update-itinerary with:', {
-        itineraryId: iterData?.id,
+      // Serialize data to prevent DataCloneError
+      const updatePayload = {
+        itineraryId: iterData.id,
         destination: originalDestination,
-        startDate: localStartDate?.toISOString(),
-        endDate: localEndDate?.toISOString(),
+        startDate: localStartDate?.toISOString() || null,
+        endDate: localEndDate?.toISOString() || null,
         budget: localBudget,
-        interests: localHolidayTypes.join(', ')
-      });
+        interests: localHolidayTypes.join(', '),
+        travelStyle: localHolidayTypes.join(', '), // Use holiday types as travel style
+        ragContext: '',
+        friendRecommendations: {},
+        currentContent: iterData.itinerary_content || itinerary
+      };
+
+      console.log('Making API call to update-itinerary with serialized data:', updatePayload);
       
       const { data, error } = await supabase.functions.invoke('update-itinerary', {
-        body: {
-          itineraryId: iterData?.id,
-          destination: originalDestination,
-          startDate: localStartDate?.toISOString(),
-          endDate: localEndDate?.toISOString(),
-          budget: localBudget,
-          interests: localHolidayTypes.join(', '),
-          travelStyle: localHolidayTypes.join(', '), // Use holiday types as travel style
-          ragContext: '',
-          friendRecommendations: {},
-          currentContent: iterData?.itinerary_content || itinerary
-        }
+        body: updatePayload
       });
 
       console.log('API response received:', { data, error });
 
       if (error) {
-        throw error;
+        throw new Error(error.message || 'Update request failed');
       }
 
-      console.log('About to call toast function:', typeof toast);
-      if (toast) {
-        toast({
-          title: "Itinerary Update Started",
+      // Handle different response types
+      if (data?.status === 'processing') {
+        safeToast({
+          title: "Itinerary Update Started", 
           description: `Your ${originalDestination} itinerary is being updated. You'll receive a notification when it's ready!`,
           duration: 5000,
         });
-        console.log('Toast called successfully');
-      } else {
-        console.error('Toast function is not available');
+      } else if (data?.itinerary) {
+        // Immediate update response
+        safeToast({
+          title: "Itinerary Updated",
+          description: "Your itinerary has been updated successfully.",
+        });
       }
       
     } catch (error) {
       console.error('Error updating itinerary:', error);
-      console.log('About to call toast for error, toast type:', typeof toast);
-      if (toast) {
-        toast({
-          title: "Update Failed",
-          description: error.message || "Failed to update itinerary. Please try again.",
-          variant: "destructive"
-        });
-      } else {
-        console.error('Toast function is not available for error');
-      }
+      
+      safeToast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update itinerary. Please try again.",
+        variant: "destructive"
+      });
     }
-  };
+  }, [hasValidIterData, iterData, originalDestination, localStartDate, localEndDate, localBudget, localHolidayTypes, itinerary, hasChanges, safeToast]);
+
+  // Early return if missing critical data for editing functionality
+  if (iterData && !hasValidIterData) {
+    console.warn('StructuredItinerary: Invalid iterData provided');
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground">Loading itinerary data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="-mx-6 lg:-mx-8">
       {/* Header with Update Dropdown */}
       <div className="px-6 lg:px-8 mb-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Your trip to {destination || parsed.destinations[0] || 'Destination'}</h2>
-          {iterData && (
+          <h2 className="text-xl font-semibold">Your trip to {safeDestination}</h2>
+          {iterData && hasValidIterData && (
             <ItineraryUpdateDropdown
               iterData={{
                 ...iterData,
-                destination: destination || parsed.destinations[0] || iterData.destination,
+                destination: safeDestination,
                 itinerary_content: itinerary,
-                is_owner: true, // Ensure edit permissions are set
-                can_edit: true  // Ensure edit permissions are set
+                is_owner: Boolean(iterData.is_owner), // Ensure boolean
+                can_edit: Boolean(iterData.can_edit)  // Ensure boolean
               }}
               hasChanges={hasChanges()}
               onUpdate={handleUpdate}

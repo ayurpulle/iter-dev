@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,8 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
   const [editRequest, setEditRequest] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversation, setConversation] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [permissions, setPermissions] = useState({ canEdit: false, isOwner: false });
   const { toast } = useToast();
 
   const handleSendRequest = async () => {
@@ -105,12 +107,27 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
     }
   };
 
-  const canEdit = iterData.is_owner || iterData.can_edit;
-  
-  console.log('IterEditDialog - canEdit:', canEdit, 'is_owner:', iterData.is_owner, 'can_edit:', iterData.can_edit);
+  // Check permissions after data is loaded (fix race condition)
+  useEffect(() => {
+    if (iterData && iterData.id) {
+      const canEdit = Boolean(iterData.is_owner || iterData.can_edit);
+      const isOwner = Boolean(iterData.is_owner);
+      
+      setPermissions({ canEdit, isOwner });
+      setIsDataLoaded(true);
+      
+      console.log('IterEditDialog permissions loaded:', { canEdit, isOwner, iterData: iterData.id });
+    }
+  }, [iterData]);
 
-  if (!canEdit) {
-    console.log('Edit button hidden due to permissions');
+  // Don't render until data is loaded
+  if (!isDataLoaded) {
+    return null; // Or a loading spinner if needed
+  }
+
+  // Only show if user has permissions
+  if (!permissions.canEdit) {
+    console.log('Edit dialog hidden - no edit permissions');
     return null;
   }
 

@@ -189,16 +189,16 @@ Keep the same engaging, personal tone while updating the content to match the ne
 
     console.log('Itinerary regeneration completed successfully');
 
-    // Send notification to user
-    await supabase.functions.invoke('create-notification', {
-      body: {
-        userId: userId,
-        type: 'message',
+    // Send notification to user using direct database insert
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'itinerary_updated',
         title: 'Itinerary Updated',
         message: `Your ${requestData.destination} itinerary has been successfully updated!`,
-        data: { itineraryId: requestData.itineraryId }
-      }
-    });
+        data: { itinerary_id: requestData.itineraryId }
+      });
 
   } catch (error) {
     console.error('Error in regenerateItineraryBackground:', error);
@@ -209,15 +209,15 @@ Keep the same engaging, personal tone while updating the content to match the ne
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    await supabase.functions.invoke('create-notification', {
-      body: {
-        userId: userId,
-        type: 'error',
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'system_message',
         title: 'Itinerary Update Failed',
         message: `Failed to update your ${requestData.destination} itinerary. Please try again.`,
-        data: { itineraryId: requestData.itineraryId, error: error.message }
-      }
-    });
+        data: { itinerary_id: requestData.itineraryId, error: error.message }
+      });
   }
 }
 

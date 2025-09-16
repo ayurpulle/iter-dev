@@ -55,7 +55,10 @@ export const ItineraryUpdateDropdown = ({
   if (hasChanges) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Button onClick={onUpdate} size="sm" className="flex items-center gap-1 px-3 py-1 h-8 text-xs">
+        <Button onClick={() => {
+          console.log('Update button clicked in dropdown');
+          onUpdate();
+        }} size="sm" className="flex items-center gap-1 px-3 py-1 h-8 text-xs">
           <RefreshCw className="h-3 w-3" />
           Update
         </Button>
@@ -83,7 +86,10 @@ export const ItineraryUpdateDropdown = ({
   return (
     <div className="flex gap-2">
       <Button 
-        onClick={onUpdate} 
+        onClick={() => {
+          console.log('Update with Changes button clicked');
+          onUpdate();
+        }}
         variant="outline" 
         size="sm" 
         className={`flex items-center gap-1 px-3 py-1 h-8 text-xs ${className}`}

@@ -63,6 +63,11 @@ export const StructuredItinerary = ({
   iterData,
   onIterUpdated
 }: StructuredItineraryProps) => {
+  console.log('StructuredItinerary component props received:', { 
+    hasItinerary: !!itinerary, 
+    hasIterData: !!iterData,
+    destination 
+  });
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(endDate);
@@ -77,7 +82,10 @@ export const StructuredItinerary = ({
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(holidayTypes || []);
   const [localBudget, setLocalBudget] = useState<number>(budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
-  const { toast } = useToast();
+  console.log('StructuredItinerary component rendering, about to call useToast');
+  const toastObj = useToast();
+  const toast = toastObj?.toast;
+  console.log('useToast hook called successfully, toast function:', typeof toast);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   // Store original destination
 
@@ -744,6 +752,7 @@ export const StructuredItinerary = ({
   };
 
   const handleUpdate = async () => {
+    console.log('handleUpdate called, hasChanges:', hasChanges());
     if (!hasChanges()) return;
     
     console.log('Update button clicked, making update request');
@@ -768,19 +777,30 @@ export const StructuredItinerary = ({
         throw error;
       }
 
-      toast({
-        title: "Itinerary Update Started",
-        description: `Your ${originalDestination} itinerary is being updated. You'll receive a notification when it's ready!`,
-        duration: 5000,
-      });
+      console.log('About to call toast function:', typeof toast);
+      if (toast) {
+        toast({
+          title: "Itinerary Update Started",
+          description: `Your ${originalDestination} itinerary is being updated. You'll receive a notification when it's ready!`,
+          duration: 5000,
+        });
+        console.log('Toast called successfully');
+      } else {
+        console.error('Toast function is not available');
+      }
       
     } catch (error) {
       console.error('Error updating itinerary:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update itinerary. Please try again.",
-        variant: "destructive"
-      });
+      console.log('About to call toast for error, toast type:', typeof toast);
+      if (toast) {
+        toast({
+          title: "Update Failed",
+          description: error.message || "Failed to update itinerary. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        console.error('Toast function is not available for error');
+      }
     }
   };
 

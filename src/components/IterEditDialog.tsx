@@ -49,10 +49,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           itineraryContent: iterData.itinerary_content,
           editRequest: userMessage,
           destination: iterData.destination,
-          conversationHistory: newConversation,
-          budget: (iterData as any)?.budget,
-          interests: (iterData as any)?.interests?.join?.(', ') || '',
-          travelStyle: (iterData as any)?.interests?.join?.(', ') || ''
+          conversationHistory: newConversation
         }
       });
 

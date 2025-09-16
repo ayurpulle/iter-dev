@@ -371,10 +371,7 @@ const GlobalSearchPage = () => {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    if (result.type === 'user') {
-      // Navigate to user profile with user data
-      navigate('/profile', { state: { userData: result.data } });
-    }
+    // User profile navigation removed - Profile.tsx no longer exists
     // For location and hashtag results, we could implement filtering or navigation in the future
   };
 

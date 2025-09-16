@@ -756,7 +756,9 @@ export const StructuredItinerary = ({
           endDate: localEndDate?.toISOString(),
           budget: localBudget,
           interests: localHolidayTypes.join(', '),
-          travelStyle: '',
+          travelStyle: localHolidayTypes.join(', '), // Use holiday types as travel style
+          ragContext: '',
+          friendRecommendations: {},
           currentContent: iterData?.itinerary_content || itinerary
         }
       });

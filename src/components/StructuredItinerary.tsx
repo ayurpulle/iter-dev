@@ -800,7 +800,12 @@ export const StructuredItinerary = ({
               }}
               hasChanges={hasChanges()}
               onUpdate={handleUpdate}
-              onIterUpdated={onIterUpdated}
+              onIterUpdated={(newContent: string, newDestination?: string) => {
+                console.log('StructuredItinerary received update:', { newContent, newDestination });
+                if (onIterUpdated) {
+                  onIterUpdated(newContent, newDestination);
+                }
+              }}
             />
           )}
         </div>

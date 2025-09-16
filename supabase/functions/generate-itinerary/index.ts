@@ -32,7 +32,21 @@ serve(async (req) => {
       );
 
       const { destination, startDate, endDate, budget, interests, travelStyle, ragContext, friendRecommendations, existingItinerary, changeRequest, inspirationSource, inspirationFolder } = requestData;
-      console.log('Request params:', { destination, startDate, endDate, budget, interests, travelStyle, hasRAGContext: !!ragContext, hasExistingItinerary: !!existingItinerary, changeRequest, inspirationSource, inspirationFolder });
+      console.log('Request params:', { 
+        destination, 
+        startDate, 
+        endDate, 
+        budget: budget, 
+        budgetType: typeof budget,
+        interests: interests, 
+        interestsType: typeof interests,
+        travelStyle, 
+        hasRAGContext: !!ragContext, 
+        hasExistingItinerary: !!existingItinerary, 
+        changeRequest, 
+        inspirationSource, 
+        inspirationFolder 
+      });
 
       // Get user's saved posts to use as review bank (filter by folder if specified)
       console.log('Fetching user saved posts for review bank...');
@@ -227,8 +241,8 @@ serve(async (req) => {
 Trip Details:
 - Destination: ${destination}
 - Dates: ${startDate} to ${endDate}
-- Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'}
-- Travel Style: ${travelStyle || 'Not specified'}
+- Budget Level: ${budget ? '$'.repeat(parseInt(budget.toString())) : 'Not specified'}
+- Travel Style: ${travelStyle || 'Not specified'}  
 - Interests: ${interests || 'General travel'}
 
 ${reviewBankContext}
@@ -319,9 +333,6 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           start_date: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
           end_date: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
           hashtags: interests ? interests.split(', ') : null,
-          destination: destination,
-          start_date: startDate,
-          end_date: endDate,
           overall_budget: budget ? '$'.repeat(budget) : null,
           description: generatedItinerary,
           is_public: false,

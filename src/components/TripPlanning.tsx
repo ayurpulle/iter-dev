@@ -93,13 +93,14 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         console.log('Auto-saving generated itinerary');
         try {
           console.log('Auto-saving with data:', { lastGeneratedData, formData });
+          const dataToSave = lastGeneratedData || {};
           const result = await saveItinerary({
-            title: `${lastGeneratedData?.destination || formData.destination} Trip`,
-            destination: lastGeneratedData?.destination || formData.destination,
-            start_date: lastGeneratedData?.startDate || formData.startDate,
-            end_date: lastGeneratedData?.endDate || formData.endDate,
-            budget: (lastGeneratedData?.budget && lastGeneratedData.budget > 0) ? lastGeneratedData.budget : (formData.budget > 0 ? formData.budget : null),
-            interests: lastGeneratedData?.holidayTypes?.length ? lastGeneratedData.holidayTypes : formData.holidayTypes,
+            title: `${dataToSave.destination || formData.destination} Trip`,
+            destination: dataToSave.destination || formData.destination,
+            start_date: dataToSave.startDate || formData.startDate,
+            end_date: dataToSave.endDate || formData.endDate,
+            budget: (dataToSave.budget && dataToSave.budget > 0) ? dataToSave.budget : (formData.budget > 0 ? formData.budget : null),
+            interests: (dataToSave.holidayTypes && dataToSave.holidayTypes.length > 0) ? dataToSave.holidayTypes : formData.holidayTypes,
             itinerary_content: generatedIter,
             friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
@@ -466,6 +467,20 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           message: data.message,
           status: 'processing'
         }));
+        
+        console.log('Form data sent to generation:', {
+          destination: formData.destination,
+          budget: formData.budget,
+          holidayTypes: formData.holidayTypes,
+          dates: { start: formData.startDate, end: formData.endDate }
+        });
+        
+        console.log('Form data sent to generation:', {
+          destination: formData.destination,
+          budget: formData.budget,
+          holidayTypes: formData.holidayTypes,
+          dates: { start: formData.startDate, end: formData.endDate }
+        });
       }
 
     } catch (error) {

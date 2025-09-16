@@ -368,6 +368,18 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             duration: 5000,
           });
           
+          // Update the saved itinerary with new parameters for immediate UI feedback
+          await updateItinerary(editingItinerary.id, {
+            title: editingItinerary.title,
+            destination: formData.destination,
+            start_date: formData.startDate,
+            end_date: formData.endDate,
+            budget: formData.budget > 0 ? formData.budget : null,
+            interests: formData.holidayTypes,
+            itinerary_content: editingItinerary.itinerary_content,
+            friend_recommendations: editingItinerary.friend_recommendations || {}
+          });
+          
           setEditingItinerary(null);
           setCurrentView('savedTrips');
         }
@@ -587,49 +599,83 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             endDate={viewingIter.end_date ? new Date(viewingIter.end_date) : undefined}
             holidayTypes={viewingIter.interests}
             budget={viewingIter.budget?.toString()}
+            iterData={{
+              id: viewingIter.id,
+              title: viewingIter.title,
+              destination: viewingIter.destination,
+              itinerary_content: viewingIter.itinerary_content,
+              is_owner: viewingIter.is_owner,
+              can_edit: viewingIter.can_edit,
+              start_date: viewingIter.start_date,
+              end_date: viewingIter.end_date,
+              budget: viewingIter.budget,
+              interests: viewingIter.interests
+            }}
+            onIterUpdated={async (newContent, newDestination) => {
+              // Update the viewing itinerary with new content
+              setViewingIter(prev => ({
+                ...prev,
+                itinerary_content: newContent,
+                destination: newDestination || prev.destination
+              }));
+
+              // Also update in saved itineraries list
+              refetchSavedItineraries();
+
+              toast({
+                title: "Iter Updated!",
+                description: "Your iter has been updated successfully.",
+              });
+            }}
             onUpdateItinerary={async (changes) => {
               try {
-                // Call the edit-itinerary edge function
-                const { data, error } = await supabase.functions.invoke('edit-itinerary', {
+                // Update the saved itinerary with new parameters
+                await updateItinerary(viewingIter.id, {
+                  title: viewingIter.title,
+                  destination: changes.destination || viewingIter.destination,
+                  start_date: changes.startDate,
+                  end_date: changes.endDate,
+                  budget: changes.budget,
+                  interests: changes.holidayTypes,
+                  itinerary_content: viewingIter.itinerary_content,
+                  friend_recommendations: viewingIter.friend_recommendations || {}
+                });
+
+                // Update local state
+                setViewingIter(prev => ({
+                  ...prev,
+                  start_date: changes.startDate?.toISOString() || prev.start_date,
+                  end_date: changes.endDate?.toISOString() || prev.end_date,
+                  interests: changes.holidayTypes || prev.interests,
+                  budget: changes.budget || prev.budget,
+                  destination: changes.destination || prev.destination
+                }));
+
+                // Call update-itinerary function for background regeneration
+                const { data, error } = await supabase.functions.invoke('update-itinerary', {
                   body: {
                     itineraryId: viewingIter.id,
                     destination: changes.destination || viewingIter.destination,
-                    startDate: changes.startDate,
-                    endDate: changes.endDate,
-                    holidayTypes: changes.holidayTypes || [],
-                    budget: changes.budget || 3
+                    startDate: changes.startDate?.toISOString(),
+                    endDate: changes.endDate?.toISOString(),
+                    budget: changes.budget,
+                    interests: changes.holidayTypes?.join(', ') || '',
+                    travelStyle: '',
+                    ragContext: '',
+                    friendRecommendations: {},
+                    currentContent: viewingIter.itinerary_content
                   }
                 });
 
-                if (error) {
-                  console.error('Error updating itinerary:', error);
+                if (data?.status === 'processing') {
                   toast({
-                    title: "Update Failed",
-                    description: error.message || "Failed to update itinerary. Please try again.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-
-                if (data && data.itinerary) {
-                  // Update the viewing itinerary with new content
-                  setViewingIter(prev => ({
-                    ...prev,
-                    itinerary_content: data.itinerary,
-                    start_date: changes.startDate?.toISOString(),
-                    end_date: changes.endDate?.toISOString(),
-                    interests: changes.holidayTypes,
-                    budget: changes.budget
-                  }));
-
-                  // Also update in saved itineraries list
-                  refetchSavedItineraries();
-
-                  toast({
-                    title: "Iter Updated!",
-                    description: "Your iter has been updated successfully.",
+                    title: "Itinerary Update Started",
+                    description: "Your itinerary is being updated in the background. You'll receive a notification when it's ready!",
+                    duration: 5000,
                   });
                 }
+
+                refetchSavedItineraries();
               } catch (error) {
                 console.error('Error updating itinerary:', error);
                 toast({
@@ -679,6 +725,41 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                 endDate={lastGeneratedData?.endDate || formData.endDate}
                 holidayTypes={lastGeneratedData?.holidayTypes || formData.holidayTypes}
                 budget={lastGeneratedData?.budget?.toString() || formData.budget.toString()}
+                iterData={lastGeneratedData?.id ? {
+                  id: lastGeneratedData.id,
+                  title: lastGeneratedData.title || `${lastGeneratedData.destination} Trip`,
+                  destination: lastGeneratedData.destination || formData.destination,
+                  itinerary_content: generatedIter,
+                  is_owner: true,
+                  can_edit: true,
+                  start_date: lastGeneratedData.startDate?.toISOString() || formData.startDate?.toISOString(),
+                  end_date: lastGeneratedData.endDate?.toISOString() || formData.endDate?.toISOString(),
+                  budget: lastGeneratedData.budget || formData.budget,
+                  interests: lastGeneratedData.holidayTypes || formData.holidayTypes
+                } : undefined}
+                onIterUpdated={async (newContent, newDestination) => {
+                  setGeneratedIter(newContent);
+                  if (newDestination) {
+                    setLastGeneratedData(prev => ({
+                      ...prev,
+                      destination: newDestination
+                    }));
+                  }
+                  
+                  // Update the saved itinerary if it exists
+                  if (lastGeneratedData?.id) {
+                    await updateItinerary(lastGeneratedData.id, {
+                      title: lastGeneratedData.title || `${newDestination || lastGeneratedData.destination} Trip`,
+                      destination: newDestination || lastGeneratedData.destination || formData.destination,
+                      start_date: formData.startDate,
+                      end_date: formData.endDate,
+                      budget: formData.budget > 0 ? formData.budget : null,
+                      interests: formData.holidayTypes,
+                      itinerary_content: newContent,
+                      friend_recommendations: friendRecommendations
+                    });
+                  }
+                }}
                 onUpdateItinerary={async (changes) => {
                   // Update form data with changes  
                   setFormData(prev => ({
@@ -687,6 +768,17 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     endDate: changes.endDate || prev.endDate,
                     holidayTypes: changes.holidayTypes || prev.holidayTypes,
                     budget: changes.budget || prev.budget,
+                    destination: changes.destination || prev.destination
+                  }));
+                  
+                  // Update lastGeneratedData to reflect changes
+                  setLastGeneratedData(prev => ({
+                    ...prev,
+                    startDate: changes.startDate || prev?.startDate,
+                    endDate: changes.endDate || prev?.endDate,
+                    holidayTypes: changes.holidayTypes || prev?.holidayTypes,
+                    budget: changes.budget || prev?.budget,
+                    destination: changes.destination || prev?.destination
                   }));
                   
                   // Trigger regeneration with updated data

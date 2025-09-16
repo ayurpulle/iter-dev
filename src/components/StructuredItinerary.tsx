@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { format } from 'date-fns';
 // Removed import of generateTripSummary as we now use dynamic summary generation
 import { SavedRecommendationModal } from './SavedRecommendationModal';
+import { ItineraryUpdateDropdown } from './ItineraryUpdateDropdown';
 
 interface FriendRecommendation {
   name: string;
@@ -32,6 +33,19 @@ interface StructuredItineraryProps {
   budget?: string;
   onUpdateDates?: (startDate: Date, endDate: Date) => void;
   onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: number; destination?: string }) => void;
+  iterData?: {
+    id: string;
+    title: string;
+    destination: string;
+    itinerary_content: string;
+    is_owner?: boolean;
+    can_edit?: boolean;
+    start_date?: string | null;
+    end_date?: string | null;
+    budget?: number | null;
+    interests?: string[] | null;
+  };
+  onIterUpdated?: (newContent: string, newDestination?: string) => void;
 }
 
 export const StructuredItinerary = ({ 
@@ -43,7 +57,9 @@ export const StructuredItinerary = ({
   holidayTypes,
   budget,
   onUpdateDates,
-  onUpdateItinerary
+  onUpdateItinerary,
+  iterData,
+  onIterUpdated
 }: StructuredItineraryProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(startDate);
@@ -732,15 +748,21 @@ export const StructuredItinerary = ({
 
   return (
     <div className="-mx-6 lg:-mx-8">
-      {/* Header with Update Button */}
+      {/* Header with Update Dropdown */}
       <div className="px-6 lg:px-8 mb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Your trip to {destination || parsed.destinations[0] || 'Destination'}</h2>
-          {hasChanges() && (
-            <Button onClick={handleUpdate} size="sm" className="flex items-center gap-1 px-3 py-1 h-8 text-xs">
-              <RefreshCw className="h-3 w-3" />
-              Update
-            </Button>
+          {iterData && (
+            <ItineraryUpdateDropdown
+              iterData={{
+                ...iterData,
+                destination: destination || parsed.destinations[0] || iterData.destination,
+                itinerary_content: itinerary
+              }}
+              hasChanges={hasChanges()}
+              onUpdate={handleUpdate}
+              onIterUpdated={onIterUpdated}
+            />
           )}
         </div>
       </div>

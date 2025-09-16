@@ -114,7 +114,7 @@ Respond conversationally and focus on what the user specifically asked for. If e
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
@@ -125,7 +125,7 @@ Respond conversationally and focus on what the user specifically asked for. If e
             content: prompt
           }
         ],
-        max_completion_tokens: 3000,
+        max_tokens: 3000,
       }),
     });
 

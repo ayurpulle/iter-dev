@@ -125,7 +125,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
@@ -136,7 +136,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
             content: prompt
           }
         ],
-        max_completion_tokens: 4000,
+        max_tokens: 4000,
       }),
     });
 

@@ -72,7 +72,12 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
 
       // If the itinerary was actually updated
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
+        console.log('Itinerary updated, calling callback');
         onIterUpdated?.(data.updatedItinerary, data.newDestination);
+        
+        // Also refresh the saved itineraries list
+        window.dispatchEvent(new CustomEvent('refreshItineraries'));
+        
         toast({
           title: "Iter Updated!",
           description: data.newDestination 
@@ -101,8 +106,11 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
   };
 
   const canEdit = iterData.is_owner || iterData.can_edit;
+  
+  console.log('IterEditDialog - canEdit:', canEdit, 'is_owner:', iterData.is_owner, 'can_edit:', iterData.can_edit);
 
   if (!canEdit) {
+    console.log('Edit button hidden due to permissions');
     return null;
   }
 

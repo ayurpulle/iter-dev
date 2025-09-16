@@ -38,6 +38,13 @@ export const ItineraryUpdateDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const canEdit = iterData.is_owner || iterData.can_edit;
+  
+  console.log('ItineraryUpdateDropdown:', {
+    hasChanges,
+    canEdit,
+    is_owner: iterData.is_owner,
+    can_edit: iterData.can_edit
+  });
 
   if (!canEdit) {
     return null;

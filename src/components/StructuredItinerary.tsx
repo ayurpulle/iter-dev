@@ -794,7 +794,9 @@ export const StructuredItinerary = ({
               iterData={{
                 ...iterData,
                 destination: destination || parsed.destinations[0] || iterData.destination,
-                itinerary_content: itinerary
+                itinerary_content: itinerary,
+                is_owner: true, // Ensure edit permissions are set
+                can_edit: true  // Ensure edit permissions are set
               }}
               hasChanges={hasChanges()}
               onUpdate={handleUpdate}

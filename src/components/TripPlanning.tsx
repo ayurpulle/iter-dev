@@ -92,13 +92,14 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
       if (generatedIter && !lastGeneratedData?.id && user) {
         console.log('Auto-saving generated itinerary');
         try {
+          console.log('Auto-saving with data:', { lastGeneratedData, formData });
           const result = await saveItinerary({
             title: `${lastGeneratedData?.destination || formData.destination} Trip`,
             destination: lastGeneratedData?.destination || formData.destination,
             start_date: lastGeneratedData?.startDate || formData.startDate,
             end_date: lastGeneratedData?.endDate || formData.endDate,
-            budget: lastGeneratedData?.budget || formData.budget,
-            interests: lastGeneratedData?.holidayTypes || formData.holidayTypes,
+            budget: (lastGeneratedData?.budget && lastGeneratedData.budget > 0) ? lastGeneratedData.budget : (formData.budget > 0 ? formData.budget : null),
+            interests: lastGeneratedData?.holidayTypes?.length ? lastGeneratedData.holidayTypes : formData.holidayTypes,
             itinerary_content: generatedIter,
             friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
@@ -319,6 +320,23 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     }
 
     setIsLoading(true);
+    setGeneratedIter('');
+    
+    // ALWAYS store the complete form data immediately
+    const completeFormData = {
+      destination: formData.destination,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      holidayTypes: formData.holidayTypes || [],
+      budget: formData.budget || 3,
+      notes: formData.notes || '',
+      inspirationSource: formData.inspirationSource,
+      inspirationFolder: formData.inspirationFolder
+    };
+    
+    console.log('Storing complete form data:', completeFormData);
+    setLastGeneratedData(completeFormData);
+    setFriendRecommendations({});
     
     try {
       // If editing, regenerate itinerary with new parameters
@@ -441,17 +459,13 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           duration: 5000,
         });
         
-        // Store generation data including budget and holiday types for later use
-        setLastGeneratedData({ 
+        // Update generation data with response data while preserving form data
+        setLastGeneratedData(prev => ({ 
+          ...prev,
           destination: data.destination || formData.destination,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          holidayTypes: formData.holidayTypes || [],
-          budget: formData.budget || 3,
-          notes: formData.notes,
           message: data.message,
           status: 'processing'
-        });
+        }));
       }
 
     } catch (error) {

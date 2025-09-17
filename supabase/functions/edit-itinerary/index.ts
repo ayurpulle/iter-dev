@@ -183,6 +183,7 @@ When making changes, consider the original budget and travel interests to ensure
       updatedItinerary,
       newDestination
     }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

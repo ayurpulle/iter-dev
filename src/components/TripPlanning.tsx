@@ -99,8 +99,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             destination: dataToSave.destination || formData.destination,
             start_date: dataToSave.startDate || formData.startDate,
             end_date: dataToSave.endDate || formData.endDate,
-            budget: (dataToSave.budget && dataToSave.budget > 0) ? dataToSave.budget : (formData.budget > 0 ? formData.budget : null),
-            interests: (dataToSave.holidayTypes && dataToSave.holidayTypes.length > 0) ? dataToSave.holidayTypes : formData.holidayTypes,
+            budget: dataToSave.budget || formData.budget || 3, // Ensure budget is always saved
+            interests: dataToSave.holidayTypes || formData.holidayTypes || [], // Ensure interests are always saved
             itinerary_content: generatedIter,
             friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
@@ -1260,8 +1260,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     destination: lastGeneratedData.destination || formData.destination,
                     start_date: formData.startDate,
                     end_date: formData.endDate,
-                    budget: formData.budget,
-                    interests: formData.holidayTypes,
+                    budget: formData.budget || 3,
+                    interests: formData.holidayTypes || [],
                     itinerary_content: lastGeneratedData.itinerary,
                     friend_recommendations: lastGeneratedData.friendRecommendations || {}
                   });

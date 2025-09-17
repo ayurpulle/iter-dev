@@ -131,7 +131,7 @@ When making changes, consider the original budget and travel interests to ensure
             content: prompt
           }
         ],
-        max_tokens: 3000,
+        max_completion_tokens: 3000,
       }),
     });
 

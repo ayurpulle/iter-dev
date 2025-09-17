@@ -754,8 +754,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                 destination={lastGeneratedData?.destination || formData.destination}
                 startDate={lastGeneratedData?.startDate || formData.startDate}
                 endDate={lastGeneratedData?.endDate || formData.endDate}
-                holidayTypes={lastGeneratedData?.holidayTypes || formData.holidayTypes}
-                budget={lastGeneratedData?.budget?.toString() || formData.budget.toString()}
+                // Remove props - let iterData handle all the data
                 iterData={lastGeneratedData?.id ? {
                   id: lastGeneratedData.id,
                   title: lastGeneratedData.title || `${lastGeneratedData.destination} Trip`,

@@ -781,16 +781,33 @@ export const StructuredItinerary = ({
   const airportCodes = getAirportCodes(destination || parsed.destinations[0] || '');
 
   const hasChanges = () => {
-    const currentBudgetNumber = budget === '1' ? 1 : budget === '2' ? 2 : budget === '3' ? 3 : budget === '4' ? 4 : budget === '5' ? 5 : 3;
-    return localStartDate !== startDate || 
-           localEndDate !== endDate ||
-           JSON.stringify(localHolidayTypes) !== JSON.stringify(holidayTypes) ||
-           localBudget !== currentBudgetNumber;
+    // Compare against iterData values, not props
+    const originalBudget = iterData?.budget || normalizedBudget;
+    const originalHolidayTypes = iterData?.interests || normalizedHolidayTypes;
+    const originalStartDate = iterData?.start_date ? new Date(iterData.start_date) : startDate;
+    const originalEndDate = iterData?.end_date ? new Date(iterData.end_date) : endDate;
+    
+    return localStartDate?.getTime() !== originalStartDate?.getTime() || 
+           localEndDate?.getTime() !== originalEndDate?.getTime() ||
+           JSON.stringify(localHolidayTypes.sort()) !== JSON.stringify(originalHolidayTypes.sort()) ||
+           localBudget !== originalBudget;
   };
 
   // Add data validation and better error handling
   const handleUpdate = useCallback(async () => {
     console.log('handleUpdate called, hasChanges:', hasChanges());
+    console.log('Current local values:', { 
+      localBudget, 
+      localHolidayTypes, 
+      localStartDate, 
+      localEndDate 
+    });
+    console.log('Original iterData values:', { 
+      budget: iterData?.budget, 
+      interests: iterData?.interests, 
+      start_date: iterData?.start_date, 
+      end_date: iterData?.end_date 
+    });
     
       // Validate iterData exists before API calls
     if (!hasValidIterData) {

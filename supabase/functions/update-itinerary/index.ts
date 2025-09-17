@@ -275,6 +275,7 @@ serve(async (req) => {
       message: 'Itinerary update started in background',
       destination: requestData.destination
     }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

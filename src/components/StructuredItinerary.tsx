@@ -31,7 +31,7 @@ interface StructuredItineraryProps {
   destination?: string;
   startDate?: Date;
   endDate?: Date;
-  holidayTypes?: string[];
+  holidayTypes?: string[] | string;
   budget?: string;
   onUpdateDates?: (startDate: Date, endDate: Date) => void;
   onUpdateItinerary?: (changes: { startDate?: Date; endDate?: Date; holidayTypes?: string[]; budget?: number; destination?: string }) => void;
@@ -75,14 +75,18 @@ export const StructuredItinerary = ({
       const parsed = parseInt(budget);
       return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed)); // Clamp between 1-5, default 3
     }
+    if (typeof budget === 'number') return Math.max(1, Math.min(5, budget));
+    if (iterData?.budget) return Math.max(1, Math.min(5, iterData.budget));
     return 3; // Default budget level
-  }, [budget]);
+  }, [budget, iterData?.budget]);
 
   // Normalize holiday types consistently  
   const normalizedHolidayTypes = useMemo(() => {
     if (Array.isArray(holidayTypes)) return holidayTypes;
+    if (typeof holidayTypes === 'string' && holidayTypes.length > 0) return holidayTypes.split(',').map(t => t.trim()).filter(Boolean);
+    if (iterData?.interests && Array.isArray(iterData.interests)) return iterData.interests;
     return [];
-  }, [holidayTypes]);
+  }, [holidayTypes, iterData?.interests]);
 
   // Validate required data before rendering
   const safeDestination = destination || iterData?.destination || 'Unknown Destination';
@@ -813,9 +817,9 @@ export const StructuredItinerary = ({
         destination: originalDestination,
         startDate: localStartDate?.toISOString() || null,
         endDate: localEndDate?.toISOString() || null,
-        budget: localBudget,
-        interests: localHolidayTypes.join(', '),
-        travelStyle: localHolidayTypes.join(', '), // Use holiday types as travel style
+        budget: localBudget || normalizedBudget,
+        interests: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : normalizedHolidayTypes.join(', '),
+        travelStyle: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : normalizedHolidayTypes.join(', '),
         ragContext: '',
         friendRecommendations: {},
         currentContent: iterData.itinerary_content || itinerary

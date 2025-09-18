@@ -39,16 +39,22 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { itineraryContent, editRequest, destination, conversationHistory, budget, interests, travelStyle } = await req.json();
+    const requestBody = await req.json();
+    const { itineraryContent, editRequest, destination, conversationHistory, budget, interests, travelStyle } = requestBody;
     
     console.log('Received edit request:', {
       editRequest,
       destination,
-      userId: user.id
+      budget,
+      interests,
+      travelStyle,
+      userId: user.id,
+      fullBody: requestBody
     });
 
     // Validate required fields
     if (!itineraryContent || !editRequest || !destination) {
+      console.error('Validation failed:', { itineraryContent: !!itineraryContent, editRequest: !!editRequest, destination: !!destination });
       throw new Error('Missing required fields: itineraryContent, editRequest, or destination');
     }
 

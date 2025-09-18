@@ -16,6 +16,7 @@ import { SavedRecommendationModal } from './SavedRecommendationModal';
 import { ItineraryUpdateDropdown } from './ItineraryUpdateDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { encodeHolidayTypes, encodeBudget, decodeHolidayTypes, decodeBudget } from '@/utils/itineraryConstants';
 
 interface FriendRecommendation {
   name: string;
@@ -69,16 +70,25 @@ export const StructuredItinerary = ({
     destination 
   });
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
-  // Normalize budget to number consistently
-  const normalizedBudget = useMemo(() => {
+  // Decode values from iterData or use props as fallback
+  const decodedBudget = useMemo(() => {
+    if (iterData?.budget) {
+      return typeof iterData.budget === 'string' ? decodeBudget(iterData.budget) : iterData.budget;
+    }
     if (typeof budget === 'string' && budget.length > 0) {
       const parsed = parseInt(budget);
-      return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed)); // Clamp between 1-5, default 3
+      return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed));
     }
     if (typeof budget === 'number') return Math.max(1, Math.min(5, budget));
-    if (iterData?.budget) return Math.max(1, Math.min(5, iterData.budget));
-    return 3; // Default budget level
+    return 3;
   }, [budget, iterData?.budget]);
+  
+  const decodedHolidayTypes = useMemo(() => {
+    if (iterData?.interests) {
+      return decodeHolidayTypes(iterData.interests);
+    }
+    return Array.isArray(holidayTypes) ? holidayTypes : [];
+  }, [iterData?.interests, holidayTypes]);
 
   // Normalize holiday types consistently  
   const normalizedHolidayTypes = useMemo(() => {
@@ -103,8 +113,8 @@ export const StructuredItinerary = ({
     return true;
   };
   
-  const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(normalizedHolidayTypes);
-  const [localBudget, setLocalBudget] = useState<number>(normalizedBudget);
+  const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(decodedHolidayTypes);
+  const [localBudget, setLocalBudget] = useState<number>(decodedBudget);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   // Always call useToast at top level (React hook rules)
   const { toast } = useToast();
@@ -733,12 +743,12 @@ export const StructuredItinerary = ({
   }, [startDate, endDate]);
 
   React.useEffect(() => {
-    setLocalHolidayTypes(normalizedHolidayTypes);
-  }, [normalizedHolidayTypes]);
+    setLocalHolidayTypes(decodedHolidayTypes);
+  }, [decodedHolidayTypes]);
 
   React.useEffect(() => {
-    setLocalBudget(normalizedBudget);
-  }, [normalizedBudget]);
+    setLocalBudget(decodedBudget);
+  }, [decodedBudget]);
   
   // Use dynamic trip summary instead of the old formulaic one
 
@@ -781,9 +791,9 @@ export const StructuredItinerary = ({
   const airportCodes = getAirportCodes(destination || parsed.destinations[0] || '');
 
   const hasChanges = () => {
-    // Compare against iterData values, not props
-    const originalBudget = iterData?.budget || normalizedBudget;
-    const originalHolidayTypes = iterData?.interests || normalizedHolidayTypes;
+    // Compare against decoded iterData values
+    const originalBudget = decodedBudget;
+    const originalHolidayTypes = decodedHolidayTypes;
     const originalStartDate = iterData?.start_date ? new Date(iterData.start_date) : startDate;
     const originalEndDate = iterData?.end_date ? new Date(iterData.end_date) : endDate;
     
@@ -802,11 +812,15 @@ export const StructuredItinerary = ({
       localStartDate, 
       localEndDate 
     });
-    console.log('Original iterData values:', { 
-      budget: iterData?.budget, 
-      interests: iterData?.interests, 
-      start_date: iterData?.start_date, 
-      end_date: iterData?.end_date 
+    console.log('Original decoded values:', { 
+      decodedBudget, 
+      decodedHolidayTypes, 
+      originalStartDate: iterData?.start_date, 
+      originalEndDate: iterData?.end_date 
+    });
+    console.log('Will encode for API:', {
+      budget: localBudget,
+      interests: encodeHolidayTypes(localHolidayTypes)
     });
     
       // Validate iterData exists before API calls
@@ -834,9 +848,9 @@ export const StructuredItinerary = ({
         destination: originalDestination,
         startDate: localStartDate?.toISOString() || null,
         endDate: localEndDate?.toISOString() || null,
-        budget: localBudget || normalizedBudget,
-        interests: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : normalizedHolidayTypes.join(', '),
-        travelStyle: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : normalizedHolidayTypes.join(', '),
+        budget: localBudget || decodedBudget,
+        interests: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : decodedHolidayTypes.join(', '),
+        travelStyle: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : decodedHolidayTypes.join(', '),
         ragContext: '',
         friendRecommendations: {},
         currentContent: iterData.itinerary_content || itinerary

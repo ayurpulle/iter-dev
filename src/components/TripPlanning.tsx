@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
 import { StructuredItinerary } from "./StructuredItinerary";
+import { encodeHolidayTypes, encodeBudget } from "@/utils/itineraryConstants";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
@@ -100,7 +101,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             start_date: dataToSave.startDate || formData.startDate,
             end_date: dataToSave.endDate || formData.endDate,
             budget: dataToSave.budget || formData.budget || 3, // Ensure budget is always saved
-            interests: dataToSave.holidayTypes || formData.holidayTypes || [], // Ensure interests are always saved
+            interests: encodeHolidayTypes(dataToSave.holidayTypes || formData.holidayTypes || []), // Encode interests
             itinerary_content: generatedIter,
             friend_recommendations: friendRecommendations
           }, false); // Don't show toast for auto-save
@@ -362,7 +363,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           startDate: formData.startDate?.toISOString() || null,
           endDate: formData.endDate?.toISOString() || null,
           budget: formData.budget > 0 ? formData.budget : null,
-          interests: formData.holidayTypes.join(', '),
+          interests: encodeHolidayTypes(formData.holidayTypes).join(', '),
           travelStyle: formData.notes || '',
           ragContext: typeof ragContext === 'string' ? ragContext : '',
           friendRecommendations: ragFriendRecs ? JSON.parse(JSON.stringify(ragFriendRecs)) : {},
@@ -397,7 +398,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             start_date: formData.startDate,
             end_date: formData.endDate,
             budget: formData.budget > 0 ? formData.budget : null,
-            interests: formData.holidayTypes,
+            interests: encodeHolidayTypes(formData.holidayTypes),
             itinerary_content: editingItinerary.itinerary_content,
             friend_recommendations: editingItinerary.friend_recommendations || {}
           });
@@ -425,7 +426,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         startDate: formData.startDate?.toISOString() || null,
         endDate: formData.endDate?.toISOString() || null,
         budget: formData.budget > 0 ? formData.budget : null,
-        interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? formData.holidayTypes.join(', ') : '',
+        interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? encodeHolidayTypes(formData.holidayTypes).join(', ') : '',
         travelStyle: formData.notes || '',
         ragContext: typeof ragContext === 'string' ? ragContext : '',
         friendRecommendations: ragFriendRecs ? JSON.parse(JSON.stringify(ragFriendRecs)) : {}
@@ -765,7 +766,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   start_date: lastGeneratedData.startDate?.toISOString() || formData.startDate?.toISOString(),
                   end_date: lastGeneratedData.endDate?.toISOString() || formData.endDate?.toISOString(),
                   budget: lastGeneratedData.budget || formData.budget,
-                  interests: lastGeneratedData.holidayTypes || formData.holidayTypes
+                  interests: encodeHolidayTypes(lastGeneratedData.holidayTypes || formData.holidayTypes)
                 } : undefined}
                 onIterUpdated={async (newContent, newDestination) => {
                   setGeneratedIter(newContent);
@@ -784,7 +785,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                       start_date: formData.startDate,
                       end_date: formData.endDate,
                       budget: formData.budget > 0 ? formData.budget : null,
-                      interests: formData.holidayTypes,
+                      interests: encodeHolidayTypes(formData.holidayTypes),
                       itinerary_content: newContent,
                       friend_recommendations: friendRecommendations
                     });
@@ -1260,7 +1261,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     start_date: formData.startDate,
                     end_date: formData.endDate,
                     budget: formData.budget || 3,
-                    interests: formData.holidayTypes || [],
+                    interests: encodeHolidayTypes(formData.holidayTypes || []),
                     itinerary_content: lastGeneratedData.itinerary,
                     friend_recommendations: lastGeneratedData.friendRecommendations || {}
                   });

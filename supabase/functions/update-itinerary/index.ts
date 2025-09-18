@@ -117,6 +117,10 @@ Keep the same engaging, personal tone while updating the content to match the ne
 `;
 
     console.log('Calling OpenAI API for itinerary regeneration...');
+    
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -136,7 +140,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
             content: prompt
           }
         ],
-        max_tokens: 4000,
+        max_completion_tokens: 4000,
       }),
     });
 

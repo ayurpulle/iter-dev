@@ -73,7 +73,7 @@ export const StructuredItinerary = ({
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
     console.log('Budget decoding - iterData.budget:', iterData?.budget, 'typeof:', typeof iterData?.budget);
-    if (iterData?.budget) {
+    if (iterData?.budget !== undefined && iterData?.budget !== null) {
       // If it's a string code, decode it; if it's a number, use it directly
       const decoded = typeof iterData.budget === 'string' ? decodeBudget(iterData.budget) : iterData.budget;
       console.log('Decoding budget:', iterData.budget, '→', decoded);
@@ -926,7 +926,10 @@ export const StructuredItinerary = ({
       {/* Header with Update Dropdown */}
       <div className="px-6 lg:px-8 mb-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Your trip to {safeDestination}</h2>
+          <div>
+            <h2 className="text-xl font-semibold">Your Iter</h2>
+            <p className="text-sm text-muted-foreground">{safeDestination}</p>
+          </div>
           {iterData && hasValidIterData && (
             <ItineraryUpdateDropdown
               iterData={{

@@ -326,6 +326,14 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
       const generatedItinerary = data.choices[0].message.content;
 
       // Save the trip to the database
+      // Note: interests comes as encoded array from TripPlanning, budget comes as number
+      console.log('Saving trip with encoded values:', { 
+        interests, 
+        interestsType: typeof interests, 
+        budget, 
+        budgetType: typeof budget 
+      });
+      
       const { data: savedTrip, error: tripError } = await supabaseClient
         .from('trips')
         .insert({
@@ -334,8 +342,8 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           destination: destination,
           start_date: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
           end_date: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
-          hashtags: interests ? interests.split(', ') : null,
-          overall_budget: budget ? '$'.repeat(budget) : null,
+          hashtags: Array.isArray(interests) ? interests : (interests ? interests.split(', ') : null),
+          overall_budget: budget || null,
           description: generatedItinerary,
           is_public: false,
           created_at: new Date().toISOString(),

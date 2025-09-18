@@ -75,6 +75,8 @@ export const useSavedItineraries = () => {
           start_date,
           end_date,
           cost,
+          hashtags,
+          overall_budget,
           description,
           created_at,
           updated_at,
@@ -133,14 +135,28 @@ export const useSavedItineraries = () => {
       const processedTrips = (backgroundTrips || [])
         .filter(trip => trip.description && trip.description.length > 500) // Only keep actual itineraries
         .map(trip => {
-        // Extract budget from cost string (e.g., "Budget Level 2" -> 2)
+        // Extract budget from overall_budget field (which stores the encoded budget number)
         let budget = null;
-        if (trip.cost && typeof trip.cost === 'string') {
+        if (trip.overall_budget && typeof trip.overall_budget === 'number') {
+          budget = trip.overall_budget;
+        } else if (trip.cost && typeof trip.cost === 'string') {
+          // Fallback: extract from cost string (e.g., "Budget Level 2" -> 2)
           const budgetMatch = trip.cost.match(/Budget Level (\d+)/);
           if (budgetMatch) {
             budget = parseInt(budgetMatch[1]);
           }
         }
+
+        // Extract encoded holiday types from hashtags field
+        const interests = trip.hashtags || [];
+
+        console.log('Processing background trip:', {
+          tripId: trip.id,
+          originalHashtags: trip.hashtags,
+          mappedInterests: interests,
+          originalOverallBudget: trip.overall_budget,
+          mappedBudget: budget
+        });
 
         return {
           id: trip.id,
@@ -149,7 +165,7 @@ export const useSavedItineraries = () => {
           start_date: trip.start_date,
           end_date: trip.end_date,
           budget: budget,
-          interests: [], // trips table doesn't store interests
+          interests: interests, // Map from hashtags field (contains encoded holiday types)
           itinerary_content: trip.description || '',
           friend_recommendations: {},
           created_at: trip.created_at,

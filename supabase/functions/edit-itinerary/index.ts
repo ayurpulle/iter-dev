@@ -131,7 +131,7 @@ When making changes, consider the original budget and travel interests to ensure
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-2024-11-20',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',

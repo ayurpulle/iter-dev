@@ -630,7 +630,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             startDate={viewingIter.start_date ? new Date(viewingIter.start_date) : undefined}
             endDate={viewingIter.end_date ? new Date(viewingIter.end_date) : undefined}
             holidayTypes={viewingIter.interests}
-            budget={viewingIter.budget?.toString()}
+            // Remove budget prop - let iterData handle it
             iterData={{
               id: viewingIter.id,
               title: viewingIter.title,

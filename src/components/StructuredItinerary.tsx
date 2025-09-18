@@ -74,10 +74,10 @@ export const StructuredItinerary = ({
   const decodedBudget = useMemo(() => {
     console.log('Budget decoding - iterData.budget:', iterData?.budget, 'typeof:', typeof iterData?.budget);
     if (iterData?.budget !== undefined && iterData?.budget !== null) {
-      // Use the budget field which contains the integer value from the encoded data
-      const budgetValue = iterData.budget;
-      console.log('Using iterData.budget:', budgetValue);
-      return budgetValue;
+      // iterData.budget should already be the integer value (1-5)
+      const budgetValue = typeof iterData.budget === 'number' ? iterData.budget : parseInt(String(iterData.budget));
+      console.log('Using iterData.budget as integer:', budgetValue);
+      return isNaN(budgetValue) ? 3 : Math.max(1, Math.min(5, budgetValue));
     }
     if (typeof budget === 'string' && budget.length > 0) {
       const parsed = parseInt(budget);

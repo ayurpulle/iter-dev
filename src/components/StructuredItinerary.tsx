@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -73,7 +73,9 @@ export const StructuredItinerary = ({
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
     if (iterData?.budget) {
-      return typeof iterData.budget === 'string' ? decodeBudget(iterData.budget) : iterData.budget;
+      const decoded = typeof iterData.budget === 'string' ? decodeBudget(iterData.budget) : iterData.budget;
+      console.log('Decoding budget:', iterData.budget, '→', decoded);
+      return decoded;
     }
     if (typeof budget === 'string' && budget.length > 0) {
       const parsed = parseInt(budget);
@@ -85,7 +87,9 @@ export const StructuredItinerary = ({
   
   const decodedHolidayTypes = useMemo(() => {
     if (iterData?.interests) {
-      return decodeHolidayTypes(iterData.interests);
+      const decoded = decodeHolidayTypes(iterData.interests);
+      console.log('Decoding holiday types:', iterData.interests, '→', decoded);
+      return decoded;
     }
     return Array.isArray(holidayTypes) ? holidayTypes : [];
   }, [iterData?.interests, holidayTypes]);
@@ -115,6 +119,16 @@ export const StructuredItinerary = ({
   
   const [localHolidayTypes, setLocalHolidayTypes] = useState<string[]>(decodedHolidayTypes);
   const [localBudget, setLocalBudget] = useState<number>(decodedBudget);
+  
+  // Log when decoded values are loaded as pre-selected
+  useEffect(() => {
+    console.log('Pre-selecting decoded values:', {
+      decodedBudget,
+      decodedHolidayTypes,
+      localBudget,
+      localHolidayTypes
+    });
+  }, [decodedBudget, decodedHolidayTypes, localBudget, localHolidayTypes]);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   // Always call useToast at top level (React hook rules)
   const { toast } = useToast();
@@ -1052,12 +1066,12 @@ export const StructuredItinerary = ({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
-                    {localHolidayTypes.length > 0 
-                      ? localHolidayTypes.length === 1 
-                        ? localHolidayTypes[0]
-                        : `${localHolidayTypes.length} selected`
-                      : 'Select types'
-                    }
+                     {localHolidayTypes.length > 0 
+                       ? localHolidayTypes.length === 1 
+                         ? localHolidayTypes[0]
+                         : `${localHolidayTypes.length} selected (${localHolidayTypes.join(', ')})`
+                       : 'Select types'
+                     }
                     <Edit3 className="h-3 w-3 ml-1 opacity-50" />
                   </Button>
                 </DialogTrigger>
@@ -1094,7 +1108,7 @@ export const StructuredItinerary = ({
               <Select value={localBudget.toString()} onValueChange={(value) => setLocalBudget(parseInt(value))}>
                 <SelectTrigger className="w-auto h-7 px-2 text-xs border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
                   <SelectValue>
-                    {getBudgetDisplay(localBudget)}
+                    {getBudgetDisplay(localBudget)} ({getBudgetDescription(localBudget)})
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

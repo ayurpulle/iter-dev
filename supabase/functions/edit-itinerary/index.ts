@@ -118,6 +118,11 @@ When making changes, consider the original budget and travel interests to ensure
 `;
 
     console.log('Calling OpenAI API for itinerary editing...');
+    console.log('OpenAI API key present:', !!openAIApiKey);
+    
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -126,7 +131,7 @@ When making changes, consider the original budget and travel interests to ensure
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-2024-11-20',
         messages: [
           {
             role: 'system',

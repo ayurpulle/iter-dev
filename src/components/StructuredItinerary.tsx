@@ -72,7 +72,9 @@ export const StructuredItinerary = ({
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
+    console.log('Budget decoding - iterData.budget:', iterData?.budget, 'typeof:', typeof iterData?.budget);
     if (iterData?.budget) {
+      // If it's a string code, decode it; if it's a number, use it directly
       const decoded = typeof iterData.budget === 'string' ? decodeBudget(iterData.budget) : iterData.budget;
       console.log('Decoding budget:', iterData.budget, '→', decoded);
       return decoded;
@@ -82,6 +84,7 @@ export const StructuredItinerary = ({
       return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed));
     }
     if (typeof budget === 'number') return Math.max(1, Math.min(5, budget));
+    console.log('Using default budget: 3');
     return 3;
   }, [budget, iterData?.budget]);
   
@@ -969,8 +972,10 @@ export const StructuredItinerary = ({
           </p>
           </div>
           
-          {/* Row 1: Editable Dates */}
-          <div className="flex items-center gap-4 text-sm">
+          {/* 3-Row Layout for Better Mobile Display */}
+          <div className="space-y-3">
+            {/* Row 1: Dates Only */}
+          <div className="flex items-center gap-3 text-sm flex-wrap">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Dates:</span>
@@ -1032,12 +1037,14 @@ export const StructuredItinerary = ({
               </div>
             </div>
 
-            {/* Airport Codes with Skyscanner Links */}
+            </div>
+
+            {/* Row 2: Airports */}
             {airportCodes.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
                 <Plane className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Airports:</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   {airportCodes.map((code, index) => (
                     <React.Fragment key={code}>
                       <a
@@ -1056,72 +1063,72 @@ export const StructuredItinerary = ({
                 </div>
               </div>
             )}
-          </div>
 
-           {/* Row 2: Holiday Type and Budget */}
-          <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Type:</span>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline">
-                     {localHolidayTypes.length > 0 
-                       ? localHolidayTypes.length === 1 
-                         ? localHolidayTypes[0]
-                         : `${localHolidayTypes.length} selected (${localHolidayTypes.join(', ')})`
-                       : 'Select types'
-                     }
-                    <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Holiday Types</DialogTitle>
-                    <DialogDescription>Choose your holiday types</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-2 py-4">
-                    {availableHolidayTypes.map((type) => (
-                      <Button
-                        key={type}
-                        variant={localHolidayTypes.includes(type) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleHolidayType(type)}
-                        className="justify-start text-left h-auto py-2"
-                      >
-                        {type}
-                      </Button>
-                    ))}
-                  </div>
-                  {localHolidayTypes.length > 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      <p className="font-medium">Selected: {localHolidayTypes.join(", ")}</p>
+            {/* Row 3: Holiday Type and Budget */}
+            <div className="flex items-start gap-4 text-sm flex-wrap">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-muted-foreground flex-shrink-0">Type:</span>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto font-normal text-foreground hover:bg-muted underline text-left">
+                       {localHolidayTypes.length > 0 
+                         ? localHolidayTypes.length === 1 
+                           ? localHolidayTypes[0]
+                           : `${localHolidayTypes.length} selected`
+                         : 'Select types'
+                       }
+                      <Edit3 className="h-3 w-3 ml-1 opacity-50 flex-shrink-0" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Holiday Types</DialogTitle>
+                      <DialogDescription>Choose your holiday types</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-2 py-4">
+                      {availableHolidayTypes.map((type) => (
+                        <Button
+                          key={type}
+                          variant={localHolidayTypes.includes(type) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleHolidayType(type)}
+                          className="justify-start text-left h-auto py-2"
+                        >
+                          {type}
+                        </Button>
+                      ))}
                     </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
+                    {localHolidayTypes.length > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium">Selected: {localHolidayTypes.join(", ")}</p>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Budget:</span>
-              <Select value={localBudget.toString()} onValueChange={(value) => setLocalBudget(parseInt(value))}>
-                <SelectTrigger className="w-auto h-7 px-2 text-xs border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
-                  <SelectValue>
-                    {getBudgetDisplay(localBudget)} ({getBudgetDescription(localBudget)})
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">$ Budget-friendly</SelectItem>
-                  <SelectItem value="2">$$ Moderate</SelectItem>
-                  <SelectItem value="3">$$$ Comfortable</SelectItem>
-                  <SelectItem value="4">$$$$ Luxury</SelectItem>
-                  <SelectItem value="5">$$$$$ Ultra-luxury</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 min-w-0">
+                <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-muted-foreground flex-shrink-0">Budget:</span>
+                <Select value={localBudget.toString()} onValueChange={(value) => setLocalBudget(parseInt(value))}>
+                  <SelectTrigger className="w-auto h-7 px-2 text-xs border-0 bg-transparent text-foreground underline font-normal hover:bg-muted">
+                    <SelectValue>
+                      {getBudgetDisplay(localBudget)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">$ Budget-friendly</SelectItem>
+                    <SelectItem value="2">$$ Moderate</SelectItem>
+                    <SelectItem value="3">$$$ Comfortable</SelectItem>
+                    <SelectItem value="4">$$$$ Luxury</SelectItem>
+                    <SelectItem value="5">$$$$$ Ultra-luxury</SelectItem>
+                  </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Dropdown Sections - Full Width */}
         <div className="space-y-3">

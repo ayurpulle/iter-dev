@@ -117,6 +117,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
 `;
 
     console.log('Calling OpenAI API for itinerary regeneration...');
+    console.log('OpenAI API key present:', !!openAIApiKey);
     
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');

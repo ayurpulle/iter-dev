@@ -36,7 +36,7 @@ const CountryMap = ({ stops, className = "h-full w-full", mapboxToken }: Country
     // Calculate bounds from stops
     console.log('Processing stops:', stops);
     const bounds = new mapboxgl.LngLatBounds();
-    stops.forEach(stop => {
+    stops?.forEach(stop => {
       console.log('Adding stop to bounds:', stop);
       bounds.extend([stop.lng, stop.lat]);
     });

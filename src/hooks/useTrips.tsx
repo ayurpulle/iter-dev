@@ -113,13 +113,14 @@ export const useTrips = () => {
       if (tripData.photo_details && uploadResults.length > 0) {
         // Create photo details array matching the successfully uploaded images
         uploadResults.forEach((result) => {
-          if (result.url && tripData.photo_details[result.originalIndex]) {
+          if (result.url && tripData.photo_details && tripData.photo_details[result.originalIndex]) {
+            const photoDetail = tripData.photo_details[result.originalIndex];
             simplifiedPhotoDetails.push({
-              caption: tripData.photo_details[result.originalIndex].caption || '',
-              budget: tripData.photo_details[result.originalIndex].budget || '',
-              tagged_friends: tripData.photo_details[result.originalIndex].tagged_friends || [],
-              location: tripData.photo_details[result.originalIndex].location || '',
-              tags: tripData.photo_details[result.originalIndex].tags || []
+              caption: String(photoDetail.caption || ''),
+              budget: String(photoDetail.budget || ''),
+              tagged_friends: Array.isArray(photoDetail.tagged_friends) ? [...photoDetail.tagged_friends] : [],
+              location: String(photoDetail.location || ''),
+              tags: Array.isArray(photoDetail.tags) ? [...photoDetail.tags] : []
             });
           }
         });

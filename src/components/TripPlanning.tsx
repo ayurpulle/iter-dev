@@ -360,8 +360,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         const updateData = {
           itineraryId: editingItinerary.id,
           destination: formData.destination,
-          startDate: formData.startDate?.toISOString() || null,
-          endDate: formData.endDate?.toISOString() || null,
+          startDate: formData.startDate ? formData.startDate.toISOString() : null,
+          endDate: formData.endDate ? formData.endDate.toISOString() : null,
           budget: formData.budget > 0 ? formData.budget : 3,
           interests: encodeHolidayTypes(formData.holidayTypes).join(', '),
           travelStyle: formData.notes || '',
@@ -423,8 +423,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
       // Serialize all data to prevent DataCloneError
       const serializedData = {
         destination: formData.destination,
-        startDate: formData.startDate?.toISOString() || null,
-        endDate: formData.endDate?.toISOString() || null,
+        startDate: formData.startDate ? formData.startDate.toISOString() : null,
+        endDate: formData.endDate ? formData.endDate.toISOString() : null,
         budget: formData.budget > 0 ? formData.budget : null,
         interests: formData.holidayTypes && formData.holidayTypes.length > 0 ? encodeHolidayTypes(formData.holidayTypes).join(', ') : '',
         travelStyle: formData.notes || '',
@@ -1166,15 +1166,32 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
             </div>
             {formData.inspirationSource === "folder" && (
               <div className="mt-3">
-                <Select onValueChange={(value) => {
-                  setFormData(prev => ({ ...prev, inspirationFolder: value }));
-                  setInspirationPopoverOpen(false); // Close popover when folder is selected
-                }}>
-                  <SelectTrigger>
+                <Select 
+                  value={formData.inspirationFolder}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, inspirationFolder: value }));
+                    setInspirationPopoverOpen(false); // Close popover when folder is selected
+                  }}
+                >
+                  <SelectTrigger className="bg-background border-border">
                     <SelectValue placeholder="Select a folder" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {/* Real folders will be loaded from useSavedPosts hook */}
+                  <SelectContent className="bg-popover border-border z-50">
+                    <SelectItem value="" disabled className="text-muted-foreground">
+                      Select a folder to use for inspiration
+                    </SelectItem>
+                    <SelectItem value="all-folders" className="hover:bg-accent">
+                      All folders
+                    </SelectItem>
+                    <SelectItem value="travel-plans" className="hover:bg-accent">
+                      Travel Plans
+                    </SelectItem>
+                    <SelectItem value="food-spots" className="hover:bg-accent">
+                      Food Spots
+                    </SelectItem>
+                    <SelectItem value="accommodation" className="hover:bg-accent">
+                      Accommodation
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

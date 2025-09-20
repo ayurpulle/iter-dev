@@ -34,6 +34,26 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
   const [permissions, setPermissions] = useState({ canEdit: false, isOwner: false });
   const { toast } = useToast();
 
+  const extractDateChanges = (editRequest: string) => {
+    const lowerRequest = editRequest.toLowerCase();
+    let dateAdjustment = 0;
+    
+    // Look for duration changes
+    if (lowerRequest.includes('week longer') || lowerRequest.includes('add a week') || lowerRequest.includes('extend by a week')) {
+      dateAdjustment = 7;
+    } else if (lowerRequest.includes('two weeks longer') || lowerRequest.includes('add two weeks')) {
+      dateAdjustment = 14;
+    } else if (lowerRequest.includes('day longer') || lowerRequest.includes('add a day') || lowerRequest.includes('extend by a day')) {
+      dateAdjustment = 1;
+    } else if (lowerRequest.includes('week shorter') || lowerRequest.includes('remove a week') || lowerRequest.includes('reduce by a week')) {
+      dateAdjustment = -7;
+    } else if (lowerRequest.includes('day shorter') || lowerRequest.includes('remove a day') || lowerRequest.includes('reduce by a day')) {
+      dateAdjustment = -1;
+    }
+    
+    return dateAdjustment;
+  };
+
   const handleSendRequest = async () => {
     if (!editRequest.trim()) return;
 
@@ -46,6 +66,9 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
     setConversation(newConversation);
 
     try {
+      // Check for date changes in the request
+      const dateAdjustment = extractDateChanges(userMessage);
+      
       // Ensure all data is properly serializable
       const serializedConversation = newConversation.map(msg => ({
         role: msg.role,
@@ -57,7 +80,8 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
         editRequest: userMessage,
         destination: iterData.destination,
         conversationHistoryLength: serializedConversation.length,
-        budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3
+        budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3,
+        dateAdjustment
       });
 
       const { data, error } = await supabase.functions.invoke('edit-itinerary', {
@@ -68,7 +92,8 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           conversationHistory: serializedConversation,
           budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3,
           interests: String((iterData as any)?.interests?.join?.(', ') || ''),
-          travelStyle: String((iterData as any)?.interests?.join?.(', ') || '')
+          travelStyle: String((iterData as any)?.interests?.join?.(', ') || ''),
+          dateAdjustment
         }
       });
 
@@ -86,19 +111,43 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       const updatedConversation = [...newConversation, { role: 'assistant' as const, content: data.response }];
       setConversation(updatedConversation);
 
-      // If the itinerary was actually updated
+      // If the itinerary was actually updated, auto-save it permanently
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
-        console.log('Itinerary updated, calling callback');
+        console.log('Itinerary updated, auto-saving permanently');
+        
+        // Update the database with the new content
+        const { error: updateError } = await supabase
+          .from('saved_itineraries')
+          .update({
+            itinerary_content: data.updatedItinerary,
+            destination: data.newDestination || iterData.destination,
+            ...(dateAdjustment !== 0 && {
+              end_date: data.newEndDate || (iterData as any).end_date
+            })
+          })
+          .eq('id', iterData.id);
+
+        if (updateError) {
+          console.error('Error auto-saving itinerary:', updateError);
+          toast({
+            title: "Save Failed",
+            description: "Changes were made but couldn't be saved permanently.",
+            variant: "destructive"
+          });
+        } else {
+          console.log('Itinerary auto-saved successfully');
+        }
+        
         onIterUpdated?.(data.updatedItinerary, data.newDestination);
         
         // Also refresh the saved itineraries list
         window.dispatchEvent(new CustomEvent('refreshItineraries'));
         
         toast({
-          title: "Iter Updated!",
+          title: "Iter Updated & Saved!",
           description: data.newDestination 
             ? `Your itinerary has been updated and destination changed to ${data.newDestination}.`
-            : "Your itinerary has been updated successfully.",
+            : "Your itinerary has been updated and saved successfully.",
         });
       }
 

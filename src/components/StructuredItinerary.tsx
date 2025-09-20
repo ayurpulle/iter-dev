@@ -262,53 +262,101 @@ export const StructuredItinerary = ({
     return parsed;
   };
 
-  const renderContentWithLinks = (content: string) => {
+  const formatContentForDisplay = (content: string) => {
     if (!content) return null;
     
-    // Split content into paragraphs and process each one
-    const paragraphs = content.split('\n\n');
+    // Clean up content - remove excessive dashes and clean formatting
+    let cleanContent = content
+      .replace(/---+/g, '') // Remove long dashes
+      .replace(/\*{3,}/g, '**') // Replace triple+ asterisks with double
+      .replace(/(\*\*[^*]+\*\*)\s*-+\s*/g, '$1 ') // Remove dashes after bold headers
+      .replace(/^\s*-+\s*/gm, '• ') // Convert leading dashes to bullets
+      .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
+      .trim();
+
+    // Split into sections and format each
+    const sections = cleanContent.split(/\n\s*\n/);
     
-    return paragraphs.map((paragraph, index) => {
-      if (!paragraph.trim()) return null;
+    return sections.map((section, index) => {
+      if (!section.trim()) return null;
       
-      // Enhanced URL detection pattern
-      const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-      const parts = paragraph.split(urlPattern);
+      // Check if this is a header (bold text at start)
+      const isHeader = section.trim().startsWith('**') && section.trim().endsWith('**');
       
-      return (
-        <div key={index} className="mb-4">
-          {parts.map((part, partIndex) => {
-            if (part.match(urlPattern)) {
-              const url = part.startsWith('http') ? part : `https://${part}`;
-              const displayText = part.length > 50 ? part.substring(0, 47) + '...' : part;
+      if (isHeader) {
+        const headerText = section.replace(/\*\*/g, '').trim();
+        return (
+          <h4 key={index} className="font-semibold text-foreground mb-2 mt-4 first:mt-0">
+            {headerText}
+          </h4>
+        );
+      }
+      
+      // Process bullet points
+      const lines = section.split('\n').filter(line => line.trim());
+      const hasBullets = lines.some(line => line.trim().startsWith('•') || line.trim().startsWith('-'));
+      
+      if (hasBullets) {
+        return (
+          <ul key={index} className="space-y-1 mb-4">
+            {lines.map((line, lineIndex) => {
+              const cleanLine = line.replace(/^[•\-]\s*/, '').trim();
+              if (!cleanLine) return null;
               
               return (
-                <a
-                  key={partIndex}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
-                >
-                  {displayText}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+                <li key={lineIndex} className="flex items-start gap-2">
+                  <span className="text-muted-foreground mt-1.5">•</span>
+                  <span className="text-sm leading-relaxed">{formatInlineContent(cleanLine)}</span>
+                </li>
               );
-            }
-            
-            // Process bold text
-            const boldPattern = /\*\*(.*?)\*\*/g;
-            const boldParts = part.split(boldPattern);
-            
-            return boldParts.map((boldPart, boldIndex) => {
-              if (boldIndex % 2 === 1) {
-                return <strong key={boldIndex}>{boldPart}</strong>;
-              }
-              return boldPart;
-            });
-          })}
-        </div>
+            })}
+          </ul>
+        );
+      }
+      
+      // Regular paragraph
+      return (
+        <p key={index} className="text-sm leading-relaxed mb-3 text-foreground/90">
+          {formatInlineContent(section)}
+        </p>
       );
+    });
+  };
+
+  const formatInlineContent = (text: string) => {
+    // Enhanced URL detection pattern
+    const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    const parts = text.split(urlPattern);
+    
+    return parts.map((part, partIndex) => {
+      if (part.match(urlPattern)) {
+        const url = part.startsWith('http') ? part : `https://${part}`;
+        const displayText = part.length > 40 ? part.substring(0, 37) + '...' : part;
+        
+        return (
+          <a
+            key={partIndex}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+          >
+            {displayText}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        );
+      }
+      
+      // Process bold text (only for actual emphasis, not headers)
+      const boldPattern = /\*\*([^*]+)\*\*/g;
+      const boldParts = part.split(boldPattern);
+      
+      return boldParts.map((boldPart, boldIndex) => {
+        if (boldIndex % 2 === 1) {
+          return <strong key={boldIndex} className="font-medium">{boldPart}</strong>;
+        }
+        return boldPart;
+      });
     });
   };
 
@@ -522,8 +570,8 @@ export const StructuredItinerary = ({
                           {day.title || `Day ${day.number}`}
                         </span>
                       </h3>
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        {renderContentWithLinks(day.content)}
+                      <div className="space-y-2">
+                        {formatContentForDisplay(day.content)}
                       </div>
                     </div>
                   ))}
@@ -560,8 +608,8 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {renderContentWithLinks(parsed.gettingThere)}
+                <div className="space-y-2">
+                  {formatContentForDisplay(parsed.gettingThere)}
                 </div>
               </div>
             </CollapsibleContent>
@@ -591,8 +639,8 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {renderContentWithLinks(parsed.perfectStay)}
+                <div className="space-y-2">
+                  {formatContentForDisplay(parsed.perfectStay)}
                 </div>
               </div>
             </CollapsibleContent>
@@ -622,8 +670,8 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {renderContentWithLinks(parsed.travelTips)}
+                <div className="space-y-2">
+                  {formatContentForDisplay(parsed.travelTips)}
                 </div>
               </div>
             </CollapsibleContent>
@@ -653,8 +701,8 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {renderContentWithLinks(parsed.bookingLinks)}
+                <div className="space-y-2">
+                  {formatContentForDisplay(parsed.bookingLinks)}
                 </div>
               </div>
             </CollapsibleContent>

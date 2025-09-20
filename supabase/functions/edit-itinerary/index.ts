@@ -173,7 +173,7 @@ serve(async (req) => {
       : '';
 
     const prompt = `
-You are a travel expert helping to make specific edits to a travel itinerary. 
+You are a travel expert helping to edit a travel itinerary. You must ALWAYS return a complete, properly structured itinerary.
 
 CURRENT ITINERARY:
 ${itineraryContent}
@@ -185,22 +185,52 @@ USER REQUEST:
 ${editRequest}
 
 ORIGINAL TRIP PARAMETERS:
+- Destination: ${destination}
 - Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'} (1=budget, 5=ultra-luxury)
 - Travel Interests: ${interests || 'General travel'}
 - Travel Style: ${travelStyle || 'Balanced exploration'}
 
-IMPORTANT INSTRUCTIONS:
-1. DO NOT regenerate the entire itinerary unless specifically asked
-2. Make targeted edits based ONLY on what the user requested
-3. If the user asks to add something, add it to the appropriate section
-4. If the user asks to change something specific, only change that part
-5. If the user asks about alternatives, suggest them without rewriting everything
-6. Keep the existing structure and formatting
-7. Be conversational in your response - explain what you're changing and why
+CRITICAL INSTRUCTIONS:
+You MUST return a complete itinerary with these exact sections in this order:
 
-For responses that don't require a full itinerary update, just respond conversationally with suggestions or specific changes. Only provide a complete updated itinerary if the user explicitly asks for major restructuring or you're making substantial changes that affect multiple sections.
+**Trip Summary** 
+[Generate a personalized 2-line summary that captures the unique essence and highlights of this trip]
 
-Focus on being helpful and specific to their request rather than comprehensive.
+**Getting There**
+• Flight recommendations and booking tips
+• Airport transfer options  
+• Any travel documentation needed
+
+**Perfect Stay**  
+• Accommodation recommendations (3-4 options across different price points)
+• Best neighborhoods to stay in
+• Booking tips and timing
+
+**Day-by-Day Itinerary**
+[For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points]
+
+**Travel Tips**
+• Local customs and etiquette
+• Transportation within the destination  
+• Money and payment tips
+• What to pack
+• Safety considerations
+• Best times to visit attractions
+
+**Booking & Tips**
+• Direct links to recommended hotels
+• Restaurant reservation information
+• Attraction tickets and tours
+• Transportation booking links
+
+IMPORTANT: 
+- Apply the user's requested changes to the appropriate sections
+- When recommending venues from saved posts, mark them with [SAVED_REC:venue_name:user_name]
+- Include 1-2 internet-researched recommendations marked with [WEB_REC:venue_name:source_url]
+- Use bullet points for all sections
+- Keep descriptions concise but well-written
+- Focus on experiences rather than rigid schedules
+- Maintain the exact section structure shown above
 `;
 
     console.log('Calling OpenAI API for itinerary editing...');
@@ -227,7 +257,7 @@ Focus on being helpful and specific to their request rather than comprehensive.
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful travel expert who can edit and improve travel itineraries based on user feedback. Be conversational and helpful. Always provide structured itineraries with proper day grouping and consistent formatting.'
+            content: 'You are a helpful travel expert who creates complete, structured travel itineraries. Always provide the full itinerary with proper sections even when making edits.'
           },
           {
             role: 'user',
@@ -255,34 +285,31 @@ Focus on being helpful and specific to their request rather than comprehensive.
 
     console.log('Generated AI response');
 
-    // Check if the response contains a complete itinerary (has the key sections)
-    const hasItineraryStructure = aiResponse.includes('**Trip Summary**') || 
-                                 aiResponse.includes('**Getting There**') || 
-                                 aiResponse.includes('**Day-by-Day Itinerary**') ||
-                                 aiResponse.includes('Day 1') ||
-                                 aiResponse.includes('Days 1') ||
-                                 aiResponse.includes('Week 1');
-
-    let updatedItinerary = null;
+    // Always return the response as a complete itinerary since we're enforcing structure
+    const updatedItinerary = aiResponse;
     let newDestination = null;
+    let newStartDate = null;
+    let newEndDate = null;
 
-    if (hasItineraryStructure) {
-      updatedItinerary = aiResponse;
-      
-      // Extract trip duration changes to update destination if needed
-      const dayMatches = aiResponse.match(/(?:Day|Days)\s+\d+/gi);
-      let maxDay = 1;
-      if (dayMatches) {
-        maxDay = Math.max(...dayMatches.map(match => {
-          const numbers = match.match(/\d+/g);
-          return numbers ? parseInt(numbers[numbers.length - 1]) : 1;
-        }));
-      }
-      
-      // Check if destination changed in the new itinerary
-      const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);
-      if (destinationMatch && destinationMatch[1] && destinationMatch[1].trim() !== destination) {
-        newDestination = destinationMatch[1].trim();
+    // Extract destination changes
+    const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);
+    if (destinationMatch && destinationMatch[1] && destinationMatch[1].trim() !== destination) {
+      newDestination = destinationMatch[1].trim();
+    }
+
+    // Handle date adjustments
+    const { dateAdjustment } = requestBody;
+    if (dateAdjustment && dateAdjustment !== 0) {
+      // If date adjustment was requested, calculate new end date
+      const currentEndDateMatch = itineraryContent.match(/end.*date[:\s]*([^\n]+)/i);
+      if (currentEndDateMatch) {
+        try {
+          const currentEndDate = new Date(currentEndDateMatch[1]);
+          const newEndDateObj = new Date(currentEndDate.getTime() + (dateAdjustment * 24 * 60 * 60 * 1000));
+          newEndDate = newEndDateObj.toISOString().split('T')[0];
+        } catch (e) {
+          console.log('Could not parse date for adjustment');
+        }
       }
     }
 
@@ -290,7 +317,9 @@ Focus on being helpful and specific to their request rather than comprehensive.
     return new Response(JSON.stringify({
       response: aiResponse,
       updatedItinerary,
-      newDestination
+      newDestination,
+      newEndDate,
+      newStartDate
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

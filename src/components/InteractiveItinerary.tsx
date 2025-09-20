@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Star, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SavedRecommendationModal } from "@/components/SavedRecommendationModal";
 
 interface FriendRecommendation {
   name: string;
@@ -10,6 +11,7 @@ interface FriendRecommendation {
   review: string;
   rating?: number;
   visitDate?: string;
+  postId: string;
 }
 
 interface InteractiveIterProps {
@@ -19,6 +21,7 @@ interface InteractiveIterProps {
 
 const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterProps) => {
   const [expandedVenues, setExpandedVenues] = useState<{ [key: string]: boolean }>({});
+  const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
 
   const toggleVenue = (venueName: string) => {
     setExpandedVenues(prev => ({
@@ -32,15 +35,15 @@ const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterPr
     return text.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;
       
-      // Check for friend recommendation markers
-      const friendRecMatch = line.match(/\[FRIEND_REC:([^\]]+)\]/g);
+      // Check for friend recommendation markers - support both old and new formats
+      const friendRecMatch = line.match(/\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]/g);
       
       if (friendRecMatch) {
         let processedLine = line;
         const venues: string[] = [];
         
         friendRecMatch.forEach(match => {
-          const venueName = match.replace('[FRIEND_REC:', '').replace(']', '');
+          const venueName = match.replace(/\[(?:FRIEND_REC|SAVED_REC):/, '').replace(']', '');
           venues.push(venueName);
           processedLine = processedLine.replace(match, `<VENUE:${venueName}>`);
         });
@@ -55,66 +58,21 @@ const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterPr
               
               if (venueName && friendRecommendations[venueName]) {
                 const recommendations = friendRecommendations[venueName];
-                const isExpanded = expandedVenues[venueName];
                 
                 return (
-                  <span key={partIdx} className="inline-block">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-1 text-primary hover:bg-primary/10 font-medium"
-                      onClick={() => toggleVenue(venueName)}
+                  <span key={partIdx} className="inline-block relative">
+                    <span 
+                      className="text-primary hover:text-primary/80 cursor-pointer font-medium underline decoration-primary/50 hover:decoration-primary transition-colors"
+                      onClick={() => setSelectedVenue(venueName)}
                     >
                       {venueName}
-                      <div className="ml-1 flex items-center">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="text-xs ml-1">{recommendations.length}</span>
-                        {isExpanded ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
-                      </div>
-                    </Button>
-                    
-                    {isExpanded && (
-                      <Card className="mt-2 mb-2 border-l-4 border-l-primary">
-                        <CardContent className="p-3">
-                          <div className="space-y-3">
-                            {recommendations.map((rec, recIdx) => (
-                              <div key={recIdx} className="flex space-x-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={rec.avatar} />
-                                  <AvatarFallback className="text-xs">
-                                    {rec.name.split(' ').map(n => n[0]).join('')}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2">
-                                    <p className="text-sm font-medium truncate">{rec.name}</p>
-                                    {rec.rating && (
-                                      <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => (
-                                          <Star
-                                            key={i}
-                                            className={`h-3 w-3 ${
-                                              i < rec.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                            }`}
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground italic">"{rec.review}"</p>
-                                  {rec.visitDate && (
-                                    <p className="text-xs text-muted-foreground flex items-center mt-1">
-                                      <MapPin className="h-3 w-3 mr-1" />
-                                      Visited {rec.visitDate}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                    </span>
+                    <span 
+                      className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full ml-1 cursor-pointer hover:bg-primary/80 transition-colors"
+                      onClick={() => setSelectedVenue(venueName)}
+                    >
+                      +{recommendations.length}
+                    </span>
                   </span>
                 );
               }
@@ -141,9 +99,20 @@ const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterPr
   };
 
   return (
-    <div className="prose prose-sm max-w-none text-foreground">
-      {renderIterWithRecommendations(itinerary)}
-    </div>
+    <>
+      <div className="prose prose-sm max-w-none text-foreground">
+        {renderIterWithRecommendations(itinerary)}
+      </div>
+      
+      {selectedVenue && friendRecommendations[selectedVenue] && (
+        <SavedRecommendationModal
+          isOpen={!!selectedVenue}
+          onClose={() => setSelectedVenue(null)}
+          venueName={selectedVenue}
+          recommendations={friendRecommendations[selectedVenue]}
+        />
+      )}
+    </>
   );
 };
 

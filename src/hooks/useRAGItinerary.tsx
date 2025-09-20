@@ -67,8 +67,11 @@ export const useRAGIter = () => {
       postsToAnalyze = savedPosts.filter(savedPost => {
         const postContent = savedPost.posts?.content?.toLowerCase() || '';
         const tripTitle = savedPost.posts?.trips?.title?.toLowerCase() || '';
+        const tripStops = savedPost.posts?.trips?.stops || [];
         return locationKeywords.some(keyword => 
-          postContent.includes(keyword) || tripTitle.includes(keyword)
+          postContent.includes(keyword) || 
+          tripTitle.includes(keyword) ||
+          tripStops.some((stop: any) => stop.name?.toLowerCase().includes(keyword))
         );
       });
     }
@@ -79,15 +82,18 @@ export const useRAGIter = () => {
 
       const postContent = savedPost.posts.content.toLowerCase();
       const tripTitle = savedPost.posts.trips?.title?.toLowerCase() || '';
+      const tripStops = savedPost.posts.trips?.stops || [];
       
       // For folder-specific inspiration, prioritize all posts in that folder
       let isRelevant = false;
       if (inspirationSource === "folder" && inspirationFolder) {
         isRelevant = true; // Already filtered above
       } else {
-        // Check if post is relevant to the destination
+        // Check if post is relevant to the destination using multiple location sources
         isRelevant = locationKeywords.some(keyword => 
-          postContent.includes(keyword) || tripTitle.includes(keyword)
+          postContent.includes(keyword) || 
+          tripTitle.includes(keyword) ||
+          tripStops.some((stop: any) => stop.name?.toLowerCase().includes(keyword))
         );
 
         if (!isRelevant && interests) {

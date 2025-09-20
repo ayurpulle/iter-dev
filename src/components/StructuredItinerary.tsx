@@ -360,7 +360,7 @@ export const StructuredItinerary = ({
         </div>
       )}
 
-      {/* Interactive Map */}
+      {/* Interactive Map - ABOVE summary */}
       <div className="relative">
         <InteractiveItineraryMap
           destinations={[currentDestination || destination || 'Unknown']}
@@ -368,7 +368,7 @@ export const StructuredItinerary = ({
         />
       </div>
 
-      {/* Trip Summary */}
+      {/* Trip Summary - BELOW map */}
       <div className="space-y-4">
         <div className="prose prose-sm max-w-none dark:prose-invert">
           <p className="text-foreground/80 leading-relaxed text-base">
@@ -377,8 +377,8 @@ export const StructuredItinerary = ({
         </div>
       </div>
 
-      {/* Trip Details - Simple layout */}
-      <div className="space-y-3">
+      {/* Trip Details in 2x2 grid like your image */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Dates */}
         <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -479,66 +479,17 @@ export const StructuredItinerary = ({
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Budget */}
+        <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Budget:</span>
+          <span className="text-blue-600">{getBudgetDisplay(localBudget)}</span>
+        </div>
       </div>
 
-      {/* Individual Dropdown Sections */}
+      {/* Individual Dropdown Sections - Remove Budget from here since it's in grid above */}
       <div className="space-y-3">
-        {/* Budget Section */}
-        <Collapsible
-          open={expandedSections['budget'] ?? false}
-          onOpenChange={() => toggleSection('budget')}
-        >
-          <CollapsibleTrigger asChild>
-            <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-lg font-semibold">Budget:</span>
-                  <span className="text-blue-600">{getBudgetDisplay(localBudget)}</span>
-                </div>
-                {expandedSections['budget'] ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </div>
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="mt-2 p-6 border rounded-lg bg-background">
-              <Select
-                value={localBudget.toString()}
-                onValueChange={(value) => {
-                  const newBudget = parseInt(value);
-                  setLocalBudget(newBudget);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    <div className="flex items-center gap-2">
-                      <span>{getBudgetDisplay(localBudget)}</span>
-                      <span className="text-muted-foreground text-sm">
-                        {getBudgetDescription(localBudget)}
-                      </span>
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background border shadow-md">
-                  {[1, 2, 3, 4, 5].map(level => (
-                    <SelectItem key={level} value={level.toString()}>
-                      <div className="flex items-center gap-2">
-                        <span>{getBudgetDisplay(level)}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {getBudgetDescription(level)}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
 
         {/* Day-by-Day Itinerary */}
         <Collapsible
@@ -578,15 +529,15 @@ export const StructuredItinerary = ({
                   ))}
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {renderContentWithLinks(currentItinerary)}
+                <div className="text-muted-foreground">
+                  No day-by-day itinerary content found.
                 </div>
               )}
             </div>
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Getting There / Flights */}
+        {/* Getting There */}
         {parsed.gettingThere && (
           <Collapsible
             open={expandedSections['gettingThere'] ?? false}
@@ -597,7 +548,7 @@ export const StructuredItinerary = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Plane className="h-5 w-5 text-green-500" />
-                    <span className="text-lg font-semibold">Getting There / Flights</span>
+                    <span className="text-lg font-semibold">Getting There</span>
                   </div>
                   {expandedSections['gettingThere'] ? (
                     <ChevronUp className="h-4 w-4" />
@@ -648,7 +599,7 @@ export const StructuredItinerary = ({
           </Collapsible>
         )}
 
-        {/* Travel Tips */}
+        {/* Essential Travel Tips */}
         {parsed.travelTips && (
           <Collapsible
             open={expandedSections['travelTips'] ?? false}
@@ -659,7 +610,7 @@ export const StructuredItinerary = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Info className="h-5 w-5 text-orange-500" />
-                    <span className="text-lg font-semibold">Travel Tips</span>
+                    <span className="text-lg font-semibold">Essential Travel Tips</span>
                   </div>
                   {expandedSections['travelTips'] ? (
                     <ChevronUp className="h-4 w-4" />

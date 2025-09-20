@@ -51,9 +51,6 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      components={{
-        Chevron: ({ ..._props }) => <ChevronLeft className="h-4 w-4 text-primary" />,
-      }}
       {...props}
     />
   );

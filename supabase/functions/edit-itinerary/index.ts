@@ -167,13 +167,13 @@ serve(async (req) => {
 
     const currentGrouping = calculateDayGrouping(itineraryContent);
 
-    // Construct prompt for OpenAI
+    // Construct prompt for OpenAI - focus on targeted editing
     const conversationContext = conversationHistory && conversationHistory.length > 0 
       ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
       : '';
 
     const prompt = `
-You are a travel expert helping to edit and improve a travel itinerary. Here's the current itinerary for ${destination}:
+You are a travel expert helping to make specific edits to a travel itinerary. 
 
 CURRENT ITINERARY:
 ${itineraryContent}
@@ -189,24 +189,18 @@ ORIGINAL TRIP PARAMETERS:
 - Travel Interests: ${interests || 'General travel'}
 - Travel Style: ${travelStyle || 'Balanced exploration'}
 
-IMPORTANT FORMATTING RULES:
-1. For trips ≤7 days: Use "Day 1:", "Day 2:", etc. for each day
-2. For trips 7-14 days: Group into "Days 1-2:", "Days 3-4:", etc.
-3. For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.
-4. Use clean formatting without asterisks around words like *night* - use **night** for bold instead
-5. Create an engaging, personalized Trip Summary (not formulaic)
-6. Keep tone casual but helpful with good grammar
-7. Ensure all recommendations match the specified budget level and travel interests
+IMPORTANT INSTRUCTIONS:
+1. DO NOT regenerate the entire itinerary unless specifically asked
+2. Make targeted edits based ONLY on what the user requested
+3. If the user asks to add something, add it to the appropriate section
+4. If the user asks to change something specific, only change that part
+5. If the user asks about alternatives, suggest them without rewriting everything
+6. Keep the existing structure and formatting
+7. Be conversational in your response - explain what you're changing and why
 
-If you're updating the itinerary, maintain this structure:
-- **Trip Summary** (Generate a unique, engaging 2-3 sentence summary)
-- **Getting There**
-- **Perfect Stay**
-- **Day-by-Day Itinerary** (or grouped days based on duration)
-- **Travel Tips**
-- **Booking Links**
+For responses that don't require a full itinerary update, just respond conversationally with suggestions or specific changes. Only provide a complete updated itinerary if the user explicitly asks for major restructuring or you're making substantial changes that affect multiple sections.
 
-When making changes, consider the original budget and travel interests to ensure consistency. Respond conversationally and focus on what the user specifically asked for. If extending trip duration, adjust the day grouping accordingly.
+Focus on being helpful and specific to their request rather than comprehensive.
 `;
 
     console.log('Calling OpenAI API for itinerary editing...');

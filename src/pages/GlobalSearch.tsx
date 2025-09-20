@@ -191,23 +191,23 @@ const GlobalSearchPage = () => {
           (post.trips.stops as any[]).forEach((stop: any) => {
             if (stop.name && stop.name.toLowerCase().includes(query.toLowerCase())) {
               const locationKey = stop.name;
+              const tripWithProfile = {
+                id: post.trips.id,
+                title: post.trips.title || 'Untitled Trip',
+                duration: post.trips.duration || '',
+                distance: post.trips.distance || '',
+                stops: post.trips.stops || [],
+                photo_count: post.trips.images?.length || 0,
+                hashtags: post.trips.hashtags || [],
+                user_id: post.user_id,
+                profiles: post.profiles ? {
+                  name: post.profiles.name,
+                  username: post.profiles.username,
+                  avatar: post.profiles.avatar
+                } : null
+              };
+              
               if (!locationMap.has(locationKey)) {
-                const tripWithProfile = {
-                  id: post.trips.id,
-                  title: post.trips.title || 'Untitled Trip',
-                  duration: post.trips.duration || '',
-                  distance: post.trips.distance || '',
-                  stops: post.trips.stops || [],
-                  photo_count: post.trips.images?.length || 0,
-                  hashtags: post.trips.hashtags || [],
-                  user_id: post.user_id,
-                  profiles: post.profiles ? {
-                    name: post.profiles.name,
-                    username: post.profiles.username,
-                    avatar: post.profiles.avatar
-                  } : null
-                };
-                
                 locationMap.set(locationKey, {
                   id: `location-${locationKey}`,
                   type: 'location',
@@ -218,19 +218,8 @@ const GlobalSearchPage = () => {
                 });
               } else {
                 const existing = locationMap.get(locationKey);
-                existing.tripCount++;
-                
-                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
-                const tripWithProfile = {
-                  ...trip,
-                  profiles: userProfile ? {
-                    name: userProfile.name,
-                    username: userProfile.username,
-                    avatar: userProfile.avatar
-                  } : null
-                };
-                
                 existing.data.trips.push(tripWithProfile);
+                existing.tripCount = existing.data.trips.length;
               }
             }
           });
@@ -311,36 +300,63 @@ const GlobalSearchPage = () => {
 
       hashtagMap.forEach(hashtag => results.push(hashtag));
 
-      // Get all trips for trip results - combine all profiles
-      const allProfiles = [...(locationProfiles || []), ...(hashtagProfiles || [])];
-      const allTrips: Trip[] = [
-        ...(locationTrips || []),
-        ...(hashtagTrips || [])
-      ]
-      .filter((trip, index, self) => 
-        index === self.findIndex(t => t.id === trip.id)
-      )
-      .map(trip => {
-        const userProfile = allProfiles.find(p => p.user_id === trip.user_id);
-        return {
-          id: trip.id,
-          title: trip.title,
-          duration: trip.duration,
-          distance: trip.distance,
-          stops: trip.stops,
-          photo_count: trip.photo_count,
-          hashtags: trip.hashtags || [],
-          user_id: trip.user_id,
-          profiles: userProfile ? {
-            name: userProfile.name,
-            username: userProfile.username,
-            avatar: userProfile.avatar
-          } : null
-        };
+      // Get all trips for trip results from both location and hashtag posts
+      const allTripData: Trip[] = [];
+      
+      // Add trips from location search
+      locationPosts?.forEach(post => {
+        if (post.trips && post.trips.stops && Array.isArray(post.trips.stops)) {
+          const hasMatchingLocation = (post.trips.stops as any[]).some((stop: any) => 
+            stop.name && stop.name.toLowerCase().includes(query.toLowerCase())
+          );
+          if (hasMatchingLocation) {
+            allTripData.push({
+              id: post.trips.id,
+              title: post.trips.title || 'Untitled Trip',
+              duration: post.trips.duration || '',
+              distance: post.trips.distance || '',
+              stops: post.trips.stops || [],
+              photo_count: post.trips.images?.length || 0,
+              hashtags: post.trips.hashtags || [],
+              user_id: post.user_id,
+              profiles: post.profiles ? {
+                name: post.profiles.name,
+                username: post.profiles.username,
+                avatar: post.profiles.avatar
+              } : null
+            });
+          }
+        }
+      });
+
+      // Add trips from hashtag search
+      hashtagPosts?.forEach(post => {
+        if (post.trips && post.trips.hashtags && Array.isArray(post.trips.hashtags)) {
+          const hasMatchingHashtag = post.trips.hashtags.some((hashtag: string) =>
+            hashtag.toLowerCase().includes(query.toLowerCase())
+          );
+          if (hasMatchingHashtag && !allTripData.find(t => t.id === post.trips.id)) {
+            allTripData.push({
+              id: post.trips.id,
+              title: post.trips.title || 'Untitled Trip',
+              duration: post.trips.duration || '',
+              distance: post.trips.distance || '',
+              stops: post.trips.stops || [],
+              photo_count: post.trips.images?.length || 0,
+              hashtags: post.trips.hashtags || [],
+              user_id: post.user_id,
+              profiles: post.profiles ? {
+                name: post.profiles.name,
+                username: post.profiles.username,
+                avatar: post.profiles.avatar
+              } : null
+            });
+          }
+        }
       });
 
       setSearchResults(results);
-      setTrips(allTrips);
+      setTrips(allTripData);
 
     } catch (error) {
       console.error('Search error:', error);

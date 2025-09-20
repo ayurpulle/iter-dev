@@ -16,9 +16,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edit itinerary function called');
+    
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authHeader);
     if (!authHeader) {
+      console.error('No authorization header found');
       throw new Error('No authorization header');
     }
 
@@ -26,16 +30,21 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
+    console.log('Supabase URL and anon key present:', !!supabaseUrl, !!supabaseAnonKey);
+    
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
       global: { headers: { Authorization: authHeader } }
     });
 
     // Get the current user
+    console.log('Attempting to get user...');
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
+    console.log('Auth result:', { user: !!user, authError: authError?.message });
     if (authError || !user) {
-      throw new Error('Authentication failed');
+      console.error('Authentication failed:', authError?.message);
+      throw new Error(`Authentication failed: ${authError?.message || 'No user found'}`);
     }
 
     // Parse the request body

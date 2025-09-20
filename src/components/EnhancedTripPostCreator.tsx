@@ -484,7 +484,7 @@ const EnhancedTripPostCreator = ({ onBack }: EnhancedTripPostCreatorProps) => {
   );
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingTop: `max(env(safe-area-inset-top), var(--safe-area-inset-top, 0px))` }}>
+    <div className="min-h-screen bg-background" style={{ paddingTop: `calc(1rem + var(--safe-area-inset-top))` }}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-3">

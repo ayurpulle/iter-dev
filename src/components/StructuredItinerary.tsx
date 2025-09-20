@@ -865,7 +865,7 @@ export const StructuredItinerary = ({
         destination: originalDestination,
         startDate: localStartDate?.toISOString() || null,
         endDate: localEndDate?.toISOString() || null,
-        budget: localBudget || decodedBudget,
+        budget: typeof (localBudget || decodedBudget) === 'number' ? (localBudget || decodedBudget) : parseInt(String(localBudget || decodedBudget)) || 3,
         interests: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : decodedHolidayTypes.join(', '),
         travelStyle: localHolidayTypes.length > 0 ? localHolidayTypes.join(', ') : decodedHolidayTypes.join(', '),
         ragContext: '',

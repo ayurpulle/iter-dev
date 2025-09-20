@@ -52,7 +52,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           editRequest: userMessage,
           destination: iterData.destination,
           conversationHistory: newConversation,
-          budget: (iterData as any)?.budget,
+          budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3,
           interests: (iterData as any)?.interests?.join?.(', ') || '',
           travelStyle: (iterData as any)?.interests?.join?.(', ') || ''
         }

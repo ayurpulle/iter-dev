@@ -348,6 +348,26 @@ export const StructuredItinerary = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
+      {/* Edit and Update Controls at the top */}
+      {iterData && (
+        <div className="flex justify-end">
+          <ItineraryUpdateDropdown
+            iterData={iterData}
+            hasChanges={false}
+            onUpdate={() => {}}
+            onIterUpdated={handleIterUpdated}
+          />
+        </div>
+      )}
+
+      {/* Interactive Map */}
+      <div className="relative">
+        <InteractiveItineraryMap
+          destinations={[currentDestination || destination || 'Unknown']}
+          className="w-full h-64 rounded-lg"
+        />
+      </div>
+
       {/* Trip Summary */}
       <div className="space-y-4">
         <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -357,10 +377,10 @@ export const StructuredItinerary = ({
         </div>
       </div>
 
-      {/* Trip Details - Clean format matching the image */}
-      <div className="space-y-3">
+      {/* Trip Details Grid - 2x2 layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Dates */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Dates:</span>
@@ -371,7 +391,7 @@ export const StructuredItinerary = ({
                     {localStartDate ? format(localStartDate, 'MMM dd, yyyy') : 'Select start'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
                   <CalendarComponent
                     mode="single"
                     selected={localStartDate}
@@ -394,7 +414,7 @@ export const StructuredItinerary = ({
                     {localEndDate ? format(localEndDate, 'MMM dd, yyyy') : 'Select end'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
                   <CalendarComponent
                     mode="single"
                     selected={localEndDate}
@@ -420,7 +440,7 @@ export const StructuredItinerary = ({
         </div>
 
         {/* Airports */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-2">
             <Plane className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Airports:</span>
@@ -429,7 +449,7 @@ export const StructuredItinerary = ({
         </div>
 
         {/* Holiday Types */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Type:</span>
@@ -439,7 +459,7 @@ export const StructuredItinerary = ({
                   {localHolidayTypes.length > 0 ? `${localHolidayTypes.length} selected` : 'Select types'}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="z-50 bg-background border shadow-md">
                 <DialogHeader>
                   <DialogTitle>Holiday Types</DialogTitle>
                   <DialogDescription>
@@ -469,7 +489,7 @@ export const StructuredItinerary = ({
         </div>
 
         {/* Budget */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Budget:</span>
@@ -487,7 +507,7 @@ export const StructuredItinerary = ({
                   </Button>
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-background border shadow-md">
                 {[1, 2, 3, 4, 5].map(level => (
                   <SelectItem key={level} value={level.toString()}>
                     <div className="flex items-center gap-2">
@@ -678,17 +698,6 @@ export const StructuredItinerary = ({
         )}
       </div>
 
-      {/* Update Controls */}
-      {iterData && (
-        <div className="flex justify-center pt-4">
-          <ItineraryUpdateDropdown
-            iterData={iterData}
-            hasChanges={false}
-            onUpdate={() => {}}
-            onIterUpdated={handleIterUpdated}
-          />
-        </div>
-      )}
 
       <SavedRecommendationModal
         isOpen={showRecommendationModal}

@@ -192,7 +192,7 @@ export const StructuredItinerary = ({
     }
     
     // Split into main sections based on headers
-    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*)/);
+    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*)/);
     
     const parsed = {
       summary: '',
@@ -208,8 +208,8 @@ export const StructuredItinerary = ({
       const trimmed = section.trim();
       if (trimmed.startsWith('**Trip Summary**')) {
         parsed.summary = trimmed.replace('**Trip Summary**', '').trim();
-      } else if (trimmed.startsWith('**Getting There**')) {
-        parsed.gettingThere = trimmed.replace('**Getting There**', '').trim();
+      } else if (trimmed.startsWith('**Getting There**') || trimmed.startsWith('**Flights**')) {
+        parsed.gettingThere = trimmed.replace(/\*\*(Getting There|Flights)\*\*/, '').trim();
       } else if (trimmed.startsWith('**Perfect Stay**')) {
         parsed.perfectStay = trimmed.replace('**Perfect Stay**', '').trim();
       } else if (trimmed.startsWith('**Day-by-Day Itinerary**') || trimmed.includes('**Day') || trimmed.includes('Day ') || trimmed.includes('Days ')) {
@@ -251,10 +251,10 @@ export const StructuredItinerary = ({
             }
           });
         }
-      } else if (trimmed.startsWith('**Travel Tips**')) {
-        parsed.travelTips = trimmed.replace('**Travel Tips**', '').trim();
-      } else if (trimmed.startsWith('**Booking Links**')) {
-        parsed.bookingLinks = trimmed.replace('**Booking Links**', '').trim();
+      } else if (trimmed.startsWith('**Travel Tips**') || trimmed.startsWith('**Essential Travel Tips**')) {
+        parsed.travelTips = trimmed.replace(/\*\*(Travel Tips|Essential Travel Tips)\*\*/, '').trim();
+      } else if (trimmed.startsWith('**Booking Links**') || trimmed.startsWith('**Booking & Tips**')) {
+        parsed.bookingLinks = trimmed.replace(/\*\*(Booking Links|Booking & Tips)\*\*/, '').trim();
       }
     });
 
@@ -377,163 +377,176 @@ export const StructuredItinerary = ({
         </div>
       </div>
 
-      {/* Trip Details Grid - 2x2 layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Trip Details - Simple layout */}
+      <div className="space-y-3">
         {/* Dates */}
-        <div className="flex items-center justify-between p-3 border rounded-lg">
+        <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Dates:</span>
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Dates:</span>
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
-                    {localStartDate ? format(localStartDate, 'MMM dd, yyyy') : 'Select start'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={localStartDate}
-                    onSelect={(date) => {
-                      if (date && validateDates(date, localEndDate)) {
-                        setLocalStartDate(date);
-                        if (onUpdateDates && localEndDate) {
-                          onUpdateDates(date, localEndDate);
-                        }
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
+                  {localStartDate ? format(localStartDate, 'MMM dd, yyyy') : 'Select start'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={localStartDate}
+                  onSelect={(date) => {
+                    if (date && validateDates(date, localEndDate)) {
+                      setLocalStartDate(date);
+                      if (onUpdateDates && localEndDate) {
+                        onUpdateDates(date, localEndDate);
                       }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <span className="text-muted-foreground">to</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
-                    {localEndDate ? format(localEndDate, 'MMM dd, yyyy') : 'Select end'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={localEndDate}
-                    onSelect={(date) => {
-                      if (date && validateDates(localStartDate, date)) {
-                        setLocalEndDate(date);
-                        if (onUpdateDates && localStartDate) {
-                          onUpdateDates(localStartDate, date);
-                        }
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground">to</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
+                  {localEndDate ? format(localEndDate, 'MMM dd, yyyy') : 'Select end'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50 bg-background border shadow-md" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={localEndDate}
+                  onSelect={(date) => {
+                    if (date && validateDates(localStartDate, date)) {
+                      setLocalEndDate(date);
+                      if (onUpdateDates && localStartDate) {
+                        onUpdateDates(localStartDate, date);
                       }
-                    }}
-                    disabled={(date) => {
-                      if (!localStartDate) return false;
-                      return date < localStartDate;
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+                    }
+                  }}
+                  disabled={(date) => {
+                    if (!localStartDate) return false;
+                    return date < localStartDate;
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          <Edit3 className="h-3 w-3 text-muted-foreground" />
         </div>
 
         {/* Airports */}
-        <div className="flex items-center justify-between p-3 border rounded-lg">
-          <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Airports:</span>
-            <span className="text-sm text-blue-600 underline">NRT • HND</span>
-          </div>
+        <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
+          <Plane className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Airports:</span>
+          <span className="text-sm text-blue-600 underline">NRT • HND</span>
         </div>
 
         {/* Holiday Types */}
-        <div className="flex items-center justify-between p-3 border rounded-lg">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Type:</span>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
-                  {localHolidayTypes.length > 0 ? `${localHolidayTypes.length} selected` : 'Select types'}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="z-50 bg-background border shadow-md">
-                <DialogHeader>
-                  <DialogTitle>Holiday Types</DialogTitle>
-                  <DialogDescription>
-                    Select the types of holiday experiences you're interested in.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableHolidayTypes.map(type => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={type}
-                        checked={localHolidayTypes.includes(type)}
-                        onChange={() => toggleHolidayType(type)}
-                        className="rounded"
-                      />
-                      <label htmlFor={type} className="text-sm">
-                        {type}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <Edit3 className="h-3 w-3 text-muted-foreground" />
-        </div>
-
-        {/* Budget */}
-        <div className="flex items-center justify-between p-3 border rounded-lg">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Budget:</span>
-            <Select
-              value={localBudget.toString()}
-              onValueChange={(value) => {
-                const newBudget = parseInt(value);
-                setLocalBudget(newBudget);
-              }}
-            >
-              <SelectTrigger className="w-auto h-auto p-0 border-0 bg-transparent">
-                <SelectValue>
-                  <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
-                    {getBudgetDisplay(localBudget)}
-                  </Button>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-background border shadow-md">
-                {[1, 2, 3, 4, 5].map(level => (
-                  <SelectItem key={level} value={level.toString()}>
-                    <div className="flex items-center gap-2">
-                      <span>{getBudgetDisplay(level)}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {getBudgetDescription(level)}
-                      </span>
-                    </div>
-                  </SelectItem>
+        <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Type:</span>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
+                {localHolidayTypes.length > 0 ? `${localHolidayTypes.length} selected` : 'Select types'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="z-50 bg-background border shadow-md">
+              <DialogHeader>
+                <DialogTitle>Holiday Types</DialogTitle>
+                <DialogDescription>
+                  Select the types of holiday experiences you're interested in.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-2">
+                {availableHolidayTypes.map(type => (
+                  <div key={type} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={type}
+                      checked={localHolidayTypes.includes(type)}
+                      onChange={() => toggleHolidayType(type)}
+                      className="rounded"
+                    />
+                    <label htmlFor={type} className="text-sm">
+                      {type}
+                    </label>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Edit3 className="h-3 w-3 text-muted-foreground" />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Main Content Sections - Clean collapsible format */}
+      {/* Individual Dropdown Sections */}
       <div className="space-y-3">
+        {/* Budget Section */}
+        <Collapsible
+          open={expandedSections['budget'] ?? false}
+          onOpenChange={() => toggleSection('budget')}
+        >
+          <CollapsibleTrigger asChild>
+            <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-lg font-semibold">Budget:</span>
+                  <span className="text-blue-600">{getBudgetDisplay(localBudget)}</span>
+                </div>
+                {expandedSections['budget'] ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 p-6 border rounded-lg bg-background">
+              <Select
+                value={localBudget.toString()}
+                onValueChange={(value) => {
+                  const newBudget = parseInt(value);
+                  setLocalBudget(newBudget);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <span>{getBudgetDisplay(localBudget)}</span>
+                      <span className="text-muted-foreground text-sm">
+                        {getBudgetDescription(localBudget)}
+                      </span>
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background border shadow-md">
+                  {[1, 2, 3, 4, 5].map(level => (
+                    <SelectItem key={level} value={level.toString()}>
+                      <div className="flex items-center gap-2">
+                        <span>{getBudgetDisplay(level)}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {getBudgetDescription(level)}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* Day-by-Day Itinerary */}
         <Collapsible
           open={expandedSections['itinerary'] ?? true}
           onOpenChange={() => toggleSection('itinerary')}
         >
           <CollapsibleTrigger asChild>
-            <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors border-blue-200 bg-blue-50/20">
+            <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 text-blue-500" />
@@ -548,7 +561,7 @@ export const StructuredItinerary = ({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="mt-2 p-6 border rounded-lg border-blue-200 bg-background">
+            <div className="mt-2 p-6 border rounded-lg bg-background">
               {parsed.days.length > 0 ? (
                 <div className="space-y-6">
                   {parsed.days.map((day, index) => (
@@ -573,18 +586,18 @@ export const StructuredItinerary = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Getting There */}
+        {/* Getting There / Flights */}
         {parsed.gettingThere && (
           <Collapsible
             open={expandedSections['gettingThere'] ?? false}
             onOpenChange={() => toggleSection('gettingThere')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors border-green-200 bg-green-50/20">
+              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Plane className="h-5 w-5 text-green-500" />
-                    <span className="text-lg font-semibold">Getting There</span>
+                    <span className="text-lg font-semibold">Getting There / Flights</span>
                   </div>
                   {expandedSections['gettingThere'] ? (
                     <ChevronUp className="h-4 w-4" />
@@ -595,7 +608,7 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg border-green-200 bg-background">
+              <div className="mt-2 p-6 border rounded-lg bg-background">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   {renderContentWithLinks(parsed.gettingThere)}
                 </div>
@@ -611,7 +624,7 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('perfectStay')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors border-purple-200 bg-purple-50/20">
+              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Hotel className="h-5 w-5 text-purple-500" />
@@ -626,7 +639,7 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg border-purple-200 bg-background">
+              <div className="mt-2 p-6 border rounded-lg bg-background">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   {renderContentWithLinks(parsed.perfectStay)}
                 </div>
@@ -642,11 +655,11 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('travelTips')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors border-orange-200 bg-orange-50/20">
+              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Info className="h-5 w-5 text-orange-500" />
-                    <span className="text-lg font-semibold">Essential Travel Tips</span>
+                    <span className="text-lg font-semibold">Travel Tips</span>
                   </div>
                   {expandedSections['travelTips'] ? (
                     <ChevronUp className="h-4 w-4" />
@@ -657,7 +670,7 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg border-orange-200 bg-background">
+              <div className="mt-2 p-6 border rounded-lg bg-background">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   {renderContentWithLinks(parsed.travelTips)}
                 </div>
@@ -673,7 +686,7 @@ export const StructuredItinerary = ({
             onOpenChange={() => toggleSection('bookingLinks')}
           >
             <CollapsibleTrigger asChild>
-              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors border-red-200 bg-red-50/20">
+              <div className="w-full p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors bg-background">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <ExternalLink className="h-5 w-5 text-red-500" />
@@ -688,7 +701,7 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg border-red-200 bg-background">
+              <div className="mt-2 p-6 border rounded-lg bg-background">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   {renderContentWithLinks(parsed.bookingLinks)}
                 </div>
@@ -698,14 +711,13 @@ export const StructuredItinerary = ({
         )}
       </div>
 
-
       <SavedRecommendationModal
         isOpen={showRecommendationModal}
         onClose={() => {
           setShowRecommendationModal(false);
           setSelectedVenue(null);
         }}
-        venueName={selectedVenue || ''}
+        venueName={selectedVenue || ""}
         recommendations={selectedVenue ? (friendRecommendations[selectedVenue] || []) : []}
       />
     </div>

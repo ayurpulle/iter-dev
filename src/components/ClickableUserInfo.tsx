@@ -14,7 +14,7 @@ interface ClickableUserInfoProps {
   avatarSize?: "sm" | "md" | "lg";
 }
 
-export const ClickableUserInfo = ({
+const ClickableUserInfo = ({
   username,
   name,
   avatar,

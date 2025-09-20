@@ -153,7 +153,7 @@ export const useSavedItineraries = () => {
         console.log('Processing background trip:', {
           tripId: trip.id,
           originalHashtags: trip.hashtags,
-          mappedInterests: interests,
+          mappedInterests: interests ? [...interests] : [], // Create a copy to avoid circular reference
           originalOverallBudget: trip.overall_budget,
           mappedBudget: budget
         });

@@ -46,15 +46,21 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
     setConversation(newConversation);
 
     try {
+      // Ensure all data is properly serializable
+      const serializedConversation = newConversation.map(msg => ({
+        role: msg.role,
+        content: String(msg.content)
+      }));
+
       const { data, error } = await supabase.functions.invoke('edit-itinerary', {
         body: {
-          itineraryContent: iterData.itinerary_content,
-          editRequest: userMessage,
-          destination: iterData.destination,
-          conversationHistory: newConversation,
+          itineraryContent: String(iterData.itinerary_content || ''),
+          editRequest: String(userMessage),
+          destination: String(iterData.destination || ''),
+          conversationHistory: serializedConversation,
           budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3,
-          interests: (iterData as any)?.interests?.join?.(', ') || '',
-          travelStyle: (iterData as any)?.interests?.join?.(', ') || ''
+          interests: String((iterData as any)?.interests?.join?.(', ') || ''),
+          travelStyle: String((iterData as any)?.interests?.join?.(', ') || '')
         }
       });
 

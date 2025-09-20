@@ -30,6 +30,11 @@ interface TripPlanningProps {
   openIterId?: string | null;
 }
 
+interface ItemFolder {
+  id: string;
+  name: string;
+}
+
 const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   console.log('TripPlanning component loaded');
   const location = useLocation();
@@ -72,7 +77,9 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   const [whenDialogOpen, setWhenDialogOpen] = useState(false);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [inspirationPopoverOpen, setInspirationPopoverOpen] = useState(false);
+  const [folders, setFolders] = useState<ItemFolder[]>([]);
 
+  // Global state management
   // View state management
   const [currentView, setCurrentView] = useState<'planning' | 'savedTrips' | 'viewIter'>('planning');
   const [viewingIter, setViewingIter] = useState<any>(null);
@@ -85,7 +92,34 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   const { generateRAGPrompt } = useRAGIter();
   const { user } = useAuth();
   
+  
   console.log('TripPlanning state:', { currentView, generatedIter, isLoading });
+
+  // Fetch user folders for inspiration selection
+  useEffect(() => {
+    const fetchFolders = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('item_folders')
+          .select('id, name')
+          .eq('user_id', user.id)
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching folders:', error);
+          return;
+        }
+
+        setFolders(data || []);
+      } catch (error) {
+        console.error('Error fetching folders:', error);
+      }
+    };
+
+    fetchFolders();
+  }, [user]);
 
   // Auto-save itinerary when generated
   useEffect(() => {
@@ -346,6 +380,9 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         console.log('Regenerating itinerary with new parameters:', editingItinerary.id);
         
         // Generate RAG context from friend experiences for the edited itinerary
+        const selectedFolder = folders.find(f => f.id === formData.inspirationFolder);
+        const folderName = selectedFolder ? selectedFolder.name : formData.inspirationFolder;
+        
         const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
           formData.destination,
           formData.holidayTypes,
@@ -353,7 +390,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           formData.endDate || undefined,
           formData.budget > 0 ? formData.budget : undefined,
           formData.inspirationSource,
-          formData.inspirationFolder
+          formData.inspirationFolder,
+          folderName
         );
 
         // Serialize data for update-itinerary call
@@ -410,6 +448,9 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
       }
 
       // Generate RAG context from friend experiences
+      const selectedFolder = folders.find(f => f.id === formData.inspirationFolder);
+      const folderName = selectedFolder ? selectedFolder.name : formData.inspirationFolder;
+      
       const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
         formData.destination,
         formData.holidayTypes,
@@ -417,7 +458,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         formData.endDate || undefined,
         formData.budget > 0 ? formData.budget : undefined,
         formData.inspirationSource,
-        formData.inspirationFolder
+        formData.inspirationFolder,
+        folderName
       );
 
       // Serialize all data to prevent DataCloneError
@@ -1180,15 +1222,11 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     <SelectItem value="all-folders" className="hover:bg-accent">
                       All folders
                     </SelectItem>
-                    <SelectItem value="travel-plans" className="hover:bg-accent">
-                      Travel Plans
-                    </SelectItem>
-                    <SelectItem value="food-spots" className="hover:bg-accent">
-                      Food Spots
-                    </SelectItem>
-                    <SelectItem value="accommodation" className="hover:bg-accent">
-                      Accommodation
-                    </SelectItem>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id} className="hover:bg-accent">
+                        {folder.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

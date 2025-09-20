@@ -59,10 +59,9 @@ export const useRAGIter = () => {
     // Filter posts based on inspiration source
     let postsToAnalyze = savedPosts;
     
-    if (inspirationSource === "folder" && inspirationFolder) {
-      // Filter to specific folder posts only - for now we'll skip folder filtering since the schema doesn't include folder names
-      // TODO: Add proper folder filtering when folder names are available in the schema
-      postsToAnalyze = savedPosts;
+    if (inspirationSource === "folder" && inspirationFolder && inspirationFolder !== "all-folders") {
+      // Filter to specific folder posts only
+      postsToAnalyze = savedPosts.filter(savedPost => savedPost.folder_id === inspirationFolder);
     } else if (inspirationSource === "none") {
       // Use minimal posts - only friends' posts about the exact destination
       postsToAnalyze = savedPosts.filter(savedPost => {
@@ -133,15 +132,15 @@ export const useRAGIter = () => {
     return friendRecommendations;
   };
 
-  const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string) => {
+  const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string, folderName?: string) => {
     const friendExperiences = findRelevantFriendExperiences(destination, interests, inspirationSource, inspirationFolder);
     const venuesWithFriends = Object.keys(friendExperiences);
 
     let ragContext = '';
     if (venuesWithFriends.length > 0) {
-      const sourceDescription = inspirationSource === "folder" && inspirationFolder 
-        ? `from your "${inspirationFolder}" folder` 
-        : inspirationSource === "all" 
+      const sourceDescription = inspirationSource === "folder" && folderName 
+        ? `from your "${folderName}" folder` 
+        : inspirationSource === "all"
         ? "from your saved posts collection"
         : "from your friends' experiences";
 

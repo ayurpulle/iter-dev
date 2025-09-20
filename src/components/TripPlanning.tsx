@@ -1177,9 +1177,6 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                     <SelectValue placeholder="Select a folder" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border z-50">
-                    <SelectItem value="" disabled className="text-muted-foreground">
-                      Select a folder to use for inspiration
-                    </SelectItem>
                     <SelectItem value="all-folders" className="hover:bg-accent">
                       All folders
                     </SelectItem>

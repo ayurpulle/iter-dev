@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
+import { NewChatDialog } from "@/components/NewChatDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -39,12 +40,15 @@ interface ChatMessage {
 
 interface Conversation {
   id: string;
-  other_user: {
+  is_group_chat: boolean;
+  group_name?: string;
+  other_user?: {
     id: string;
     name: string;
     username: string;
     avatar: string;
   };
+  participants: string[];
   last_message: string;
   last_message_time: string;
   unread_count: number;
@@ -156,7 +160,9 @@ const Chat = () => {
           id,
           participants,
           last_message,
-          last_message_at
+          last_message_at,
+          is_group_chat,
+          group_name
         `)
         .contains('participants', [user.id])
         .order('last_message_at', { ascending: false });
@@ -166,22 +172,11 @@ const Chat = () => {
       // Get profile data for other participants
       const conversationsWithProfiles = await Promise.all(
         (conversations || []).map(async (conv) => {
-          const otherUserId = conv.participants.find((id: string) => id !== user.id);
-          
-          if (!otherUserId) {
-            console.log('No other user found for conversation:', conv.id);
-            return null;
-          }
-
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('user_id, name, username, avatar')
-            .eq('user_id', otherUserId)
-            .single();
-
-          if (profileError) {
-            console.log('Profile fetch error:', profileError);
-          }
+          let conversationData = {
+            ...conv,
+            unread_count: 0,
+            other_user: undefined as any
+          };
 
           // Count unread messages for this conversation
           const { count: unreadCount } = await supabase
@@ -191,9 +186,31 @@ const Chat = () => {
             .neq('sender_id', user.id)
             .is('read_at', null);
 
-          return {
-            ...conv,
-            other_user: profile ? {
+          conversationData.unread_count = unreadCount || 0;
+
+          if (conv.is_group_chat) {
+            // For group chats, we don't need to fetch other user profiles
+            return conversationData;
+          } else {
+            // For direct messages, get the other user's profile
+            const otherUserId = conv.participants.find((id: string) => id !== user.id);
+            
+            if (!otherUserId) {
+              console.log('No other user found for conversation:', conv.id);
+              return null;
+            }
+
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('user_id, name, username, avatar')
+              .eq('user_id', otherUserId)
+              .single();
+
+            if (profileError) {
+              console.log('Profile fetch error:', profileError);
+            }
+
+            conversationData.other_user = profile ? {
               id: profile.user_id,
               name: profile.name || 'Unknown User',
               username: profile.username || 'unknown',
@@ -203,9 +220,10 @@ const Chat = () => {
               name: 'Unknown User',
               username: 'unknown',
               avatar: ''
-            },
-            unread_count: unreadCount || 0
-          };
+            };
+
+            return conversationData;
+          }
         })
       );
 
@@ -216,7 +234,10 @@ const Chat = () => {
 
       setConversations(validConversations.map(conv => ({
         id: conv.id,
+        is_group_chat: conv.is_group_chat || false,
+        group_name: conv.group_name,
         other_user: conv.other_user,
+        participants: conv.participants,
         last_message: conv.last_message || '',
         last_message_time: conv.last_message_at || '',
         unread_count: conv.unread_count || 0
@@ -414,10 +435,13 @@ const Chat = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.other_user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.other_user?.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(conv => {
+    if (conv.is_group_chat) {
+      return conv.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    return conv.other_user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           conv.other_user?.username?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -448,16 +472,26 @@ const Chat = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Avatar className="h-8 w-8">
-            <AvatarImage src={currentConv?.other_user?.avatar || ''} />
+            <AvatarImage src={currentConv?.is_group_chat ? '' : currentConv?.other_user?.avatar || ''} />
             <AvatarFallback>
-              {currentConv?.other_user?.name?.charAt(0) || '?'}
+              {currentConv?.is_group_chat 
+                ? <Users className="h-4 w-4" />
+                : currentConv?.other_user?.name?.charAt(0) || '?'
+              }
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <h2 className="font-medium">{currentConv?.other_user?.name || 'Unknown User'}</h2>
-            <p className="text-xs text-muted-foreground">
-              @{currentConv?.other_user?.username || 'username'}
-            </p>
+            <h2 className="font-medium">
+              {currentConv?.is_group_chat 
+                ? currentConv.group_name || 'Group Chat'
+                : currentConv?.other_user?.name || 'Unknown User'
+              }
+            </h2>
+            {!currentConv?.is_group_chat && (
+              <p className="text-xs text-muted-foreground">
+                @{currentConv?.other_user?.username || 'username'}
+              </p>
+            )}
           </div>
           <ConversationActions 
             conversationId={selectedConversation}
@@ -562,6 +596,7 @@ const Chat = () => {
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Messages</h1>
+          <NewChatDialog onConversationCreated={setSelectedConversation} />
         </div>
 
         {/* Search */}
@@ -603,15 +638,21 @@ const Chat = () => {
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={conversation.other_user?.avatar || ''} />
+                    <AvatarImage src={conversation.is_group_chat ? '' : conversation.other_user?.avatar || ''} />
                     <AvatarFallback>
-                      {conversation.other_user?.name?.charAt(0) || '?'}
+                      {conversation.is_group_chat 
+                        ? <Users className="h-6 w-6" />
+                        : conversation.other_user?.name?.charAt(0) || '?'
+                      }
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium truncate">
-                        {conversation.other_user?.name || 'Unknown User'}
+                        {conversation.is_group_chat 
+                          ? conversation.group_name || 'Group Chat'
+                          : conversation.other_user?.name || 'Unknown User'
+                        }
                       </h3>
                       <span className="text-xs text-muted-foreground">
                         {formatTime(conversation.last_message_time)}

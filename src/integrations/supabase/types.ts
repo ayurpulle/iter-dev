@@ -62,7 +62,11 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          created_by: string | null
+          group_description: string | null
+          group_name: string | null
           id: string
+          is_group_chat: boolean | null
           last_message: string | null
           last_message_at: string | null
           participants: string[]
@@ -70,7 +74,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          group_description?: string | null
+          group_name?: string | null
           id?: string
+          is_group_chat?: boolean | null
           last_message?: string | null
           last_message_at?: string | null
           participants: string[]
@@ -78,7 +86,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          group_description?: string | null
+          group_name?: string | null
           id?: string
+          is_group_chat?: boolean | null
           last_message?: string | null
           last_message_at?: string | null
           participants?: string[]

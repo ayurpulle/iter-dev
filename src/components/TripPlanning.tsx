@@ -1146,12 +1146,12 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                 <Users size={20} className="text-primary" />
                 <div>
                   <p className="font-medium text-sm">Take Inspiration</p>
-                  <p className="text-muted-foreground text-sm">
-                    {formData.inspirationSource === "none" ? "Not using inspiration" :
-                     formData.inspirationSource === "all" ? "From all saved posts" :
-                     formData.inspirationSource === "folder" ? `From ${formData.inspirationFolder || "selected folder"}` :
-                     "From search results"}
-                  </p>
+                   <p className="text-muted-foreground text-sm">
+                     {formData.inspirationSource === "none" ? "Not using inspiration" :
+                      formData.inspirationSource === "all" ? "From all saved posts" :
+                      formData.inspirationSource === "folder" ? `From ${folders.find(f => f.id === formData.inspirationFolder)?.name || "selected folder"}` :
+                      "From search results"}
+                   </p>
                 </div>
               </div>
               <Popover open={inspirationPopoverOpen} onOpenChange={setInspirationPopoverOpen}>

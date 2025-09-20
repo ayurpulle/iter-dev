@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ClickableUserInfoProps {
   username?: string;
@@ -25,8 +26,17 @@ export const ClickableUserInfo = ({
   avatarSize = "md"
 }: ClickableUserInfoProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Don't make it clickable if it's the current user's own content
+  const isOwnContent = user && userId === user.id;
 
   const handleClick = (e: React.MouseEvent) => {
+    // Don't navigate if it's the user's own content
+    if (isOwnContent) {
+      return;
+    }
+    
     e.preventDefault();
     e.stopPropagation();
     
@@ -46,8 +56,8 @@ export const ClickableUserInfo = ({
   if (children) {
     return (
       <div 
-        onClick={handleClick}
-        className={`cursor-pointer hover:opacity-80 transition-opacity ${className}`}
+        onClick={!isOwnContent ? handleClick : undefined}
+        className={`${!isOwnContent ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`}
       >
         {children}
       </div>
@@ -56,8 +66,8 @@ export const ClickableUserInfo = ({
 
   return (
     <div 
-      onClick={handleClick}
-      className={`flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${className}`}
+      onClick={!isOwnContent ? handleClick : undefined}
+      className={`flex items-center gap-2 ${!isOwnContent ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`}
     >
       {showAvatar && (
         <Avatar className={sizeClasses[avatarSize]}>

@@ -301,34 +301,34 @@ const Profile = () => {
       <div className="pt-16 pb-20">
         {/* Profile Header */}
         <div className="bg-card border-b">
-          <div className="px-6 py-6">
-            <div className="flex items-start gap-4">
-              <Avatar className="h-20 w-20">
+          <div className="px-6 py-8">
+            <div className="flex flex-col items-center text-center mb-6">
+              <Avatar className="h-24 w-24 mb-4">
                 <AvatarImage src={userProfile.avatar || ''} />
-                <AvatarFallback className="text-lg">
+                <AvatarFallback className="text-2xl">
                   {userProfile.name?.charAt(0) || userProfile.username?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-xl font-bold truncate">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 justify-center">
+                  <h1 className="text-2xl font-bold">
                     {userProfile.name || userProfile.username}
                   </h1>
                   {!userProfile.is_public && (
-                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <Lock className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
                 
                 {userProfile.username && userProfile.name && (
-                  <p className="text-muted-foreground text-sm mb-2">@{userProfile.username}</p>
+                  <p className="text-muted-foreground">@{userProfile.username}</p>
                 )}
                 
                 {userProfile.bio && (
-                  <p className="text-sm mb-3">{userProfile.bio}</p>
+                  <p className="text-sm max-w-sm mx-auto">{userProfile.bio}</p>
                 )}
                 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground justify-center">
                   {userProfile.base_location && (
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
@@ -345,24 +345,28 @@ const Profile = () => {
                     </span>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-4 text-sm mb-4">
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold">{postCount}</span>
-                    <span className="text-muted-foreground">posts</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold">{userProfile.followers_count}</span>
-                    <span className="text-muted-foreground">followers</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold">{userProfile.following_count}</span>
-                    <span className="text-muted-foreground">following</span>
-                  </div>
-                </div>
-                
-                {renderActionButton()}
               </div>
+            </div>
+            
+            {/* Stats */}
+            <div className="flex justify-center gap-8 mb-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{postCount}</div>
+                <div className="text-sm text-muted-foreground">Posts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{userProfile.followers_count}</div>
+                <div className="text-sm text-muted-foreground">Followers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{userProfile.following_count}</div>
+                <div className="text-sm text-muted-foreground">Following</div>
+              </div>
+            </div>
+            
+            {/* Action Button */}
+            <div className="max-w-xs mx-auto">
+              {renderActionButton()}
             </div>
           </div>
         </div>
@@ -370,29 +374,38 @@ const Profile = () => {
         {/* Posts Section */}
         <div className="px-4 py-6">
           {canViewPosts ? (
-            userPosts.length > 0 ? (
-              <div className="space-y-4">
-                {userPosts.map((post) => (
-                  <UnifiedPostCard key={post.id} post={post} />
-                ))}
+            <>
+              {/* Section Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Posts ({postCount})</h2>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <Heart className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
-                <p className="text-muted-foreground">
-                  {isOwnProfile ? "Start sharing your travel experiences!" : `${userProfile.name || userProfile.username} hasn't shared any posts yet.`}
-                </p>
-              </div>
-            )
+              
+              {userPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {userPosts.map((post) => (
+                    <UnifiedPostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Heart className="h-16 w-16 text-muted-foreground/50 mx-auto mb-6" />
+                  <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    {isOwnProfile ? "Start sharing your travel experiences!" : `${userProfile.name || userProfile.username} hasn't shared any posts yet.`}
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="text-center py-12">
-              <Lock className="h-16 w-16 text-muted-foreground/50 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold mb-2">Private Account</h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+            <div className="text-center py-16">
+              <Lock className="h-20 w-20 text-muted-foreground/50 mx-auto mb-8" />
+              <h3 className="text-2xl font-semibold mb-4">Private Account</h3>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-lg">
                 This account is private. Follow {userProfile.name || userProfile.username} to see their posts.
               </p>
-              {renderActionButton()}
+              <div className="max-w-xs mx-auto">
+                {renderActionButton()}
+              </div>
             </div>
           )}
         </div>

@@ -21,30 +21,56 @@ serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('Authorization header present:', !!authHeader);
+    console.log('Authorization header value:', authHeader?.substring(0, 20) + '...');
+    
     if (!authHeader) {
       console.error('No authorization header found');
-      throw new Error('No authorization header');
+      throw new Error('Auth session missing!');
     }
 
     // Create Supabase client to verify the user
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    console.log('Supabase URL and anon key present:', !!supabaseUrl, !!supabaseAnonKey);
+    console.log('Environment variables:', { 
+      supabaseUrl: !!supabaseUrl, 
+      supabaseAnonKey: !!supabaseAnonKey,
+      openAIApiKey: !!openAIApiKey
+    });
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      throw new Error('Server configuration error');
+    }
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: authHeader } }
+      auth: { 
+        autoRefreshToken: false, 
+        persistSession: false 
+      }
+    });
+
+    // Set the auth token properly
+    const token = authHeader.replace('Bearer ', '');
+    await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: ''
     });
 
     // Get the current user
     console.log('Attempting to get user...');
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    console.log('Auth result:', { user: !!user, authError: authError?.message });
+    console.log('Auth result:', { 
+      user: !!user, 
+      userId: user?.id, 
+      authError: authError?.message,
+      authErrorCode: authError?.status
+    });
+    
     if (authError || !user) {
       console.error('Authentication failed:', authError?.message);
-      throw new Error(`Authentication failed: ${authError?.message || 'No user found'}`);
+      throw new Error(`Auth session missing!`);
     }
 
     // Parse the request body

@@ -235,24 +235,84 @@ serve(async (req) => {
   try {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authHeader);
+    console.log('Authorization header value:', authHeader?.substring(0, 20) + '...');
+    
     if (!authHeader) {
-      throw new Error('No authorization header');
+      console.error('No authorization header found');
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: 'No authorization header provided'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create Supabase client to verify the user
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    console.log('Environment variables:', { 
+      supabaseUrl: !!supabaseUrl, 
+      supabaseAnonKey: !!supabaseAnonKey
+    });
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      return new Response(JSON.stringify({
+        error: 'Server configuration error',
+        details: 'Missing required environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: authHeader } }
+      auth: { 
+        autoRefreshToken: false, 
+        persistSession: false 
+      },
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
     });
 
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get the current user using the JWT from the authorization header
+    console.log('Attempting to get user...');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    if (authError || !user) {
-      throw new Error('Authentication failed');
+    console.log('Auth result:', { 
+      user: !!user, 
+      userId: user?.id, 
+      authError: authError?.message,
+      authErrorCode: authError?.status
+    });
+    
+    if (authError) {
+      console.error('Authentication error details:', authError);
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: `Authentication failed: ${authError.message}`
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (!user) {
+      console.error('No user found in token');
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: 'No user found in session'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Parse the request body

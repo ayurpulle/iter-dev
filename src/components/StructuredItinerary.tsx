@@ -69,6 +69,31 @@ export const StructuredItinerary = ({
     hasIterData: !!iterData,
     destination 
   });
+  
+  // State to track the current itinerary content (can be updated via chat)
+  const [currentItinerary, setCurrentItinerary] = useState(itinerary);
+  const [currentDestination, setCurrentDestination] = useState(destination);
+  
+  // Update current content when props change
+  useEffect(() => {
+    setCurrentItinerary(itinerary);
+  }, [itinerary]);
+  
+  useEffect(() => {
+    setCurrentDestination(destination);
+  }, [destination]);
+  
+  // Handle itinerary updates from the edit dialog
+  const handleIterUpdated = useCallback((newContent: string, newDestination?: string) => {
+    console.log('Itinerary updated in StructuredItinerary:', { newContent: newContent.substring(0, 100) + '...', newDestination });
+    setCurrentItinerary(newContent);
+    if (newDestination) {
+      setCurrentDestination(newDestination);
+    }
+    // Call the parent callback if provided
+    onIterUpdated?.(newContent, newDestination);
+  }, [onIterUpdated]);
+  
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
@@ -268,10 +293,10 @@ export const StructuredItinerary = ({
   };
 
   const parseItinerary = () => {
-    console.log('Parsing itinerary content:', itinerary?.substring(0, 200));
+    console.log('Parsing itinerary content:', currentItinerary?.substring(0, 200));
     
-    if (!itinerary || typeof itinerary !== 'string') {
-      console.error('Invalid itinerary content:', itinerary);
+    if (!currentItinerary || typeof currentItinerary !== 'string') {
+      console.error('Invalid itinerary content:', currentItinerary);
       return {
         summary: '',
         gettingThere: '',
@@ -279,12 +304,12 @@ export const StructuredItinerary = ({
         days: [],
         travelTips: '',
         bookingLinks: '',
-        destinations: [destination || 'Destination']
+        destinations: [currentDestination || destination || 'Destination']
       };
     }
     
     // Split into main sections based on headers
-    const sections = itinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*)/);
+    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*)/);
     console.log('Parsed sections:', sections.length);
     
     const parsed = {
@@ -748,7 +773,7 @@ export const StructuredItinerary = ({
     }).filter(Boolean);
   };
 
-  const parsed = parseItinerary();
+  const parsed = useMemo(() => parseItinerary(), [currentItinerary, currentDestination]);
   
   // Store original destination for updates
   const [originalDestination] = useState<string>(destination || parsed.destinations[0] || '');
@@ -931,19 +956,14 @@ export const StructuredItinerary = ({
             <ItineraryUpdateDropdown
               iterData={{
                 ...iterData,
-                destination: safeDestination,
-                itinerary_content: itinerary,
+                destination: currentDestination || safeDestination,
+                itinerary_content: currentItinerary,
                 is_owner: Boolean(iterData.is_owner), // Ensure boolean
                 can_edit: Boolean(iterData.can_edit)  // Ensure boolean
               }}
               hasChanges={hasChanges()}
               onUpdate={handleUpdate}
-              onIterUpdated={(newContent: string, newDestination?: string) => {
-                console.log('StructuredItinerary received update:', { newContent, newDestination });
-                if (onIterUpdated) {
-                  onIterUpdated(newContent, newDestination);
-                }
-              }}
+              onIterUpdated={handleIterUpdated}
             />
           )}
         </div>

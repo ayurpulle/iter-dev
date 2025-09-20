@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import UnifiedPostCard from "@/components/UnifiedPostCard";
+import ClickableUserInfo from "@/components/ClickableUserInfo";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -371,7 +372,12 @@ const GlobalSearchPage = () => {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    // User profile navigation removed - Profile.tsx no longer exists
+    if (result.type === 'user' && result.data) {
+      const username = result.data.username || result.data.user_id;
+      if (username) {
+        navigate(`/profile/${username}`);
+      }
+    }
     // For location and hashtag results, we could implement filtering or navigation in the future
   };
 
@@ -442,35 +448,61 @@ const GlobalSearchPage = () => {
                              onClick={() => handleResultClick(result)}
                            >
                             <CardContent className="p-4">
-                              <div className="flex items-center gap-3">
-                                {result.type === 'user' ? (
-                                  <Avatar className="w-10 h-10">
-                                    <AvatarImage src={result.avatar} />
-                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                                      {result.initials}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                ) : (
-                                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                                    {getIcon(result.type)}
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm truncate">{result.title}</p>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {result.type}
-                                    </Badge>
-                                  </div>
-                                  {result.subtitle && (
-                                    <p className="text-xs text-muted-foreground">{result.subtitle}</p>
-                                  )}
-                                  {result.tripCount && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {result.tripCount} trip{result.tripCount !== 1 ? 's' : ''}
-                                    </p>
-                                  )}
-                                </div>
+                               <div className="flex items-center gap-3">
+                                 {result.type === 'user' ? (
+                                   <ClickableUserInfo
+                                     username={result.data?.username}
+                                     name={result.data?.name}
+                                     avatar={result.avatar}
+                                     userId={result.data?.user_id}
+                                     className="flex items-center gap-3 flex-1"
+                                   >
+                                     <Avatar className="w-10 h-10">
+                                       <AvatarImage src={result.avatar} />
+                                       <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                                         {result.initials}
+                                       </AvatarFallback>
+                                     </Avatar>
+                                     <div className="flex-1 min-w-0">
+                                       <div className="flex items-center gap-2">
+                                         <p className="font-medium text-sm truncate">{result.title}</p>
+                                         <Badge variant="secondary" className="text-xs">
+                                           {result.type}
+                                         </Badge>
+                                       </div>
+                                       {result.subtitle && (
+                                         <p className="text-xs text-muted-foreground">{result.subtitle}</p>
+                                       )}
+                                       {result.tripCount && (
+                                         <p className="text-xs text-muted-foreground">
+                                           {result.tripCount} trip{result.tripCount !== 1 ? 's' : ''}
+                                         </p>
+                                       )}
+                                     </div>
+                                   </ClickableUserInfo>
+                                 ) : (
+                                   <>
+                                     <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                                       {getIcon(result.type)}
+                                     </div>
+                                     <div className="flex-1 min-w-0">
+                                       <div className="flex items-center gap-2">
+                                         <p className="font-medium text-sm truncate">{result.title}</p>
+                                         <Badge variant="secondary" className="text-xs">
+                                           {result.type}
+                                         </Badge>
+                                       </div>
+                                       {result.subtitle && (
+                                         <p className="text-xs text-muted-foreground">{result.subtitle}</p>
+                                       )}
+                                       {result.tripCount && (
+                                         <p className="text-xs text-muted-foreground">
+                                           {result.tripCount} trip{result.tripCount !== 1 ? 's' : ''}
+                                         </p>
+                                       )}
+                                     </div>
+                                   </>
+                                 )}
                               </div>
                             </CardContent>
                           </Card>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { X, MapPin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { SavedPost } from "@/hooks/useSavedPosts";
+import ClickableUserInfo from "@/components/ClickableUserInfo";
 
 interface LocationPostsListProps {
   location: string;
@@ -39,26 +40,34 @@ const LocationPostsList = ({ location, posts, onClose }: LocationPostsListProps)
               <Card key={savedPost.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3 mb-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={post.profiles?.avatar} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {(post.profiles?.name || 'U')[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
-                          <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
-                          {post.trips?.title && (
-                            <p className="text-xs text-primary font-medium">{post.trips.title}</p>
-                          )}
+                    <ClickableUserInfo
+                      username={post.profiles?.username}
+                      name={post.profiles?.name}
+                      avatar={post.profiles?.avatar}
+                      userId={post.user_id}
+                      className="flex items-start gap-3 flex-1"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={post.profiles?.avatar} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {(post.profiles?.name || 'U')[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{post.profiles?.name || 'Unknown User'}</p>
+                            <p className="text-xs text-muted-foreground">@{post.profiles?.username || 'unknown'}</p>
+                            {post.trips?.title && (
+                              <p className="text-xs text-primary font-medium">{post.trips.title}</p>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </span>
                       </div>
-                    </div>
+                    </ClickableUserInfo>
                   </div>
                   
                   {post.content && (

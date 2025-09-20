@@ -49,20 +49,38 @@ export const useSavedItineraries = () => {
       if (ownedError) throw ownedError;
 
       // Fetch collaborative itineraries with creator profile info
-      const { data: collaborativeItineraries, error: collabError } = await client
-        .from('saved_itineraries')
-        .select(`
-          *,
-          profiles!saved_itineraries_user_id_fkey(username, name),
-          itinerary_collaborators!inner(
-            permission,
-            status
-          )
-        `)
-        .eq('itinerary_collaborators.user_id', user.id)
-        .eq('itinerary_collaborators.status', 'accepted');
+      // First get collaboration records for the current user
+      const { data: userCollaborations, error: userCollabError } = await client
+        .from('itinerary_collaborators')
+        .select('itinerary_id, permission, status')
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
 
-      if (collabError) throw collabError;
+      if (userCollabError) throw userCollabError;
+
+      let collaborativeItineraries = [];
+      if (userCollaborations && userCollaborations.length > 0) {
+        const itineraryIds = userCollaborations.map(collab => collab.itinerary_id);
+        
+        const { data: collabItineraries, error: collabError } = await client
+          .from('saved_itineraries')
+          .select(`
+            *,
+            profiles!saved_itineraries_user_id_fkey(username, name)
+          `)
+          .in('id', itineraryIds);
+
+        if (collabError) throw collabError;
+        
+        // Combine itinerary data with collaboration info
+        collaborativeItineraries = (collabItineraries || []).map(iter => {
+          const collaboration = userCollaborations.find(collab => collab.itinerary_id === iter.id);
+          return {
+            ...iter,
+            itinerary_collaborators: collaboration
+          };
+        });
+      }
 
       // Fetch background-generated trips (from generate-itinerary edge function)
       // These are distinguished by having long, structured descriptions (>500 chars)

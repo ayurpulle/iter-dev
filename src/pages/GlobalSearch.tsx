@@ -155,46 +155,56 @@ const GlobalSearchPage = () => {
         });
       });
 
-      // Search locations in trips
-      const { data: locationTrips, error: locationError } = await supabase
-        .from('trips')
+      // Search locations in posts (not trips directly)
+      const { data: locationPosts, error: locationError } = await supabase
+        .from('posts')
         .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id
+          *,
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          ),
+          trips (
+            id,
+            title,
+            duration,
+            distance,
+            stops,
+            photo_count,
+            hashtags,
+            images
+          )
         `)
-        .eq('is_public', true)
-        .limit(10);
+        .eq('is_private', false)
+        .not('trips', 'is', null)
+        .limit(50);
 
       if (locationError) throw locationError;
 
-      // Get profiles for location trips
-      const locationUserIds = [...new Set(locationTrips?.map(trip => trip.user_id) || [])];
-      const { data: locationProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', locationUserIds);
-
-      // Group by location
+      // Group by location - now using posts data
       const locationMap = new Map();
-      locationTrips?.forEach(trip => {
-        if (trip.stops && Array.isArray(trip.stops)) {
-          (trip.stops as any[]).forEach((stop: any) => {
+      locationPosts?.forEach(post => {
+        if (post.trips?.stops && Array.isArray(post.trips.stops)) {
+          (post.trips.stops as any[]).forEach((stop: any) => {
             if (stop.name && stop.name.toLowerCase().includes(query.toLowerCase())) {
               const locationKey = stop.name;
               if (!locationMap.has(locationKey)) {
-                const userProfile = locationProfiles?.find(p => p.user_id === trip.user_id);
                 const tripWithProfile = {
-                  ...trip,
-                  profiles: userProfile ? {
-                    name: userProfile.name,
-                    username: userProfile.username,
-                    avatar: userProfile.avatar
+                  id: post.trips.id,
+                  title: post.trips.title || 'Untitled Trip',
+                  duration: post.trips.duration || '',
+                  distance: post.trips.distance || '',
+                  stops: post.trips.stops || [],
+                  photo_count: post.trips.images?.length || 0,
+                  hashtags: post.trips.hashtags || [],
+                  user_id: post.user_id,
+                  profiles: post.profiles ? {
+                    name: post.profiles.name,
+                    username: post.profiles.username,
+                    avatar: post.profiles.avatar
                   } : null
                 };
                 
@@ -229,44 +239,54 @@ const GlobalSearchPage = () => {
 
       locationMap.forEach(location => results.push(location));
 
-      // Search hashtags
-      const { data: hashtagTrips, error: hashtagError } = await supabase
-        .from('trips')
+      // Search hashtags in posts (not trips directly)
+      const { data: hashtagPosts, error: hashtagError } = await supabase
+        .from('posts')
         .select(`
-          id,
-          title,
-          duration,
-          distance,
-          stops,
-          photo_count,
-          hashtags,
-          user_id
+          *,
+          profiles (
+            id,
+            user_id,
+            name,
+            username,
+            avatar
+          ),
+          trips (
+            id,
+            title,
+            duration,
+            distance,
+            stops,
+            photo_count,
+            hashtags,
+            images
+          )
         `)
-        .eq('is_public', true)
-        .limit(10);
+        .eq('is_private', false)
+        .not('trips', 'is', null)
+        .limit(50);
 
       if (hashtagError) throw hashtagError;
 
-      // Get profiles for hashtag trips
-      const hashtagUserIds = [...new Set(hashtagTrips?.map(trip => trip.user_id) || [])];
-      const { data: hashtagProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, name, username, avatar')
-        .in('user_id', hashtagUserIds);
-
-      // Group by hashtag - filter in memory for now
+      // Group by hashtag - now using posts data
       const hashtagMap = new Map();
-      hashtagTrips?.forEach(trip => {
-        if (trip.hashtags && Array.isArray(trip.hashtags)) {
-          trip.hashtags.forEach((hashtag: string) => {
+      hashtagPosts?.forEach(post => {
+        if (post.trips?.hashtags && Array.isArray(post.trips.hashtags)) {
+          post.trips.hashtags.forEach((hashtag: string) => {
             if (hashtag.toLowerCase().includes(query.toLowerCase())) {
-              const userProfile = hashtagProfiles?.find(p => p.user_id === trip.user_id);
               const tripWithProfile = {
-                ...trip,
-                profiles: userProfile ? {
-                  name: userProfile.name,
-                  username: userProfile.username,
-                  avatar: userProfile.avatar
+                id: post.trips.id,
+                title: post.trips.title || 'Untitled Trip',
+                duration: post.trips.duration || '',
+                distance: post.trips.distance || '',
+                stops: post.trips.stops || [],
+                photo_count: post.trips.images?.length || 0,
+                hashtags: post.trips.hashtags || [],
+                user_id: post.user_id,
+                profiles: post.profiles ? {
+                  name: post.profiles.name,
+                  username: post.profiles.username,
+                  avatar: post.profiles.avatar
                 } : null
               };
               

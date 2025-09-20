@@ -53,28 +53,39 @@ export const useSavedPosts = () => {
       const savedPostsWithDetails: SavedPost[] = [];
       
       for (const savedItem of savedItemsData || []) {
-        const { data: postData, error: postError } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            profiles (
-              name,
-              username,
-              avatar
-            ),
-            trips (
-              title,
-              stops
-            )
-          `)
-          .eq('id', savedItem.item_id)
-          .single();
+        try {
+          const { data: postData, error: postError } = await supabase
+            .from('posts')
+            .select(`
+              *,
+              profiles (
+                name,
+                username,
+                avatar
+              ),
+              trips (
+                title,
+                stops
+              )
+            `)
+            .eq('id', savedItem.item_id)
+            .single();
 
-        if (!postError && postData) {
-          savedPostsWithDetails.push({
-            ...savedItem,
-            posts: postData
-          } as SavedPost);
+          if (!postError && postData) {
+            savedPostsWithDetails.push({
+              ...savedItem,
+              posts: postData
+            } as SavedPost);
+          } else if (postError) {
+            console.warn(`Post ${savedItem.item_id} not found or inaccessible:`, postError.message);
+            // Remove saved item if post doesn't exist
+            await supabase
+              .from('saved_items')
+              .delete()
+              .eq('id', savedItem.id);
+          }
+        } catch (itemError) {
+          console.warn(`Error fetching post ${savedItem.item_id}:`, itemError);
         }
       }
 

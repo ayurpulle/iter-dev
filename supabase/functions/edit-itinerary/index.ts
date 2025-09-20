@@ -62,9 +62,16 @@ serve(async (req) => {
     });
 
     // Validate required fields
-    if (!itineraryContent || !editRequest || !destination) {
-      console.error('Validation failed:', { itineraryContent: !!itineraryContent, editRequest: !!editRequest, destination: !!destination });
-      throw new Error('Missing required fields: itineraryContent, editRequest, or destination');
+    if (!itineraryContent || itineraryContent.trim() === '' || !editRequest || editRequest.trim() === '' || !destination || destination.trim() === '') {
+      console.error('Validation failed:', { 
+        itineraryContent: !!itineraryContent, 
+        itineraryContentLength: itineraryContent?.length,
+        editRequest: !!editRequest, 
+        editRequestLength: editRequest?.length,
+        destination: !!destination,
+        destinationLength: destination?.length
+      });
+      throw new Error(`Missing required fields: ${!itineraryContent || itineraryContent.trim() === '' ? 'itineraryContent ' : ''}${!editRequest || editRequest.trim() === '' ? 'editRequest ' : ''}${!destination || destination.trim() === '' ? 'destination' : ''}`);
     }
 
     // Calculate trip duration for proper day grouping

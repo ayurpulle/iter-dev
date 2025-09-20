@@ -52,6 +52,14 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
         content: String(msg.content)
       }));
 
+      console.log('Sending edit request with data:', {
+        itineraryContent: iterData.itinerary_content?.substring(0, 100) + '...',
+        editRequest: userMessage,
+        destination: iterData.destination,
+        conversationHistoryLength: serializedConversation.length,
+        budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3
+      });
+
       const { data, error } = await supabase.functions.invoke('edit-itinerary', {
         body: {
           itineraryContent: String(iterData.itinerary_content || ''),

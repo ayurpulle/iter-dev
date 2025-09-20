@@ -116,15 +116,21 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
         console.log('Itinerary updated, auto-saving permanently');
         
         // Update the database with the new content
+        const updateData: any = {
+          itinerary_content: data.updatedItinerary,
+          destination: data.newDestination || iterData.destination,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Add date updates if needed
+        if (dateAdjustment !== 0) {
+          if (data.newEndDate) updateData.end_date = data.newEndDate;
+          if (data.newStartDate) updateData.start_date = data.newStartDate;
+        }
+        
         const { error: updateError } = await supabase
           .from('saved_itineraries')
-          .update({
-            itinerary_content: data.updatedItinerary,
-            destination: data.newDestination || iterData.destination,
-            ...(dateAdjustment !== 0 && {
-              end_date: data.newEndDate || (iterData as any).end_date
-            })
-          })
+          .update(updateData)
           .eq('id', iterData.id);
 
         if (updateError) {

@@ -138,9 +138,33 @@ export const useRAGIter = () => {
     return friendRecommendations;
   };
 
+  const detectDestinationContext = (destination: string, startDate?: Date) => {
+    const destLower = destination.toLowerCase();
+    const month = startDate ? startDate.getMonth() + 1 : null; // 1-12
+    
+    // Ski destinations in winter months
+    const skiDestinations = ['les arcs', 'val thorens', 'chamonix', 'verbier', 'zermatt', 'st. moritz', 'aspen', 'whistler', 'vail'];
+    const isWinterMonth = month && (month >= 12 || month <= 3);
+    
+    if (skiDestinations.some(ski => destLower.includes(ski)) && isWinterMonth) {
+      return { activity: 'skiing', season: 'winter' };
+    }
+    
+    // Beach destinations in summer
+    const beachDestinations = ['maldives', 'santorini', 'mykonos', 'ibiza', 'bali', 'hawaii', 'miami', 'nice', 'cannes'];
+    const isSummerMonth = month && month >= 6 && month <= 8;
+    
+    if (beachDestinations.some(beach => destLower.includes(beach)) && isSummerMonth) {
+      return { activity: 'beach', season: 'summer' };
+    }
+    
+    return { activity: null, season: null };
+  };
+
   const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string, folderName?: string) => {
     const friendExperiences = findRelevantFriendExperiences(destination, interests, inspirationSource, inspirationFolder);
     const venuesWithFriends = Object.keys(friendExperiences);
+    const { activity, season } = detectDestinationContext(destination, startDate);
 
     let ragContext = '';
     if (venuesWithFriends.length > 0) {
@@ -150,7 +174,7 @@ export const useRAGIter = () => {
         ? "from your saved posts collection"
         : "from your friends' experiences";
 
-      ragContext = `\n\nFRIEND RECOMMENDATIONS CONTEXT:
+      ragContext = `\n\nSAVED RECOMMENDATIONS CONTEXT:
 Based on your travel inspiration ${sourceDescription}, here are places they've visited and enjoyed in ${destination}:
 
 ${venuesWithFriends.map(venue => {
@@ -160,15 +184,17 @@ ${venuesWithFriends.map(venue => {
     ${recs.map(rec => `  • ${rec.name}: "${rec.review.substring(0, 100)}..."`).join('\n    ')}`;
 }).join('\n')}
 
-IMPORTANT: When mentioning any of these venues in your itinerary, add "(suggested by ${
-  inspirationSource === "folder" && inspirationFolder 
-    ? `your ${inspirationFolder} collection` 
-    : "your friends"
-})" immediately after the venue name.
+IMPORTANT: When mentioning any of these venues in your itinerary, add the marker [SAVED_REC:VenueName:UserName] immediately after the venue name.
 
-For venues from the list above, also add the technical marker [FRIEND_REC:VenueName] after the venue name for display purposes.
+${activity ? `\nCONTEXT: Since this is ${destination} in ${season || 'the selected time'}, focus heavily on ${activity} activities and related recommendations.` : ''}
+
+Also include 1-2 internet-researched recommendations per itinerary with high ratings/reviews, marked as [WEB_REC:VenueName:source_url] for display purposes.
 
 Prioritize these recommended places in your itinerary as they come from trusted sources.`;
+    } else if (activity) {
+      ragContext = `\n\nCONTEXT: Since this is ${destination} in ${season || 'the selected time'}, focus heavily on ${activity} activities and related recommendations.
+
+Include 1-2 internet-researched recommendations with high ratings/reviews, marked as [WEB_REC:VenueName:source_url] for display purposes.`;
     }
 
     return {

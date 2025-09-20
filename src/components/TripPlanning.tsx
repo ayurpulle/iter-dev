@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import CountryMap from "./CountryMap";
 import { StructuredItinerary } from "./StructuredItinerary";
 import { encodeHolidayTypes, encodeBudget } from "@/utils/itineraryConstants";
+import { extractWebRecommendations } from "@/utils/recommendationExtractor";
 import SavedTripsView from "./SavedTripsView";
 import { useSavedItineraries } from "@/hooks/useSavedItineraries";
 import { useRAGIter } from "@/hooks/useRAGItinerary";
@@ -668,6 +669,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           <StructuredItinerary 
             itinerary={viewingIter.itinerary_content}
             friendRecommendations={viewingIter.friend_recommendations || {}}
+            webRecommendations={extractWebRecommendations(viewingIter.itinerary_content)}
             destination={viewingIter.destination}
             startDate={viewingIter.start_date ? new Date(viewingIter.start_date) : undefined}
             endDate={viewingIter.end_date ? new Date(viewingIter.end_date) : undefined}
@@ -794,6 +796,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <StructuredItinerary 
                 itinerary={generatedIter}
                 friendRecommendations={friendRecommendations}
+                webRecommendations={extractWebRecommendations(generatedIter)}
                 destination={lastGeneratedData?.destination || formData.destination}
                 startDate={lastGeneratedData?.startDate || formData.startDate}
                 endDate={lastGeneratedData?.endDate || formData.endDate}

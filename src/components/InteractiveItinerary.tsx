@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Star, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SavedRecommendationModal } from "@/components/SavedRecommendationModal";
+import { WebRecommendationModal } from "@/components/WebRecommendationModal";
 
 interface FriendRecommendation {
   name: string;
@@ -14,14 +15,22 @@ interface FriendRecommendation {
   postId: string;
 }
 
+interface WebRecommendation {
+  name: string;
+  source: string;
+  url: string;
+}
+
 interface InteractiveIterProps {
   itinerary: string;
   friendRecommendations: { [key: string]: FriendRecommendation[] };
+  webRecommendations?: { [key: string]: WebRecommendation[] };
 }
 
-const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterProps) => {
+const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations = {} }: InteractiveIterProps) => {
   const [expandedVenues, setExpandedVenues] = useState<{ [key: string]: boolean }>({});
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
+  const [selectedWebVenue, setSelectedWebVenue] = useState<string | null>(null);
 
   const toggleVenue = (venueName: string) => {
     setExpandedVenues(prev => ({
@@ -35,41 +44,83 @@ const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterPr
     return text.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;
       
-      // Check for friend recommendation markers - support both old and new formats
-      const friendRecMatch = line.match(/\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]/g);
+      // Check for recommendation markers - support saved, friend, and web recs
+      const savedRecMatch = line.match(/\[(?:FRIEND_REC|SAVED_REC):([^:\]]+)(?::([^\]]+))?\]/g);
+      const webRecMatch = line.match(/\[WEB_REC:([^:\]]+):([^\]]+)\]/g);
       
-      if (friendRecMatch) {
+      if (savedRecMatch || webRecMatch) {
         let processedLine = line;
         const venues: string[] = [];
+        const webVenues: string[] = [];
         
-        friendRecMatch.forEach(match => {
-          const venueName = match.replace(/\[(?:FRIEND_REC|SAVED_REC):/, '').replace(']', '');
-          venues.push(venueName);
-          processedLine = processedLine.replace(match, `<VENUE:${venueName}>`);
-        });
+        // Process saved recommendations
+        if (savedRecMatch) {
+          savedRecMatch.forEach(match => {
+            const parts = match.match(/\[(?:FRIEND_REC|SAVED_REC):([^:\]]+)(?::([^\]]+))?\]/);
+            if (parts) {
+              const venueName = parts[1];
+              venues.push(venueName);
+              processedLine = processedLine.replace(match, `<VENUE:${venueName}>`);
+            }
+          });
+        }
         
-        // Split by venue markers and render with interactive elements
-        const parts = processedLine.split(/<VENUE:([^>]+)>/);
+        // Process web recommendations
+        if (webRecMatch) {
+          webRecMatch.forEach(match => {
+            const parts = match.match(/\[WEB_REC:([^:\]]+):([^\]]+)\]/);
+            if (parts) {
+              const venueName = parts[1];
+              webVenues.push(venueName);
+              processedLine = processedLine.replace(match, `<WEB_VENUE:${venueName}>`);
+            }
+          });
+        }
+        
+        // Split by all venue markers and render with interactive elements
+        const parts = processedLine.split(/<(?:VENUE|WEB_VENUE):([^>]+)>/);
         
         return (
           <div key={lineIdx} className="mb-2">
             {parts.map((part, partIdx) => {
-              const venueName = venues.find(v => part === v);
+              const savedVenueName = venues.find(v => part === v);
+              const webVenueName = webVenues.find(v => part === v);
               
-              if (venueName && friendRecommendations[venueName]) {
-                const recommendations = friendRecommendations[venueName];
+              if (savedVenueName && friendRecommendations[savedVenueName]) {
+                const recommendations = friendRecommendations[savedVenueName];
                 
                 return (
                   <span key={partIdx} className="inline-block relative">
                     <span 
                       className="text-primary hover:text-primary/80 cursor-pointer font-medium underline decoration-primary/50 hover:decoration-primary transition-colors"
-                      onClick={() => setSelectedVenue(venueName)}
+                      onClick={() => setSelectedVenue(savedVenueName)}
                     >
-                      {venueName}
+                      {savedVenueName}
                     </span>
                     <span 
                       className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full ml-1 cursor-pointer hover:bg-primary/80 transition-colors"
-                      onClick={() => setSelectedVenue(venueName)}
+                      onClick={() => setSelectedVenue(savedVenueName)}
+                    >
+                      +{recommendations.length}
+                    </span>
+                  </span>
+                );
+              }
+              
+              if (webVenueName && webRecommendations[webVenueName]) {
+                const recommendations = webRecommendations[webVenueName];
+                
+                return (
+                  <span key={partIdx} className="inline-block relative">
+                    <span 
+                      className="text-blue-600 hover:text-blue-500 cursor-pointer font-medium underline decoration-blue-300 hover:decoration-blue-600 transition-colors"
+                      onClick={() => setSelectedWebVenue(webVenueName)}
+                    >
+                      {webVenueName}
+                    </span>
+                    <span 
+                      className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full ml-1 cursor-pointer hover:bg-blue-500 transition-colors"
+                      onClick={() => setSelectedWebVenue(webVenueName)}
                     >
                       +{recommendations.length}
                     </span>
@@ -110,6 +161,15 @@ const InteractiveIter = ({ itinerary, friendRecommendations }: InteractiveIterPr
           onClose={() => setSelectedVenue(null)}
           venueName={selectedVenue}
           recommendations={friendRecommendations[selectedVenue]}
+        />
+      )}
+      
+      {selectedWebVenue && webRecommendations[selectedWebVenue] && (
+        <WebRecommendationModal
+          isOpen={!!selectedWebVenue}
+          onClose={() => setSelectedWebVenue(null)}
+          venueName={selectedWebVenue}
+          recommendations={webRecommendations[selectedWebVenue]}
         />
       )}
     </>

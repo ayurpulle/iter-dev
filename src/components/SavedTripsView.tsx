@@ -8,6 +8,7 @@ import { useSavedItineraries, SavedItinerary } from "@/hooks/useSavedItineraries
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { StructuredItinerary } from "./StructuredItinerary";
 import { UnifiedItineraryShareDialog } from "./UnifiedItineraryShareDialog";
+import { extractWebRecommendations } from "@/utils/recommendationExtractor";
 
 interface SavedTripsViewProps {
   onBack: () => void;

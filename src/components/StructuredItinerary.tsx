@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { format } from 'date-fns';
 import { SavedRecommendationModal } from './SavedRecommendationModal';
 import { ItineraryUpdateDropdown } from './ItineraryUpdateDropdown';
+import InteractiveIter from './InteractiveItinerary';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { encodeHolidayTypes, encodeBudget, decodeHolidayTypes, decodeBudget } from '@/utils/itineraryConstants';
@@ -21,13 +22,21 @@ interface FriendRecommendation {
   name: string;
   avatar?: string;
   review: string;
-  rating: number;
-  visitDate: string;
+  rating?: number;
+  visitDate?: string;
+  postId: string;
+}
+
+interface WebRecommendation {
+  name: string;
+  source: string;
+  url: string;
 }
 
 interface StructuredItineraryProps {
   itinerary: string;
   friendRecommendations?: { [venueName: string]: FriendRecommendation[] };
+  webRecommendations?: { [venueName: string]: WebRecommendation[] };
   destination?: string;
   startDate?: Date;
   endDate?: Date;
@@ -52,7 +61,8 @@ interface StructuredItineraryProps {
 
 export const StructuredItinerary = ({ 
   itinerary, 
-  friendRecommendations = {}, 
+  friendRecommendations = {},
+  webRecommendations = {},
   destination,
   startDate,
   endDate,
@@ -570,9 +580,13 @@ export const StructuredItinerary = ({
                           {day.title || `Day ${day.number}`}
                         </span>
                       </h3>
-                      <div className="space-y-2">
-                        {formatContentForDisplay(day.content)}
-                      </div>
+                       <div className="space-y-2">
+                         <InteractiveIter 
+                           itinerary={day.content} 
+                           friendRecommendations={friendRecommendations}
+                           webRecommendations={webRecommendations}
+                         />
+                       </div>
                     </div>
                   ))}
                 </div>
@@ -608,9 +622,13 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="space-y-2">
-                  {formatContentForDisplay(parsed.gettingThere)}
-                </div>
+                 <div className="space-y-2">
+                   <InteractiveIter 
+                     itinerary={parsed.gettingThere} 
+                     friendRecommendations={friendRecommendations}
+                     webRecommendations={webRecommendations}
+                   />
+                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -639,9 +657,13 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="space-y-2">
-                  {formatContentForDisplay(parsed.perfectStay)}
-                </div>
+                 <div className="space-y-2">
+                   <InteractiveIter 
+                     itinerary={parsed.perfectStay} 
+                     friendRecommendations={friendRecommendations}
+                     webRecommendations={webRecommendations}
+                   />
+                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -670,9 +692,13 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="space-y-2">
-                  {formatContentForDisplay(parsed.travelTips)}
-                </div>
+                 <div className="space-y-2">
+                   <InteractiveIter 
+                     itinerary={parsed.travelTips} 
+                     friendRecommendations={friendRecommendations}
+                     webRecommendations={webRecommendations}
+                   />
+                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -701,9 +727,13 @@ export const StructuredItinerary = ({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 p-6 border rounded-lg bg-background">
-                <div className="space-y-2">
-                  {formatContentForDisplay(parsed.bookingLinks)}
-                </div>
+                 <div className="space-y-2">
+                   <InteractiveIter 
+                     itinerary={parsed.bookingLinks} 
+                     friendRecommendations={friendRecommendations}
+                     webRecommendations={webRecommendations}
+                   />
+                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>

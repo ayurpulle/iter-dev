@@ -289,7 +289,12 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 • Attraction tickets and tours
 • Transportation booking links
 
-IMPORTANT: When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post. Use bullet points for all sections.
+IMPORTANT: 
+- When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post.
+- Include 1-2 highly-rated internet-researched recommendations per itinerary, marked with [WEB_REC:venue_name:source_url] where source_url is a real booking/review website URL.
+- For ${destination} in this season, prioritize the most popular activities (e.g., skiing for mountain destinations in winter).
+- Use bullet points for all sections.
+- Never show the recommendation markers in the final text - they should be invisible to users but clickable.
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 

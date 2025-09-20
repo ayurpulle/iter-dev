@@ -168,15 +168,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "itinerary_collaborators_itinerary_id_fkey"
-            columns: ["itinerary_id"]
-            isOneToOne: false
-            referencedRelation: "saved_itineraries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
@@ -670,6 +662,10 @@ export type Database = {
           p_title: string
         }
         Returns: string
+      }
+      validate_itinerary_exists: {
+        Args: { itinerary_uuid: string }
+        Returns: boolean
       }
     }
     Enums: {

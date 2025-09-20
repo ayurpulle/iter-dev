@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, MoreHorizontal } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import ClickableUserInfo from "@/components/ClickableUserInfo";
 
 // Lazy load heavy components
 const LazyTripMapVisual = lazy(() => import('@/components/LazyTripMapVisual'));
@@ -78,23 +79,31 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
       <CardContent className="p-4">
         {/* User Info */}
         <div className="flex items-center gap-3 mb-3">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={userAvatar} />
-            <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-sm">{userName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                </p>
+          <ClickableUserInfo
+            username={post.profiles?.username}
+            name={post.profiles?.name}
+            avatar={userAvatar}
+            userId={post.user_id}
+            className="flex items-center gap-3 flex-1"
+          >
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={userAvatar} />
+              <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-sm">{userName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
               </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
+          </ClickableUserInfo>
         </div>
 
         {/* Trip Info */}

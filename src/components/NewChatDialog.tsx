@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFriends, Friend } from '@/hooks/useFriends';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ClickableUserInfo from '@/components/ClickableUserInfo';
 
 interface NewChatDialogProps {
   onConversationCreated: (conversationId: string) => void;
@@ -228,16 +229,24 @@ export const NewChatDialog: React.FC<NewChatDialogProps> = ({ onConversationCrea
                     onClick={() => createDirectMessage(friend)}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={friend.profile?.avatar || ''} />
-                        <AvatarFallback>
-                          {friend.profile?.name?.charAt(0) || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="font-medium">{friend.profile?.name || 'Unknown'}</h3>
-                        <p className="text-sm text-muted-foreground">@{friend.profile?.username || 'unknown'}</p>
-                      </div>
+                      <ClickableUserInfo
+                        username={friend.profile?.username}
+                        name={friend.profile?.name}
+                        avatar={friend.profile?.avatar}
+                        userId={friend.user_id || friend.friend_id}
+                        className="flex items-center gap-3 flex-1"
+                      >
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={friend.profile?.avatar || ''} />
+                          <AvatarFallback>
+                            {friend.profile?.name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h3 className="font-medium">{friend.profile?.name || 'Unknown'}</h3>
+                          <p className="text-sm text-muted-foreground">@{friend.profile?.username || 'unknown'}</p>
+                        </div>
+                      </ClickableUserInfo>
                       <MessageCircle className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </Card>

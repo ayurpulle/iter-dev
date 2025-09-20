@@ -23,6 +23,7 @@ import Chat from "./pages/Chat";
 
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
+import Profile from "./pages/Profile";
 
 import Settings from "./pages/Settings";
 import PostDetail from "./pages/PostDetail";
@@ -97,6 +98,11 @@ const App = () => {
               <Route path="/account" element={
                 <ProtectedRoute>
                   <Account />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/:username" element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

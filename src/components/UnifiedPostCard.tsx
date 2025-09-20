@@ -19,6 +19,7 @@ import { ItemFolderSelector } from "@/components/ItemFolderSelector";
 import { PostActions } from "@/components/PostActions";
 import TripOverallDetails from "@/components/TripOverallDetails";
 import PhotoSpecificDetails from "@/components/PhotoSpecificDetails";
+import ClickableUserInfo from "@/components/ClickableUserInfo";
 
 import {
   AlertDialog,
@@ -687,21 +688,29 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
         <CardContent className="p-0">
           {/* Header */}
           <div className="flex items-center gap-3 p-4 pb-2">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={(post as PostWithProfile).profiles?.avatar || profile?.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-medium text-sm">{userName}</p>
-              <p className="text-xs text-muted-foreground">
-                @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </p>
-              {locationText && (
-                <p className="text-xs text-blue-600 font-medium">{locationText}</p>
-              )}
-            </div>
+            <ClickableUserInfo
+              username={(post as PostWithProfile).profiles?.username || profile?.username}
+              name={(post as PostWithProfile).profiles?.name || profile?.name}
+              avatar={(post as PostWithProfile).profiles?.avatar || profile?.avatar}
+              userId={(post as PostWithProfile).user_id}
+              className="flex items-center gap-3 flex-1"
+            >
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={(post as PostWithProfile).profiles?.avatar || profile?.avatar} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="font-medium text-sm">{userName}</p>
+                <p className="text-xs text-muted-foreground">
+                  @{username} • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                </p>
+                {locationText && (
+                  <p className="text-xs text-blue-600 font-medium">{locationText}</p>
+                )}
+              </div>
+            </ClickableUserInfo>
             
           {/* Unified action dropdown */}
           <div className="flex items-center gap-1">

@@ -25,7 +25,13 @@ serve(async (req) => {
     
     if (!authHeader) {
       console.error('No authorization header found');
-      throw new Error('Auth session missing!');
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: 'No authorization header provided'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create Supabase client to verify the user
@@ -40,26 +46,31 @@ serve(async (req) => {
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase environment variables');
-      throw new Error('Server configuration error');
+      return new Response(JSON.stringify({
+        error: 'Server configuration error',
+        details: 'Missing required environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { 
         autoRefreshToken: false, 
         persistSession: false 
+      },
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
       }
     });
 
-    // Set the auth token properly
-    const token = authHeader.replace('Bearer ', '');
-    await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: ''
-    });
-
-    // Get the current user
+    // Get the current user using the JWT from the authorization header
     console.log('Attempting to get user...');
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     console.log('Auth result:', { 
       user: !!user, 
@@ -68,9 +79,26 @@ serve(async (req) => {
       authErrorCode: authError?.status
     });
     
-    if (authError || !user) {
-      console.error('Authentication failed:', authError?.message);
-      throw new Error(`Auth session missing!`);
+    if (authError) {
+      console.error('Authentication error details:', authError);
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: `Authentication failed: ${authError.message}`
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (!user) {
+      console.error('No user found in token');
+      return new Response(JSON.stringify({
+        error: 'Auth session missing!',
+        details: 'No user found in session'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Parse the request body
@@ -84,20 +112,42 @@ serve(async (req) => {
       interests,
       travelStyle,
       userId: user.id,
-      fullBody: requestBody
+      hasItineraryContent: !!itineraryContent,
+      itineraryContentLength: itineraryContent?.length
     });
 
     // Validate required fields
-    if (!itineraryContent || itineraryContent.trim() === '' || !editRequest || editRequest.trim() === '' || !destination || destination.trim() === '') {
-      console.error('Validation failed:', { 
-        itineraryContent: !!itineraryContent, 
-        itineraryContentLength: itineraryContent?.length,
-        editRequest: !!editRequest, 
-        editRequestLength: editRequest?.length,
-        destination: !!destination,
-        destinationLength: destination?.length
+    if (!itineraryContent || itineraryContent.trim() === '') {
+      console.error('Missing itinerary content');
+      return new Response(JSON.stringify({
+        error: 'Missing required fields: itineraryContent',
+        details: 'Itinerary content is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      throw new Error(`Missing required fields: ${!itineraryContent || itineraryContent.trim() === '' ? 'itineraryContent ' : ''}${!editRequest || editRequest.trim() === '' ? 'editRequest ' : ''}${!destination || destination.trim() === '' ? 'destination' : ''}`);
+    }
+
+    if (!editRequest || editRequest.trim() === '') {
+      console.error('Missing edit request');
+      return new Response(JSON.stringify({
+        error: 'Missing required fields: editRequest',
+        details: 'Edit request is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!destination || destination.trim() === '') {
+      console.error('Missing destination');
+      return new Response(JSON.stringify({
+        error: 'Missing required fields: destination',
+        details: 'Destination is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Calculate trip duration for proper day grouping
@@ -163,7 +213,13 @@ When making changes, consider the original budget and travel interests to ensure
     console.log('OpenAI API key present:', !!openAIApiKey);
     
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      return new Response(JSON.stringify({
+        error: 'OpenAI API key not configured',
+        details: 'Server configuration error'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -191,7 +247,13 @@ When making changes, consider the original budget and travel interests to ensure
     if (!response.ok) {
       const error = await response.text();
       console.error('OpenAI API error:', error);
-      throw new Error(`OpenAI API error: ${error}`);
+      return new Response(JSON.stringify({
+        error: `OpenAI API error: ${error}`,
+        details: 'Failed to generate response'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
@@ -243,7 +305,7 @@ When making changes, consider the original budget and travel interests to ensure
   } catch (error) {
     console.error('Error in edit-itinerary function:', error);
     return new Response(JSON.stringify({
-      error: error.message,
+      error: error.message || 'Unknown error',
       details: 'Failed to edit itinerary'
     }), {
       status: 400,

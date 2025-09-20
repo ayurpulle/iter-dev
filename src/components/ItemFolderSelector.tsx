@@ -170,7 +170,7 @@ export function ItemFolderSelector({ itemId, itemType, onSave, children }: ItemF
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="no-folder">No folder</SelectItem>
-                {folders.map((folder) => (
+                {folders.filter(folder => folder.id && folder.id.trim() !== '').map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}
                   </SelectItem>

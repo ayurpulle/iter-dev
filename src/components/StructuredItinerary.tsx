@@ -387,9 +387,9 @@ export const StructuredItinerary = ({
     
     if (days) {
       const duration = days <= 7 ? `${days}-day` : days <= 14 ? `${days}-day` : `${Math.ceil(days/7)}-week`;
-      return `Embark on a ${duration} ${primaryType.toLowerCase()} adventure in ${dest}. This ${budgetStr} itinerary combines authentic experiences with carefully curated recommendations to create unforgettable memories.`;
+      return `${duration} ${primaryType.toLowerCase()} adventure in ${dest}. ${budgetStr.charAt(0).toUpperCase() + budgetStr.slice(1)} experiences with curated recommendations.`;
     } else {
-      return `Discover the essence of ${dest} through this ${primaryType.toLowerCase()} journey. Experience the destination's unique character with ${budgetStr} recommendations tailored to your interests.`;
+      return `${primaryType} journey in ${dest}. ${budgetStr.charAt(0).toUpperCase() + budgetStr.slice(1)} experiences tailored to your interests.`;
     }
   };
 

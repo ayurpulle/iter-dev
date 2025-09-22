@@ -17,6 +17,8 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3 pointer-events-auto", className)}
+      fixedWeeks={true}
+      hideWeekdays={true}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-3 w-full",
@@ -29,7 +31,8 @@ function Calendar({
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
-        table: "w-full",
+        table: "w-full table-fixed border-collapse",
+        tbody: "grid gap-1",
         head_row: "hidden",
         head_cell: "hidden",
         row: "grid grid-cols-7 gap-1 w-full",

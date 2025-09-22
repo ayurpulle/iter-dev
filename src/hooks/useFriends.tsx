@@ -108,19 +108,7 @@ export const useFriends = () => {
 
     if (error) throw error;
 
-    // Only create notification for private accounts (pending requests)
-    if (!isPublic) {
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: friendId,
-          type: 'friend_request',
-          title: 'New Friend Request',
-          message: `${user.email} sent you a friend request`,
-          related_user_id: user.id,
-          friend_request_id: data.id
-        });
-    }
+    // Notifications are now handled by database triggers
 
     // Force refresh of friends list and profile counts
     await fetchMutualFriends();

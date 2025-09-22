@@ -14,6 +14,7 @@ import { Share2, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useShareToChat } from '@/hooks/useShareToChat';
 import { useFriends } from '@/hooks/useFriends';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ShareToChatDialogProps {
   itemType: 'itinerary' | 'post';
@@ -38,6 +39,7 @@ export const ShareToChatDialog = ({
   const [selectedFriend, setSelectedFriend] = useState<string>('');
   const { shareToChat, loading } = useShareToChat();
   const { friends } = useFriends();
+  const { user } = useAuth();
 
   const handleShare = async () => {
     if (!selectedFriend) return;
@@ -78,7 +80,10 @@ export const ShareToChatDialog = ({
             >
               {friends.map((friend) => {
                 const friendProfile = friend.profile;
-                const friendId = friend.user_id === friend.friend_id ? friend.friend_id : friend.user_id;
+                // Get the friend's user ID (the one that's not the current user)
+                const friendId = friend.user_id !== friend.friend_id 
+                  ? (friend.user_id === user?.id ? friend.friend_id : friend.user_id)
+                  : friend.friend_id;
                 
                 return (
                   <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">

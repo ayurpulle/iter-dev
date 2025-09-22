@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface GroupMember {
-  id: string;
+  user_id: string;
   name?: string;
   username?: string;
   avatar?: string;
@@ -48,17 +48,24 @@ export const GroupMembersDialog = ({
         .eq('id', conversationId)
         .single();
 
-      if (convError) throw convError;
+      if (convError) {
+        console.error('Error fetching conversation:', convError);
+        throw convError;
+      }
 
       if (conversation?.participants) {
         // Fetch profile data for all participants
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, name, username, avatar')
-          .in('id', conversation.participants);
+          .select('user_id, name, username, avatar')
+          .in('user_id', conversation.participants);
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
+        console.log('Fetched group members:', profiles);
         setMembers(profiles || []);
       }
     } catch (error: any) {
@@ -106,7 +113,7 @@ export const GroupMembersDialog = ({
             </div>
           ) : (
             members.map((member) => (
-              <div key={member.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent">
+              <div key={member.user_id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={member.avatar || ''} />
                   <AvatarFallback>

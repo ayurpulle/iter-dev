@@ -45,6 +45,7 @@ export const useShareToChat = () => {
           .from('conversations')
           .insert({
             participants: [user.id, friendId],
+            created_by: user.id,
             last_message: `Shared ${itemType}: ${itemTitle}`,
             last_message_at: new Date().toISOString()
           })

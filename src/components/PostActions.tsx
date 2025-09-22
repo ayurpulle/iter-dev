@@ -88,6 +88,18 @@ export const PostActions = ({
             <Share2 className="h-4 w-4 mr-2" />
             Share URL
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <div className="w-full">
+              <ShareToChatDialog
+                itemType="post"
+                itemId={postId}
+                itemTitle={content.slice(0, 50) + (content.length > 50 ? '...' : '')}
+                triggerText="Send to Chat"
+                variant="ghost"
+                size="sm"
+              />
+            </div>
+          </DropdownMenuItem>
           
           {isOwner && (
             <>

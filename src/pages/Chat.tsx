@@ -18,6 +18,7 @@ import { useLocation } from "react-router-dom";
 import SharedPostCard from "@/components/SharedPostCard";
 import { SharedItineraryCard } from "@/components/SharedItineraryCard";
 import { CollaborationItineraryCard } from "@/components/CollaborationItineraryCard";
+import { GroupMembersDialog } from "@/components/GroupMembersDialog";
 import { ConversationActions } from "@/components/ConversationActions";
 
 interface ChatMessage {
@@ -481,12 +482,20 @@ const Chat = () => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <h2 className="font-medium">
-              {currentConv?.is_group_chat 
-                ? currentConv.group_name || 'Group Chat'
-                : currentConv?.other_user?.name || 'Unknown User'
-              }
-            </h2>
+            {currentConv?.is_group_chat ? (
+              <GroupMembersDialog 
+                conversationId={selectedConversation}
+                groupName={currentConv.group_name || 'Group Chat'}
+              >
+                <Button variant="ghost" className="h-auto p-0 font-medium text-left justify-start">
+                  {currentConv.group_name || 'Group Chat'}
+                </Button>
+              </GroupMembersDialog>
+            ) : (
+              <h2 className="font-medium">
+                {currentConv?.other_user?.name || 'Unknown User'}
+              </h2>
+            )}
             {!currentConv?.is_group_chat && (
               <p className="text-xs text-muted-foreground">
                 @{currentConv?.other_user?.username || 'username'}

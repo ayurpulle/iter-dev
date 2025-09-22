@@ -448,7 +448,7 @@ export const StructuredItinerary = ({
                   {localStartDate ? format(localStartDate, 'MMM dd, yyyy') : 'Select start'}
                 </Button>
               </PopoverTrigger>
-               <PopoverContent className="w-fit p-0 z-50 bg-background border shadow-md" align="start">
+               <PopoverContent className="w-80 p-0 z-50 bg-background border shadow-md" align="start">
                 <CalendarComponent
                   mode="single"
                   selected={localStartDate}
@@ -471,7 +471,7 @@ export const StructuredItinerary = ({
                   {localEndDate ? format(localEndDate, 'MMM dd, yyyy') : 'Select end'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-fit p-0 z-50 bg-background border shadow-md" align="start">
+              <PopoverContent className="w-80 p-0 z-50 bg-background border shadow-md" align="start">
                 <CalendarComponent
                   mode="single"
                   selected={localEndDate}

@@ -16,38 +16,38 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-4 pointer-events-auto", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center mb-4",
-        caption_label: "text-lg font-semibold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent",
+        caption: "flex justify-center pt-1 relative items-center",
+        caption_label: "text-lg font-semibold text-foreground",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "h-8 w-8 bg-gradient-to-r from-primary/10 to-primary-glow/10 border-primary/20 p-0 hover:bg-gradient-to-r hover:from-primary/20 hover:to-primary-glow/20 hover:border-primary/40 transition-all duration-200"
+          "h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex mb-2",
+        head_row: "flex",
         head_cell:
-          "text-primary font-semibold rounded-md w-10 h-10 flex items-center justify-center text-sm bg-gradient-to-r from-primary/5 to-primary-glow/5",
-        row: "flex w-full mt-1",
-        cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gradient-to-r [&:has([aria-selected].day-outside)]:from-primary/20 [&:has([aria-selected].day-outside)]:to-primary-glow/20 [&:has([aria-selected])]:bg-gradient-to-r [&:has([aria-selected])]:from-primary/10 [&:has([aria-selected])]:to-primary-glow/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] flex items-center justify-center",
+        row: "flex w-full mt-2",
+        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-10 w-10 p-0 font-medium aria-selected:opacity-100 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary-glow/10 hover:text-primary transition-all duration-200 rounded-md"
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground"
         ),
         day_range_end: "day-range-end",
         day_selected:
-          "bg-gradient-to-r from-primary to-primary-glow text-white hover:from-primary-glow hover:to-primary hover:text-white focus:from-primary-glow focus:to-primary focus:text-white shadow-lg transform scale-105 transition-all duration-200",
-        day_today: "bg-gradient-to-r from-accent to-accent-glow text-accent-foreground font-bold border-2 border-primary/30 shadow-sm",
+          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+        day_today: "bg-accent text-accent-foreground",
         day_outside:
-          "day-outside text-muted-foreground/50 opacity-40 aria-selected:bg-gradient-to-r aria-selected:from-primary/20 aria-selected:to-primary-glow/20 aria-selected:text-primary aria-selected:opacity-70",
-        day_disabled: "text-muted-foreground/30 opacity-30 cursor-not-allowed",
+          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+        day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
-          "aria-selected:bg-gradient-to-r aria-selected:from-primary/20 aria-selected:to-primary-glow/20 aria-selected:text-primary",
+          "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
         ...classNames,
       }}

@@ -41,66 +41,62 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
   const loadUsers = async () => {
     setLoading(true);
     try {
-      let query;
+      let friendsData;
       
       if (type === 'followers') {
         // Get users who follow this user
-        query = supabase
+        const { data, error } = await supabase
           .from('friends')
-          .select(`
-            user_id,
-            profiles!friends_user_id_fkey (
-              user_id,
-              name,
-              username,
-              avatar
-            )
-          `)
+          .select('user_id')
           .eq('friend_id', userId)
           .eq('status', 'accepted');
+        
+        if (error) throw error;
+        friendsData = data || [];
       } else {
         // Get users this user follows
-        query = supabase
+        const { data, error } = await supabase
           .from('friends')
-          .select(`
-            friend_id,
-            profiles!friends_friend_id_fkey (
-              user_id,
-              name,
-              username,
-              avatar
-            )
-          `)
+          .select('friend_id')
           .eq('user_id', userId)
           .eq('status', 'accepted');
+        
+        if (error) throw error;
+        friendsData = data || [];
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error loading users:', error);
+      if (friendsData.length === 0) {
+        setUsers([]);
         return;
       }
 
+      // Get user IDs
+      const userIds = type === 'followers' 
+        ? friendsData.map(item => item.user_id)
+        : friendsData.map(item => item.friend_id);
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, name, username, avatar')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
       // Transform data and check friendship status for current user
       const transformedUsers = await Promise.all(
-        (data || []).map(async (item: any) => {
-          const profile = item.profiles;
-          const targetUserId = type === 'followers' ? item.user_id : item.friend_id;
-          
-          if (!profile) return null;
-
+        (profilesData || []).map(async (profile: any) => {
           let friendshipStatus = null;
-          if (user && user.id !== targetUserId) {
+          if (user && user.id !== profile.user_id) {
             try {
-              friendshipStatus = await getFriendshipStatus(targetUserId);
+              friendshipStatus = await getFriendshipStatus(profile.user_id);
             } catch (error) {
               console.error('Error getting friendship status:', error);
             }
           }
 
           return {
-            user_id: targetUserId,
+            user_id: profile.user_id,
             name: profile.name,
             username: profile.username,
             avatar: profile.avatar,
@@ -110,7 +106,7 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
         })
       );
 
-      setUsers(transformedUsers.filter(Boolean) as FollowUser[]);
+      setUsers(transformedUsers);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {

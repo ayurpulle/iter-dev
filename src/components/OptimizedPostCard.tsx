@@ -138,7 +138,7 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
             <img
               src={post.image_url}
               alt="Post content"
-              className={`w-full aspect-square object-cover rounded-lg transition-opacity duration-300 ${
+              className={`w-full max-h-[min(100vw,400px)] object-cover rounded-lg transition-opacity duration-300 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
               }`}
               loading="lazy"

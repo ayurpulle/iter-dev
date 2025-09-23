@@ -24,10 +24,8 @@ const MapView = () => {
     
     yourSavedPosts
       .filter(savedPost => {
-        // Only include posts that:
-        // 1. Have trip data with stops
-        // 2. Are authored by the current user (their own trips, not saved from others)
-        return savedPost.posts?.trips?.stops && savedPost.posts?.user_id === user?.id;
+        // Only include posts that have trip data with stops
+        return savedPost.posts?.trips?.stops;
       })
       .forEach(savedPost => {
         const stops = savedPost.posts?.trips?.stops || [];

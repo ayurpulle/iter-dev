@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -74,6 +75,7 @@ const Profile = () => {
   const [canViewPosts, setCanViewPosts] = useState(false);
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
   const [followersDialogType, setFollowersDialogType] = useState<'followers' | 'following'>('followers');
+  const [showUnfollowDialog, setShowUnfollowDialog] = useState(false);
 
   useEffect(() => {
     if (username) {
@@ -224,6 +226,38 @@ const Profile = () => {
     }
   };
 
+  const handleUnfollowUser = async () => {
+    if (!userProfile || !user) return;
+
+    try {
+      // Find and delete the friendship relationship
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('friend_id', userProfile.user_id)
+        .eq('status', 'accepted');
+
+      if (error) throw error;
+
+      toast({
+        title: "Unfollowed",
+        description: `You unfollowed ${userProfile.name || userProfile.username}`,
+      });
+      
+      // Refresh friendship status
+      await checkFriendshipStatus();
+      setShowUnfollowDialog(false);
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unfollow user",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderActionButton = () => {
     if (isOwnProfile) {
       return (
@@ -241,7 +275,11 @@ const Profile = () => {
 
     if (friendshipStatus.mutualStatus === 'accepted') {
       return (
-        <Button variant="secondary" className="w-full" disabled>
+        <Button 
+          variant="secondary" 
+          className="w-full"
+          onClick={() => setShowUnfollowDialog(true)}
+        >
           Following
         </Button>
       );
@@ -441,6 +479,21 @@ const Profile = () => {
           count={followersDialogType === 'followers' ? userProfile.followers_count : userProfile.following_count}
         />
       )}
+      
+      <AlertDialog open={showUnfollowDialog} onOpenChange={setShowUnfollowDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfollow {userProfile?.name || userProfile?.username}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their posts will no longer appear in your feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnfollowUser}>Unfollow</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

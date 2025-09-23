@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import ClickableUserInfo from '@/components/ClickableUserInfo';
@@ -28,6 +29,8 @@ interface FollowersDialogProps {
 export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: FollowersDialogProps) => {
   const [users, setUsers] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showUnfollowDialog, setShowUnfollowDialog] = useState(false);
+  const [userToUnfollow, setUserToUnfollow] = useState<FollowUser | null>(null);
   const { user } = useAuth();
   const { getFriendshipStatus, sendFriendRequest } = useFriends();
   const { toast } = useToast();
@@ -86,12 +89,27 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
       // Transform data and check friendship status for current user
       const transformedUsers = await Promise.all(
         (profilesData || []).map(async (profile: any) => {
-          let friendshipStatus = null;
-          if (user && user.id !== profile.user_id) {
+          // For users in the Following list, they are already being followed
+          // For users in the Followers list, check if current user follows them back
+          let isFollowing = false;
+          
+          if (type === 'following') {
+            // If this is the Following list, we know the main user follows these people
+            isFollowing = true;
+          } else if (type === 'followers' && user && user.id !== profile.user_id) {
+            // If this is the Followers list, check if current user follows them back
             try {
-              friendshipStatus = await getFriendshipStatus(profile.user_id);
+              const { data: followingCheck } = await supabase
+                .from('friends')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('friend_id', profile.user_id)
+                .eq('status', 'accepted')
+                .maybeSingle();
+              
+              isFollowing = !!followingCheck;
             } catch (error) {
-              console.error('Error getting friendship status:', error);
+              console.error('Error checking follow status:', error);
             }
           }
 
@@ -100,8 +118,7 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
             name: profile.name,
             username: profile.username,
             avatar: profile.avatar,
-            friendship_status: friendshipStatus?.mutualStatus,
-            is_following: friendshipStatus?.mutualStatus === 'accepted'
+            is_following: isFollowing
           };
         })
       );
@@ -127,7 +144,7 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
       // Update local state
       setUsers(prev => prev.map(u => 
         u.user_id === targetUserId 
-          ? { ...u, friendship_status: 'pending' }
+          ? { ...u, is_following: false, friendship_status: 'pending' }
           : u
       ));
     } catch (error) {
@@ -140,21 +157,60 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
     }
   };
 
+  const handleUnfollowUser = async (targetUser: FollowUser) => {
+    setUserToUnfollow(targetUser);
+    setShowUnfollowDialog(true);
+  };
+
+  const confirmUnfollow = async () => {
+    if (!user || !userToUnfollow) return;
+
+    try {
+      // Find and delete the friendship relationship
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('friend_id', userToUnfollow.user_id)
+        .eq('status', 'accepted');
+
+      if (error) throw error;
+
+      toast({
+        title: "Unfollowed",
+        description: `You unfollowed ${userToUnfollow.name || userToUnfollow.username}`,
+      });
+      
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.user_id === userToUnfollow.user_id 
+          ? { ...u, is_following: false }
+          : u
+      ));
+      
+      setShowUnfollowDialog(false);
+      setUserToUnfollow(null);
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unfollow user",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderActionButton = (targetUser: FollowUser) => {
     if (!user || user.id === targetUser.user_id) return null;
 
-    if (targetUser.friendship_status === 'accepted') {
+    if (targetUser.is_following) {
       return (
-        <Button variant="secondary" size="sm" disabled>
+        <Button 
+          variant="secondary" 
+          size="sm"
+          onClick={() => handleUnfollowUser(targetUser)}
+        >
           Following
-        </Button>
-      );
-    }
-
-    if (targetUser.friendship_status === 'pending') {
-      return (
-        <Button variant="outline" size="sm" disabled>
-          Sent
         </Button>
       );
     }
@@ -225,6 +281,21 @@ export const FollowersDialog = ({ isOpen, onClose, userId, type, count }: Follow
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog open={showUnfollowDialog} onOpenChange={setShowUnfollowDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfollow {userToUnfollow?.name || userToUnfollow?.username}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their posts will no longer appear in your feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUnfollow}>Unfollow</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

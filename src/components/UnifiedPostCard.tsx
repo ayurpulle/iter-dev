@@ -732,36 +732,31 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
 
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
-            <div 
-              className="w-full bg-muted overflow-hidden"
-              style={{ maxHeight: "min(100vw, 400px)" }}
-            >
-              <Carousel className="w-full h-full" setApi={setCarouselApi}>
-                <CarouselContent className="h-full ml-0">
+            <div className="w-full overflow-hidden">
+              <Carousel className="w-full" setApi={setCarouselApi}>
+                <CarouselContent className="ml-0">
                    {/* Trip Map - ALWAYS FIRST when trip exists */}
-                    {hasTrip && (
-                      <CarouselItem className="h-full pl-0">
-                        <div className="w-full h-full flex items-center justify-center">
-                          <TripMapVisual 
-                            stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
-                            className="w-full h-full"
-                          />
-                        </div>
-                      </CarouselItem>
+                     {hasTrip && (
+                       <CarouselItem className="pl-0">
+                         <div className="w-full aspect-square flex items-center justify-center">
+                           <TripMapVisual 
+                             stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
+                             className="w-full h-full"
+                           />
+                         </div>
+                       </CarouselItem>
                     )}
                   
                     {/* Images - Come after trip map */}
-                   {images.map((imageUrl, index) => (
-                    <CarouselItem key={`image-${index}`} className="h-full pl-0">
-                       <div className="w-full bg-muted overflow-hidden flex items-center justify-center">
-                          <img 
-                            src={imageUrl} 
-                            alt={`Post image ${index + 1}`} 
-                            className="w-full object-cover"
-                            style={{ objectPosition: 'center', maxHeight: "min(100vw, 400px)" }}
-                         />
-                      </div>
-                    </CarouselItem>
+                    {images.map((imageUrl, index) => (
+                     <CarouselItem key={`image-${index}`} className="pl-0">
+                        <img 
+                          src={imageUrl} 
+                          alt={`Post image ${index + 1}`} 
+                          className="w-full object-cover"
+                          style={{ objectPosition: 'center', maxHeight: "min(100vw, 400px)" }}
+                        />
+                     </CarouselItem>
                   ))}
                 </CarouselContent>
                 {/* Show navigation if there's a trip map + images, or multiple images */}

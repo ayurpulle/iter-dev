@@ -738,10 +738,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                    {/* Trip Map - ALWAYS FIRST when trip exists */}
                      {hasTrip && (
                        <CarouselItem className="pl-0">
-                         <div className="w-full aspect-square flex items-center justify-center">
+                         <div className="w-full aspect-square overflow-hidden">
                            <TripMapVisual 
                              stops={(post as any).trips?.stops ? (Array.isArray((post as any).trips.stops) ? (post as any).trips.stops : []) : []} 
-                             className="w-full h-full"
+                             className="w-full h-full object-cover"
                            />
                          </div>
                        </CarouselItem>
@@ -750,12 +750,14 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                     {/* Images - Come after trip map */}
                     {images.map((imageUrl, index) => (
                      <CarouselItem key={`image-${index}`} className="pl-0">
-                        <img 
-                          src={imageUrl} 
-                          alt={`Post image ${index + 1}`} 
-                          className="w-full object-cover"
-                          style={{ objectPosition: 'center', maxHeight: "min(100vw, 400px)" }}
-                        />
+                        <div className="w-full aspect-square overflow-hidden">
+                          <img 
+                            src={imageUrl} 
+                            alt={`Post image ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                            style={{ objectPosition: 'center' }}
+                          />
+                        </div>
                      </CarouselItem>
                   ))}
                 </CarouselContent>

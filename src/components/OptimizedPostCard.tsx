@@ -133,14 +133,15 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
 
         {/* Post Image with lazy loading */}
         {post.image_url && (
-          <div className="mb-3 relative">
-            {!imageLoaded && <Skeleton className="w-full aspect-square rounded-lg" />}
+          <div className="mb-3 relative w-full aspect-square overflow-hidden rounded-lg">
+            {!imageLoaded && <Skeleton className="w-full h-full" />}
             <img
               src={post.image_url}
               alt="Post content"
-              className={`w-full max-h-[min(100vw,400px)] object-cover rounded-lg transition-opacity duration-300 ${
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
               }`}
+              style={{ objectPosition: 'center' }}
               loading="lazy"
               onLoad={() => setImageLoaded(true)}
             />

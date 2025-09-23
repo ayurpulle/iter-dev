@@ -865,9 +865,10 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(!showComments)}
-                className="p-2 text-muted-foreground"
+                className="p-2 text-muted-foreground flex items-center gap-1"
               >
                 <MessageCircle className="w-6 h-6" />
+                <span className="text-sm">{post.comments_count}</span>
               </Button>
               
                <ShareToChatDialog

@@ -733,8 +733,7 @@ const UnifiedPostCard = ({ post, profile, onDelete, onPostUpdate, onPostDelete }
           {/* Image/Map Carousel */}
           {shouldShowCarousel && (
             <div 
-              className="w-full bg-muted overflow-hidden"
-              style={{ height: "208px" }}
+              className="w-full bg-muted overflow-hidden aspect-square"
             >
               <Carousel className="w-full h-full" setApi={setCarouselApi}>
                 <CarouselContent className="h-full ml-0">

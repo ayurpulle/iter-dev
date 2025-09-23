@@ -126,7 +126,7 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
           <Suspense fallback={<MapSkeleton />}>
             <LazyTripMapVisual 
               stops={tripStops} 
-              className="w-full h-48 rounded-lg mb-3" 
+              className="w-full aspect-square rounded-lg mb-3" 
             />
           </Suspense>
         )}
@@ -134,11 +134,11 @@ const OptimizedPostCard = memo(({ post, onDelete }: OptimizedPostCardProps) => {
         {/* Post Image with lazy loading */}
         {post.image_url && (
           <div className="mb-3 relative">
-            {!imageLoaded && <Skeleton className="w-full h-48 rounded-lg" />}
+            {!imageLoaded && <Skeleton className="w-full aspect-square rounded-lg" />}
             <img
               src={post.image_url}
               alt="Post content"
-              className={`w-full h-48 object-cover rounded-lg transition-opacity duration-300 ${
+              className={`w-full aspect-square object-cover rounded-lg transition-opacity duration-300 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
               }`}
               loading="lazy"

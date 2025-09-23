@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import UnifiedPostCard from "@/components/UnifiedPostCard";
+import { FollowersDialog } from "@/components/FollowersDialog";
 
 interface SavedPost {
   id: string;
@@ -57,6 +58,8 @@ const Account = () => {
   const [selectedFolder, setSelectedFolder] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showFollowersDialog, setShowFollowersDialog] = useState(false);
+  const [followersDialogType, setFollowersDialogType] = useState<'followers' | 'following'>('followers');
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -610,11 +613,23 @@ const Account = () => {
               <div className="text-xl font-bold">{userProfile.stats.posts}</div>
               <div className="text-xs text-muted-foreground">Posts</div>
             </div>
-            <div className="text-center">
+            <div 
+              className="text-center cursor-pointer"
+              onClick={() => {
+                setFollowersDialogType('followers');
+                setShowFollowersDialog(true);
+              }}
+            >
               <div className="text-xl font-bold">{userProfile.stats.followers.toLocaleString()}</div>
               <div className="text-xs text-muted-foreground">Followers</div>
             </div>
-            <div className="text-center">
+            <div 
+              className="text-center cursor-pointer"
+              onClick={() => {
+                setFollowersDialogType('following');
+                setShowFollowersDialog(true);
+              }}
+            >
               <div className="text-xl font-bold">{userProfile.stats.following}</div>
               <div className="text-xs text-muted-foreground">Following</div>
             </div>
@@ -777,6 +792,14 @@ const Account = () => {
       </main>
 
       <BottomTabBar />
+
+      <FollowersDialog
+        isOpen={showFollowersDialog}
+        onClose={() => setShowFollowersDialog(false)}
+        userId={user?.id || ''}
+        type={followersDialogType}
+        count={followersDialogType === 'followers' ? userProfile.stats.followers : userProfile.stats.following}
+      />
     </div>
   );
 };

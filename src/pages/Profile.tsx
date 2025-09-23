@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import TopBar from "@/components/TopBar";
 import BottomTabBar from "@/components/BottomTabBar";
 import UnifiedPostCard from "@/components/UnifiedPostCard";
+import { FollowersDialog } from "@/components/FollowersDialog";
 import { Calendar, MapPin, Users, Heart, Lock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +72,8 @@ const Profile = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [friendshipStatus, setFriendshipStatus] = useState<any>(null);
   const [canViewPosts, setCanViewPosts] = useState(false);
+  const [showFollowersDialog, setShowFollowersDialog] = useState(false);
+  const [followersDialogType, setFollowersDialogType] = useState<'followers' | 'following'>('followers');
 
   useEffect(() => {
     if (username) {
@@ -354,11 +357,27 @@ const Profile = () => {
                 <div className="text-2xl font-bold">{postCount}</div>
                 <div className="text-sm text-muted-foreground">Posts</div>
               </div>
-              <div className="text-center">
+              <div 
+                className="text-center cursor-pointer"
+                onClick={() => {
+                  if (canViewPosts || isOwnProfile) {
+                    setFollowersDialogType('followers');
+                    setShowFollowersDialog(true);
+                  }
+                }}
+              >
                 <div className="text-2xl font-bold">{userProfile.followers_count}</div>
                 <div className="text-sm text-muted-foreground">Followers</div>
               </div>
-              <div className="text-center">
+              <div 
+                className="text-center cursor-pointer"
+                onClick={() => {
+                  if (canViewPosts || isOwnProfile) {
+                    setFollowersDialogType('following');
+                    setShowFollowersDialog(true);
+                  }
+                }}
+              >
                 <div className="text-2xl font-bold">{userProfile.following_count}</div>
                 <div className="text-sm text-muted-foreground">Following</div>
               </div>
@@ -412,6 +431,16 @@ const Profile = () => {
       </div>
 
       <BottomTabBar />
+
+      {userProfile && (
+        <FollowersDialog
+          isOpen={showFollowersDialog}
+          onClose={() => setShowFollowersDialog(false)}
+          userId={userProfile.user_id}
+          type={followersDialogType}
+          count={followersDialogType === 'followers' ? userProfile.followers_count : userProfile.following_count}
+        />
+      )}
     </div>
   );
 };

@@ -430,16 +430,9 @@ export const StructuredItinerary = ({
         );
       }
       
-      // Process bold text (only for actual emphasis, not headers)
-      const boldPattern = /\*\*([^*]+)\*\*/g;
-      const boldParts = part.split(boldPattern);
-      
-      return boldParts.map((boldPart, boldIndex) => {
-        if (boldIndex % 2 === 1) {
-          return <strong key={boldIndex} className="font-medium">{boldPart}</strong>;
-        }
-        return boldPart;
-      });
+      // Remove ** formatting from text but don't process as bold
+      const cleanedPart = part.replace(/\*\*/g, '');
+      return cleanedPart;
     });
   };
 
@@ -632,7 +625,12 @@ export const StructuredItinerary = ({
                     onClick={() => {
                       setLocalBudget(budgetLevel);
                       if (onUpdateItinerary) {
-                        onUpdateItinerary({ budget: budgetLevel });
+                        onUpdateItinerary({ 
+                          budget: budgetLevel,
+                          startDate: localStartDate,
+                          endDate: localEndDate,
+                          holidayTypes: localHolidayTypes 
+                        });
                       }
                     }}
                   >

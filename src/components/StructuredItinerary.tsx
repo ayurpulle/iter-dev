@@ -303,7 +303,7 @@ export const StructuredItinerary = ({
         const content = trimmed.replace('**Day-by-Day Itinerary**', '').trim();
         
         if (tripLength <= 7) {
-          // For 1-7 days: Show detailed daily breakdown with morning/afternoon/evening
+          // For 1-7 days: Show detailed daily breakdown with morning/afternoon/evening for each individual day
           const dayMatches = content.match(/(?:\*\*)?Day \d+[^\n]*(?:\*\*)?/gi);
           
           if (dayMatches) {
@@ -316,11 +316,11 @@ export const StructuredItinerary = ({
               const singleDayMatch = dayMatch.match(/Day (\d+)/i);
               
               if (singleDayMatch) {
-                const dayNum = singleDayMatch[1];
+                const dayNum = parseInt(singleDayMatch[1]);
                 const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
                 
                 parsed.days.push({
-                  number: dayNum,
+                  number: dayNum.toString(),
                   title: dayTitle || `Day ${dayNum}`,
                   content: dayContent.trim()
                 });
@@ -328,37 +328,24 @@ export const StructuredItinerary = ({
             });
           }
         } else if (tripLength <= 14) {
-          // For 7-14 days: Group days in 2s or 3s with brief descriptions
-          const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?[^\n]*(?:\*\*)?/gi);
+          // For 7-14 days: Still show individual days but with brief bullet points
+          const dayMatches = content.match(/(?:\*\*)?Day \d+[^\n]*(?:\*\*)?/gi);
           
           if (dayMatches) {
             dayMatches.forEach((dayMatch) => {
               const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Days? \\d+:|$)', 'i');
+              const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Day \\d+:|$)', 'i');
               const match = content.match(regex);
               const dayContent = match?.[1] || '';
               
-              const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
               const singleDayMatch = dayMatch.match(/Day (\d+)/i);
               
-              if (dayRangeMatch) {
-                const startDay = dayRangeMatch[1];
-                const endDay = dayRangeMatch[2];
-                const dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
-                
-                parsed.days.push({
-                  number: startDay,
-                  title: dayTitle || `Days ${startDay}-${endDay}`,
-                  content: dayContent.trim(),
-                  isRange: true,
-                  endDay: endDay
-                });
-              } else if (singleDayMatch) {
-                const dayNum = singleDayMatch[1];
+              if (singleDayMatch) {
+                const dayNum = parseInt(singleDayMatch[1]);
                 const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
                 
                 parsed.days.push({
-                  number: dayNum,
+                  number: dayNum.toString(),
                   title: dayTitle || `Day ${dayNum}`,
                   content: dayContent.trim()
                 });

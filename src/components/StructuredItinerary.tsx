@@ -178,6 +178,46 @@ export const StructuredItinerary = ({
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
+  const calculateTotalBudget = () => {
+    if (!localStartDate || !localEndDate) return null;
+    
+    const days = Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    const destination = currentDestination?.toLowerCase() || '';
+    
+    // Base costs per day by budget level
+    const dailyCosts = {
+      1: { accommodation: 30, food: 25, activities: 20, transport: 15 }, // Budget
+      2: { accommodation: 60, food: 45, activities: 40, transport: 25 }, // Moderate
+      3: { accommodation: 120, food: 75, activities: 60, transport: 40 }, // Comfortable
+      4: { accommodation: 250, food: 120, activities: 100, transport: 60 }, // Luxury
+      5: { accommodation: 500, food: 200, activities: 180, transport: 100 } // Ultra-luxury
+    };
+    
+    // Flight costs by destination (rough estimates)
+    const flightCosts = {
+      1: destination.includes('europe') ? 400 : destination.includes('asia') ? 600 : 300,
+      2: destination.includes('europe') ? 600 : destination.includes('asia') ? 800 : 450,
+      3: destination.includes('europe') ? 800 : destination.includes('asia') ? 1200 : 600,
+      4: destination.includes('europe') ? 1500 : destination.includes('asia') ? 2000 : 1200,
+      5: destination.includes('europe') ? 3000 : destination.includes('asia') ? 4000 : 2500
+    };
+    
+    const costs = dailyCosts[localBudget as keyof typeof dailyCosts];
+    const flightCost = flightCosts[localBudget as keyof typeof flightCosts];
+    
+    const totalDaily = (costs.accommodation + costs.food + costs.activities + costs.transport) * days;
+    const total = totalDaily + flightCost;
+    
+    return {
+      accommodation: costs.accommodation * days,
+      food: costs.food * days,
+      activities: costs.activities * days,
+      transport: costs.transport * days,
+      flights: flightCost,
+      total
+    };
+  };
+
   const getAirportsForDestination = (destination: string) => {
     const dest = destination.toLowerCase();
     
@@ -408,11 +448,29 @@ export const StructuredItinerary = ({
     // Clean up content - remove excessive dashes and clean formatting
     let cleanContent = content
       .replace(/---+/g, '') // Remove long dashes
-      .replace(/\*{3,}/g, '**') // Replace triple+ asterisks with double
-      .replace(/(\*\*[^*]+\*\*)\s*-+\s*/g, '$1 ') // Remove dashes after bold headers
+      .replace(/\*{3,}/g, '') // Remove triple+ asterisks completely
+      .replace(/\*\*/g, '') // Remove all ** formatting
       .replace(/^\s*-+\s*/gm, '• ') // Convert leading dashes to bullets
       .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
       .trim();
+
+    // Split into time-based sections for better formatting
+    const timePatterns = ['Morning:', 'Afternoon:', 'Evening:', 'Night:'];
+    
+    // Check if content has time-based structure
+    const hasTimeStructure = timePatterns.some(pattern => 
+      cleanContent.toLowerCase().includes(pattern.toLowerCase())
+    );
+    
+    if (hasTimeStructure) {
+      // Split by time periods and format consistently
+      let formattedContent = cleanContent;
+      timePatterns.forEach(pattern => {
+        const regex = new RegExp(`(${pattern})`, 'gi');
+        formattedContent = formattedContent.replace(regex, `\n**$1**\n`);
+      });
+      cleanContent = formattedContent.replace(/\n{3,}/g, '\n\n').trim();
+    }
 
     // Split into sections and format each
     const sections = cleanContent.split(/\n\s*\n/);
@@ -420,10 +478,12 @@ export const StructuredItinerary = ({
     return sections.map((section, index) => {
       if (!section.trim()) return null;
       
-      // Check if this is a header (bold text at start)
-      const isHeader = section.trim().startsWith('**') && section.trim().endsWith('**');
+      // Check if this is a header (now looking for time periods or bold markers)
+      const isTimeHeader = timePatterns.some(pattern => 
+        section.trim().toLowerCase().includes(pattern.toLowerCase())
+      ) && section.trim().length < 50;
       
-      if (isHeader) {
+      if (isTimeHeader) {
         const headerText = section.replace(/\*\*/g, '').trim();
         return (
           <h4 key={index} className="font-semibold text-foreground mb-2 mt-4 first:mt-0">
@@ -440,7 +500,7 @@ export const StructuredItinerary = ({
         return (
           <ul key={index} className="space-y-1 mb-4">
             {lines.map((line, lineIndex) => {
-              const cleanLine = line.replace(/^[•\-]\s*/, '').trim();
+              const cleanLine = line.replace(/^[•\-]\s*/, '').replace(/\*\*/g, '').trim();
               if (!cleanLine) return null;
               
               return (
@@ -695,6 +755,42 @@ export const StructuredItinerary = ({
                     <span className="text-sm">{getBudgetDescription(budgetLevel)}</span>
                   </Button>
                 ))}
+                
+                {/* Total Budget Estimate */}
+                {(() => {
+                  const budget = calculateTotalBudget();
+                  return budget ? (
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">Estimated Total Cost</div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span>Flights:</span>
+                          <span>${budget.flights.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Accommodation:</span>
+                          <span>${budget.accommodation.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Food & Dining:</span>
+                          <span>${budget.food.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Activities:</span>
+                          <span>${budget.activities.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Local Transport:</span>
+                          <span>${budget.transport.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold pt-2 border-t border-border">
+                          <span>Total:</span>
+                          <span>${budget.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </PopoverContent>
           </Popover>

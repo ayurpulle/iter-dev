@@ -615,7 +615,34 @@ export const StructuredItinerary = ({
         <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Budget:</span>
-          <span className="text-blue-600">{getBudgetDisplay(localBudget)}</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-0 h-auto underline font-normal text-blue-600">
+                {getBudgetDisplay(localBudget)}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0 z-50 bg-background border shadow-md" align="start">
+              <div className="p-4 space-y-2">
+                <div className="text-sm font-medium mb-3">Select Budget Range</div>
+                {[1, 2, 3, 4, 5].map((budgetLevel) => (
+                  <Button
+                    key={budgetLevel}
+                    variant={localBudget === budgetLevel ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setLocalBudget(budgetLevel);
+                      if (onUpdateItinerary) {
+                        onUpdateItinerary({ budget: budgetLevel });
+                      }
+                    }}
+                  >
+                    <span className="font-mono text-lg mr-3">{getBudgetDisplay(budgetLevel)}</span>
+                    <span className="text-sm">{getBudgetDescription(budgetLevel)}</span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

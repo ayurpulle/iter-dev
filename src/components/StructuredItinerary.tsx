@@ -178,6 +178,78 @@ export const StructuredItinerary = ({
     return descriptions[budget as keyof typeof descriptions] || "";
   };
 
+  const getAirportsForDestination = (destination: string) => {
+    const dest = destination.toLowerCase();
+    
+    // Major destinations and their primary airports
+    const airportMap: { [key: string]: string } = {
+      'tokyo': 'NRT • HND',
+      'japan': 'NRT • HND',
+      'london': 'LHR • LGW',
+      'paris': 'CDG • ORY',
+      'new york': 'JFK • LGA',
+      'los angeles': 'LAX • BUR',
+      'san francisco': 'SFO • OAK',
+      'miami': 'MIA • FLL',
+      'bangkok': 'BKK • DMK',
+      'singapore': 'SIN',
+      'hong kong': 'HKG',
+      'sydney': 'SYD • KSF',
+      'melbourne': 'MEL • AVV',
+      'dubai': 'DXB • DWC',
+      'amsterdam': 'AMS',
+      'rome': 'FCO • CIA',
+      'berlin': 'BER',
+      'madrid': 'MAD',
+      'barcelona': 'BCN • GRO',
+      'istanbul': 'IST • SAW',
+      'beijing': 'PEK • PKX',
+      'shanghai': 'PVG • SHA',
+      'seoul': 'ICN • GMP',
+      'mumbai': 'BOM',
+      'delhi': 'DEL',
+      'toronto': 'YYZ • YTZ',
+      'vancouver': 'YVR • YKA',
+      'mexico city': 'MEX • NLU',
+      'sao paulo': 'GRU • CGH',
+      'rio de janeiro': 'GIG • SDU',
+      'cape town': 'CPT',
+      'johannesburg': 'JNB • HLA',
+      'cairo': 'CAI',
+      'montreal': 'YUL • YMX',
+      'chicago': 'ORD • MDW',
+      'atlanta': 'ATL',
+      'las vegas': 'LAS • VGT',
+      'seattle': 'SEA • BFI',
+      'denver': 'DEN',
+      'phoenix': 'PHX • SDL',
+      'dallas': 'DFW • DAL',
+      'houston': 'IAH • HOU',
+      'boston': 'BOS • BED',
+      'washington': 'DCA • IAD',
+      'philadelphia': 'PHL',
+      'detroit': 'DTW',
+      'minneapolis': 'MSP',
+      'salt lake city': 'SLC',
+      'portland': 'PDX',
+      'san diego': 'SAN',
+      'nashville': 'BNA',
+      'austin': 'AUS',
+      'orlando': 'MCO • SFB',
+      'tampa': 'TPA • PIE'
+    };
+    
+    // Check for exact matches first
+    for (const [city, airports] of Object.entries(airportMap)) {
+      if (dest.includes(city)) {
+        return airports;
+      }
+    }
+    
+    // Default fallback
+    return 'TBD';
+  };
+
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -222,8 +294,9 @@ export const StructuredItinerary = ({
         parsed.gettingThere = trimmed.replace(/\*\*(Getting There|Flights)\*\*/, '').trim();
       } else if (trimmed.startsWith('**Perfect Stay**')) {
         parsed.perfectStay = trimmed.replace('**Perfect Stay**', '').trim();
-      } else if (trimmed.startsWith('**Day-by-Day Itinerary**') || trimmed.includes('**Day') || trimmed.includes('Day ') || trimmed.includes('Days ')) {
-        const content = trimmed;
+      } else if (trimmed.startsWith('**Day-by-Day Itinerary**')) {
+        // Only process Day-by-Day sections, not any section that contains "Day"
+        const content = trimmed.replace('**Day-by-Day Itinerary**', '').trim();
         const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?:?[^\n]*(?:\*\*)?/gi);
         
         if (dayMatches) {
@@ -498,7 +571,7 @@ export const StructuredItinerary = ({
         <div className="flex items-center gap-2 p-4 border rounded-lg bg-background">
           <Plane className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Airports:</span>
-          <span className="text-sm text-blue-600 underline">NRT • HND</span>
+          <span className="text-sm text-blue-600 underline">{getAirportsForDestination(currentDestination || destination || '')}</span>
         </div>
 
         {/* Holiday Types */}

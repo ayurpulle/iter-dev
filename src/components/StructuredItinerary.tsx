@@ -273,6 +273,11 @@ export const StructuredItinerary = ({
       };
     }
     
+    // Calculate trip length to determine parsing strategy
+    const tripLength = localStartDate && localEndDate 
+      ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 7; // Default to 7 days if no dates
+    
     // Split into main sections based on headers
     const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*)/);
     
@@ -295,44 +300,109 @@ export const StructuredItinerary = ({
       } else if (trimmed.startsWith('**Perfect Stay**')) {
         parsed.perfectStay = trimmed.replace('**Perfect Stay**', '').trim();
       } else if (trimmed.startsWith('**Day-by-Day Itinerary**')) {
-        // Only process Day-by-Day sections, not any section that contains "Day"
         const content = trimmed.replace('**Day-by-Day Itinerary**', '').trim();
-        const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?:?[^\n]*(?:\*\*)?/gi);
         
-        if (dayMatches) {
-          dayMatches.forEach((dayMatch, matchIndex) => {
-            const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Days? \\d+:|$)', 'i');
-            const match = content.match(regex);
-            const dayContent = match?.[1] || '';
-            
-            const singleDayMatch = dayMatch.match(/Day (\d+)/i);
-            const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
-            
-            let dayNum, dayTitle;
-            
-            if (dayRangeMatch) {
-              dayNum = dayRangeMatch[1];
-              dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
-              if (!dayTitle) {
-                dayTitle = `Days ${dayRangeMatch[1]}-${dayRangeMatch[2]}`;
+        if (tripLength <= 7) {
+          // For 1-7 days: Show detailed daily breakdown with morning/afternoon/evening
+          const dayMatches = content.match(/(?:\*\*)?Day \d+[^\n]*(?:\*\*)?/gi);
+          
+          if (dayMatches) {
+            dayMatches.forEach((dayMatch) => {
+              const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Day \\d+:|$)', 'i');
+              const match = content.match(regex);
+              const dayContent = match?.[1] || '';
+              
+              const singleDayMatch = dayMatch.match(/Day (\d+)/i);
+              
+              if (singleDayMatch) {
+                const dayNum = singleDayMatch[1];
+                const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+                
+                parsed.days.push({
+                  number: dayNum,
+                  title: dayTitle || `Day ${dayNum}`,
+                  content: dayContent.trim()
+                });
               }
-            } else if (singleDayMatch) {
-              dayNum = singleDayMatch[1];
-              dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
-              if (!dayTitle) {
-                dayTitle = `Day ${dayNum}`;
+            });
+          }
+        } else if (tripLength <= 14) {
+          // For 7-14 days: Group days in 2s or 3s with brief descriptions
+          const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?[^\n]*(?:\*\*)?/gi);
+          
+          if (dayMatches) {
+            dayMatches.forEach((dayMatch) => {
+              const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Days? \\d+:|$)', 'i');
+              const match = content.match(regex);
+              const dayContent = match?.[1] || '';
+              
+              const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
+              const singleDayMatch = dayMatch.match(/Day (\d+)/i);
+              
+              if (dayRangeMatch) {
+                const startDay = dayRangeMatch[1];
+                const endDay = dayRangeMatch[2];
+                const dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+                
+                parsed.days.push({
+                  number: startDay,
+                  title: dayTitle || `Days ${startDay}-${endDay}`,
+                  content: dayContent.trim(),
+                  isRange: true,
+                  endDay: endDay
+                });
+              } else if (singleDayMatch) {
+                const dayNum = singleDayMatch[1];
+                const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+                
+                parsed.days.push({
+                  number: dayNum,
+                  title: dayTitle || `Day ${dayNum}`,
+                  content: dayContent.trim()
+                });
               }
-            }
-            
-            if (dayNum) {
-              parsed.days.push({
-                number: dayNum,
-                title: dayTitle,
-                content: dayContent.trim()
-              });
-            }
-          });
+            });
+          }
+        } else {
+          // For 14+ days: Group by 3-4 days with brief descriptions
+          const dayMatches = content.match(/(?:\*\*)?Days? \d+(?:-\d+)?[^\n]*(?:\*\*)?/gi);
+          
+          if (dayMatches) {
+            dayMatches.forEach((dayMatch) => {
+              const dayPattern = dayMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(dayPattern + '([\\s\\S]*?)(?=(?:\\*\\*)?Days? \\d+:|$)', 'i');
+              const match = content.match(regex);
+              const dayContent = match?.[1] || '';
+              
+              const dayRangeMatch = dayMatch.match(/Days (\d+)-(\d+)/i);
+              const singleDayMatch = dayMatch.match(/Day (\d+)/i);
+              
+              if (dayRangeMatch) {
+                const startDay = dayRangeMatch[1];
+                const endDay = dayRangeMatch[2];
+                const dayTitle = dayMatch.replace(/\*\*Days? \d+-\d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+                
+                parsed.days.push({
+                  number: startDay,
+                  title: dayTitle || `Days ${startDay}-${endDay}`,
+                  content: dayContent.trim(),
+                  isRange: true,
+                  endDay: endDay
+                });
+              } else if (singleDayMatch) {
+                const dayNum = singleDayMatch[1];
+                const dayTitle = dayMatch.replace(/\*\*Day \d+:?\s*/i, '').replace(/\*\*/g, '').trim();
+                
+                parsed.days.push({
+                  number: dayNum,
+                  title: dayTitle || `Day ${dayNum}`,
+                  content: dayContent.trim()
+                });
+              }
+            });
+          }
         }
       } else if (trimmed.startsWith('**Travel Tips**') || trimmed.startsWith('**Essential Travel Tips**')) {
         parsed.travelTips = trimmed.replace(/\*\*(Travel Tips|Essential Travel Tips)\*\*/, '').trim();
@@ -675,8 +745,11 @@ export const StructuredItinerary = ({
                     <div key={index} className="border-l-2 border-blue-200 pl-4">
                       <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
-                          {day.title || `Day ${day.number}`}
+                          {day.isRange ? `Days ${day.number}-${day.endDay}` : `Day ${day.number}`}
                         </span>
+                        {day.title && (
+                          <span className="text-foreground/80">{day.title}</span>
+                        )}
                       </h3>
                        <div className="space-y-2">
                          <InteractiveIter 

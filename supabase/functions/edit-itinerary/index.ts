@@ -103,7 +103,7 @@ serve(async (req) => {
 
     // Parse the request body
     const requestBody = await req.json();
-    const { itineraryContent, editRequest, destination, conversationHistory, budget, interests, travelStyle } = requestBody;
+    const { itineraryContent, editRequest, destination, conversationHistory, budget, interests, travelStyle, itineraryId } = requestBody;
     
     console.log('Received edit request:', {
       editRequest,
@@ -319,7 +319,7 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
         end_date: updatedEndDate,
         updated_at: new Date().toISOString()
       })
-      .eq('id', requestBody.itineraryId)
+      .eq('id', itineraryId)
       .eq('user_id', user.id);
 
     // If not found in saved_itineraries, try trips table
@@ -334,7 +334,7 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
           end_date: updatedEndDate,
           updated_at: new Date().toISOString()
         })
-        .eq('id', requestBody.itineraryId)
+        .eq('id', itineraryId)
         .eq('user_id', user.id);
 
       if (updateError2) {

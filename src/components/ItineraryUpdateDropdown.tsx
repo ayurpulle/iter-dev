@@ -39,7 +39,9 @@ export const ItineraryUpdateDropdown = ({
 
   const canEdit = iterData.is_owner || iterData.can_edit;
   
-  console.log('ItineraryUpdateDropdown:', {
+  console.log('ItineraryUpdateDropdown - received iterData:', {
+    id: iterData.id,
+    title: iterData.title,
     hasChanges,
     canEdit,
     is_owner: iterData.is_owner,

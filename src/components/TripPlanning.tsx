@@ -776,7 +776,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               destination: viewingIter.destination,
               itinerary_content: viewingIter.itinerary_content,
               is_owner: viewingIter.isOwner || false,
-              can_edit: viewingIter.canEdit || false,
+              can_edit: viewingIter.can_edit || false,
               start_date: viewingIter.start_date,
               end_date: viewingIter.end_date,
               budget: viewingIter.budget,

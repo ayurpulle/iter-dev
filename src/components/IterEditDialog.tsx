@@ -98,6 +98,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           budget: typeof (iterData as any)?.budget === 'number' ? (iterData as any).budget : parseInt(String((iterData as any)?.budget)) || 3,
           interests: String((iterData as any)?.interests?.join?.(', ') || ''),
           travelStyle: String((iterData as any)?.interests?.join?.(', ') || ''),
+          itineraryId: iterData.id,
           dateAdjustment
         }
       });

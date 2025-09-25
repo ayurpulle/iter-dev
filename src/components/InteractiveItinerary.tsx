@@ -40,8 +40,13 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
   };
 
   const renderIterWithRecommendations = (text: string) => {
+    // Clean up markdown formatting first
+    let cleanedText = text
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
+      .replace(/\*([^*]+)\*/g, '$1'); // Remove * markdown formatting
+    
     // Split text by lines and process each line
-    return text.split('\n').map((line, lineIdx) => {
+    return cleanedText.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;
       
       // Check for recommendation markers - support saved, friend, and web recs
@@ -139,9 +144,12 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         return <h1 key={lineIdx} className="text-xl font-bold mb-3 text-foreground">{line.substring(2)}</h1>;
       } else if (line.startsWith('## ')) {
         return <h2 key={lineIdx} className="text-lg font-semibold mb-2 text-foreground">{line.substring(3)}</h2>;
-      } else if (line.startsWith('**') && line.endsWith('**')) {
-        return <h3 key={lineIdx} className="text-base font-semibold mb-2 text-foreground">{line.slice(2, -2)}</h3>;
       } else if (line.startsWith('- ')) {
+        // Check if this is a time-of-day bullet point and standardize formatting
+        const timePattern = /^- (Morning|Afternoon|Evening|Night):/i;
+        if (timePattern.test(line)) {
+          return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-4">{line.substring(2)}</p>;
+        }
         return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-4">{line.substring(2)}</p>;
       } else {
         return <p key={lineIdx} className="text-sm text-foreground mb-2">{line}</p>;

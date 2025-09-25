@@ -479,6 +479,18 @@ export const useSavedItineraries = () => {
     };
   }, [user]);
 
+  // Listen for collaboration acceptance events to refetch
+  useEffect(() => {
+    const handleCollaborationAccepted = () => {
+      if (user) {
+        fetchSavedItineraries();
+      }
+    };
+
+    window.addEventListener('collaborationAccepted', handleCollaborationAccepted);
+    return () => window.removeEventListener('collaborationAccepted', handleCollaborationAccepted);
+  }, [user]);
+
   return {
     savedItineraries,
     loading,

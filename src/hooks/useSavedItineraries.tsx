@@ -178,14 +178,16 @@ export const useSavedItineraries = () => {
               collaboratorData = iter.itinerary_collaborators[0];
             }
           } else {
-            // If it's a single object
-            collaboratorData = iter.itinerary_collaborators;
+            // If it's a single object, make sure it's for the current user
+            if (iter.itinerary_collaborators.user_id === user.id) {
+              collaboratorData = iter.itinerary_collaborators;
+            }
           }
         }
         
         hasEditPermission = collaboratorData?.permission === 'edit' || collaboratorData?.permission === 'admin';
         
-        console.log(`Collaborative iter ${iter.title}: collaboratorData=`, collaboratorData, 'hasEditPermission=', hasEditPermission);
+        console.log(`Collaborative iter ${iter.title}: collaboratorData=`, collaboratorData, 'hasEditPermission=', hasEditPermission, 'permission=', collaboratorData?.permission);
         
         return {
           ...iter,

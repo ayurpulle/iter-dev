@@ -40,17 +40,32 @@ export const useItineraryCollaboration = () => {
 
     setLoading(true);
     try {
-      // Use upsert to handle existing collaborations gracefully
+      // Check if collaboration already exists
+      const { data: existingCollab } = await supabase
+        .from('itinerary_collaborators')
+        .select('id, status')
+        .eq('itinerary_id', itineraryId)
+        .eq('user_id', friendId)
+        .maybeSingle();
+
+      if (existingCollab) {
+        toast({
+          title: "Already Invited",
+          description: "User already invited for collaboration!",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Use insert instead of upsert to avoid RLS issues
       const { data, error } = await supabase
         .from('itinerary_collaborators')
-        .upsert({
+        .insert({
           itinerary_id: itineraryId,
           user_id: friendId,
           permission,
           invited_by: user.id,
-          status: 'pending' // Reset to pending if it was declined before
-        }, {
-          onConflict: 'itinerary_id,user_id'
+          status: 'pending'
         })
         .select()
         .single();
@@ -292,28 +307,47 @@ export const useItineraryCollaboration = () => {
       const invites = friendIds.map(friendId => ({
         itinerary_id: itineraryId,
         user_id: friendId,
-        permission: permission, // Use the provided permission
+        permission: permission,
         invited_by: user.id,
         status: 'pending'
       }));
 
+      // Check for existing collaborations first
+      const { data: existingCollabs } = await supabase
+        .from('itinerary_collaborators')
+        .select('user_id')
+        .eq('itinerary_id', itineraryId)
+        .in('user_id', friendIds);
+
+      const existingUserIds = existingCollabs?.map(c => c.user_id) || [];
+      const newInvites = invites.filter(invite => !existingUserIds.includes(invite.user_id));
+
+      if (newInvites.length === 0) {
+        toast({
+          title: "Already Invited",
+          description: "User already invited for collaboration!",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('itinerary_collaborators')
-        .upsert(invites, {
-          onConflict: 'itinerary_id,user_id'
-        });
+        .insert(newInvites);
 
       if (error) throw error;
 
-      // Send collaboration chat messages to each friend
-      console.log('Sending chat messages to friends...');
-      for (const friendId of friendIds) {
+      // Send collaboration chat messages only to successfully invited friends
+      console.log('Sending chat messages to newly invited friends...');
+      const newFriendIds = newInvites.map(invite => invite.user_id);
+      for (const friendId of newFriendIds) {
         await sendCollaborationChatMessage(friendId, itineraryId, itineraryTitle || 'Itinerary');
       }
 
+      const totalInvited = newInvites.length;
       toast({
         title: "Success",
-        description: `${permission === 'edit' ? 'Collaboration' : 'Sharing'} invites sent to ${friendIds.length} friend${friendIds.length > 1 ? 's' : ''}!`
+        description: `${permission === 'edit' ? 'Collaboration' : 'Sharing'} invites sent to ${totalInvited} friend${totalInvited > 1 ? 's' : ''}!`
       });
 
       return true;

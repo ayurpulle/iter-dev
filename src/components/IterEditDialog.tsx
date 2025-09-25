@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Edit, Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useItineraryEditContext } from './ItineraryEditContext';
 
 interface IterEditDialogProps {
   iterData: {
@@ -29,10 +30,13 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
   const [isOpen, setIsOpen] = useState(false);
   const [editRequest, setEditRequest] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [conversation, setConversation] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [permissions, setPermissions] = useState({ canEdit: false, isOwner: false });
   const { toast } = useToast();
+  const { addMessage, getConversation } = useItineraryEditContext();
+  
+  // Get conversation from context
+  const conversation = getConversation(iterData.id);
 
   const extractDateChanges = (editRequest: string) => {
     const lowerRequest = editRequest.toLowerCase();
@@ -62,8 +66,9 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
     setEditRequest('');
     
     // Add user message to conversation
-    const newConversation = [...conversation, { role: 'user' as const, content: userMessage }];
-    setConversation(newConversation);
+    const userMsgObj = { role: 'user' as const, content: userMessage };
+    addMessage(iterData.id, userMsgObj);
+    const newConversation = [...conversation, userMsgObj];
 
     try {
       // Check for date changes in the request
@@ -108,8 +113,8 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       }
 
       // Add assistant response to conversation
-      const updatedConversation = [...newConversation, { role: 'assistant' as const, content: data.response }];
-      setConversation(updatedConversation);
+      const assistantMsgObj = { role: 'assistant' as const, content: data.response };
+      addMessage(iterData.id, assistantMsgObj);
 
       // If the itinerary was actually updated, auto-save it permanently
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
@@ -132,25 +137,17 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           if (data.newStartDate) updateData.start_date = data.newStartDate;
         }
         
-        // Try updating both saved_itineraries and trips tables
-        let updateError = null;
-        
-        // First try saved_itineraries
-        const { error: savedIterError } = await supabase
+        // Use a direct update approach that works with RLS policies for collaborators
+        const { error: updateError } = await supabase
           .from('saved_itineraries')
-          .update(updateData)
+          .update({
+            itinerary_content: data.updatedItinerary,
+            destination: data.newDestination || iterData.destination,
+            start_date: data.newStartDate || null,
+            end_date: data.newEndDate || null,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', iterData.id);
-          
-        if (savedIterError) {
-          // If not found in saved_itineraries, try trips table
-          const { error: tripsError } = await supabase
-            .from('trips')
-            .update(updateData)
-            .eq('id', iterData.id);
-          updateError = tripsError;
-        } else {
-          updateError = savedIterError;
-        }
 
         if (updateError) {
           console.error('Error auto-saving itinerary:', updateError);

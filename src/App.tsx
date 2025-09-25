@@ -10,6 +10,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import GlobalNotifications from "@/components/GlobalNotifications";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
+import { ItineraryEditProvider } from "@/components/ItineraryEditContext";
 
 // Page imports
 import Index from "./pages/Index";
@@ -43,7 +44,8 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
         <OnboardingWrapper>
-          <TooltipProvider>
+          <ItineraryEditProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -114,7 +116,8 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+            </TooltipProvider>
+          </ItineraryEditProvider>
         </OnboardingWrapper>
       </AuthProvider>
     </ThemeProvider>

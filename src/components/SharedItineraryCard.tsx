@@ -30,44 +30,66 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
 
       if (messageType === 'collaboration_invite') {
         // For collaboration invites, check if there's a pending invite and accept it
-        const { data: existingInvite } = await supabase
+        const { data: existingInvite, error: fetchError } = await supabase
+          .from('itinerary_collaborators')
+          .select('id, status')
+          .eq('itinerary_id', itineraryId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (fetchError) {
+          console.error('Error fetching collaboration invite:', fetchError);
+          throw fetchError;
+        }
+
+        if (existingInvite) {
+          if (existingInvite.status === 'pending') {
+            // Accept the existing pending invitation
+            const { error: updateError } = await supabase
+              .from('itinerary_collaborators')
+              .update({ status: 'accepted' })
+              .eq('id', existingInvite.id);
+
+            if (updateError) {
+              console.error('Error accepting collaboration invite:', updateError);
+              throw updateError;
+            }
+          }
+          // If already accepted, just proceed to view
+        } else {
+          throw new Error('No collaboration invitation found');
+        }
+      } else {
+        // For shared itineraries (view-only), check if user already has access
+        const { data: existingAccess, error: fetchError } = await supabase
           .from('itinerary_collaborators')
           .select('id')
           .eq('itinerary_id', itineraryId)
           .eq('user_id', user.id)
-          .eq('status', 'pending')
-          .single();
+          .maybeSingle();
 
-        if (existingInvite) {
-          // Accept the collaboration invite
-          await respondToInvite(existingInvite.id, 'accepted');
-        } else {
-          // If no pending invite, create a collaboration record
-          await supabase
+        if (fetchError) {
+          console.error('Error checking existing access:', fetchError);
+          throw fetchError;
+        }
+
+        if (!existingAccess) {
+          // Create a view-only collaboration record
+          const { error: insertError } = await supabase
             .from('itinerary_collaborators')
-            .upsert({
+            .insert({
               itinerary_id: itineraryId,
               user_id: user.id,
-              permission: 'edit',
+              permission: 'view',
               invited_by: invitedBy || user.id,
               status: 'accepted'
-            }, {
-              onConflict: 'itinerary_id,user_id'
             });
+
+          if (insertError) {
+            console.error('Error creating view access:', insertError);
+            throw insertError;
+          }
         }
-      } else {
-        // For shared itineraries, create a view-only collaboration record
-        await supabase
-          .from('itinerary_collaborators')
-          .upsert({
-            itinerary_id: itineraryId,
-            user_id: user.id,
-            permission: 'view',
-            invited_by: invitedBy || user.id,
-            status: 'accepted'
-          }, {
-            onConflict: 'itinerary_id,user_id'
-          });
       }
       
       // Navigate to view the itinerary

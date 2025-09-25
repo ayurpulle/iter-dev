@@ -48,7 +48,7 @@ const Index = () => {
   
   // Check if we should show trip planning (saved trips view)
   const shouldShowTripPlanning = searchParams.get('view') === 'savedTrips';
-  const openIterId = searchParams.get('openIter');
+  const openIterId = searchParams.get('openIter') || searchParams.get('viewIter');
 
   if (loading) {
     return (

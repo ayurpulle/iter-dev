@@ -153,19 +153,37 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     autoSaveItinerary();
   }, [generatedIter, user, lastGeneratedData?.id]);
 
-  // Listen for collaboration acceptance events
+  // Listen for collaboration acceptance events and itinerary updates
   useEffect(() => {
     const handleCollaborationAccepted = () => {
       // Refresh saved itineraries when a collaboration is accepted
       refetchSavedItineraries();
     };
 
+    const handleRefreshItineraries = async () => {
+      console.log('Received refreshItineraries event');
+      // Refresh the saved itineraries list
+      refetchSavedItineraries();
+      
+      // If we're currently viewing an itinerary, refresh its data
+      if (viewingIter?.id) {
+        console.log('Refreshing viewed itinerary data:', viewingIter.id);
+        const refreshedIter = await fetchSpecificItinerary(viewingIter.id);
+        if (refreshedIter) {
+          setViewingIter(refreshedIter);
+          console.log('Refreshed viewing itinerary with updated data');
+        }
+      }
+    };
+
     window.addEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+    window.addEventListener('refreshItineraries', handleRefreshItineraries);
     
     return () => {
       window.removeEventListener('itinerary-collaboration-accepted', handleCollaborationAccepted);
+      window.removeEventListener('refreshItineraries', handleRefreshItineraries);
     };
-  }, [refetchSavedItineraries]);
+  }, [refetchSavedItineraries, viewingIter?.id]);
 
   // Fetch specific itinerary directly (bypasses race condition)
   const fetchSpecificItinerary = async (itineraryId: string) => {

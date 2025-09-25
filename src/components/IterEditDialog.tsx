@@ -115,12 +115,16 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
         console.log('Itinerary updated, auto-saving permanently');
         
-        // Update the database with the new content
+        // Update the database with the new content - only update specific fields to preserve metadata
         const updateData: any = {
           itinerary_content: data.updatedItinerary,
-          destination: data.newDestination || iterData.destination,
           updated_at: new Date().toISOString()
         };
+        
+        // Only update destination if explicitly changed
+        if (data.newDestination && data.newDestination !== iterData.destination) {
+          updateData.destination = data.newDestination;
+        }
         
         // Add date updates if needed
         if (dateAdjustment !== 0) {
@@ -128,10 +132,25 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           if (data.newStartDate) updateData.start_date = data.newStartDate;
         }
         
-        const { error: updateError } = await supabase
+        // Try updating both saved_itineraries and trips tables
+        let updateError = null;
+        
+        // First try saved_itineraries
+        const { error: savedIterError } = await supabase
           .from('saved_itineraries')
           .update(updateData)
           .eq('id', iterData.id);
+          
+        if (savedIterError) {
+          // If not found in saved_itineraries, try trips table
+          const { error: tripsError } = await supabase
+            .from('trips')
+            .update(updateData)
+            .eq('id', iterData.id);
+          updateError = tripsError;
+        } else {
+          updateError = savedIterError;
+        }
 
         if (updateError) {
           console.error('Error auto-saving itinerary:', updateError);

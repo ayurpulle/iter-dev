@@ -99,9 +99,13 @@ export const StructuredItinerary = ({
     if (newDestination) {
       setCurrentDestination(newDestination);
     }
-    // Call the parent callback if provided
+    // Call the parent callback if provided to update the parent state
     onIterUpdated?.(newContent, newDestination);
-  }, [onIterUpdated]);
+    // Update parent with destination change if needed
+    if (onUpdateItinerary && newDestination) {
+      onUpdateItinerary({ destination: newDestination });
+    }
+  }, [onIterUpdated, onUpdateItinerary]);
   
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   

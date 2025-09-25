@@ -167,13 +167,30 @@ serve(async (req) => {
 
     const currentGrouping = calculateDayGrouping(itineraryContent);
 
+    // Extract current metadata from the itinerary
+    const extractCurrentMetadata = (content: string) => {
+      const dateMatch = content.match(/Dates:\s*([^\\n]+)/i);
+      const airportMatch = content.match(/Airports:\s*([^\\n]+)/i);
+      const typeMatch = content.match(/Type:\s*([^\\n]+)/i);
+      const budgetMatch = content.match(/Budget:\s*([^\\n]+)/i);
+      
+      return {
+        dates: dateMatch ? dateMatch[1].trim() : null,
+        airports: airportMatch ? airportMatch[1].trim() : null,
+        type: typeMatch ? typeMatch[1].trim() : null,
+        budgetDisplay: budgetMatch ? budgetMatch[1].trim() : null
+      };
+    };
+
+    const currentMetadata = extractCurrentMetadata(itineraryContent);
+    
     // Construct prompt for OpenAI - focus on targeted editing
     const conversationContext = conversationHistory && conversationHistory.length > 0 
       ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
       : '';
 
     const prompt = `
-You are a travel expert helping to edit a travel itinerary. You must ALWAYS return a complete, properly structured itinerary.
+You are a travel expert helping to edit a travel itinerary. You must ALWAYS return a complete, properly structured itinerary while preserving essential metadata.
 
 CURRENT ITINERARY:
 ${itineraryContent}
@@ -190,11 +207,24 @@ ORIGINAL TRIP PARAMETERS:
 - Travel Interests: ${interests || 'General travel'}
 - Travel Style: ${travelStyle || 'Balanced exploration'}
 
-CRITICAL INSTRUCTIONS:
-You MUST return a complete itinerary with these exact sections in this order:
+CURRENT METADATA TO PRESERVE:
+- Current Dates: ${currentMetadata.dates || 'Not specified'}
+- Current Airports: ${currentMetadata.airports || 'Not specified'}
+- Current Holiday Type: ${currentMetadata.type || 'Not specified'}
+- Current Budget Display: ${currentMetadata.budgetDisplay || 'Not specified'}
 
-**Trip Summary** 
-[Generate a personalized 2-line summary that captures the unique essence and highlights of this trip]
+CRITICAL INSTRUCTIONS:
+You MUST return a complete itinerary with these exact sections in this order.
+IMPORTANT: Unless the user specifically asks to change dates, airports, holiday types, or budget, keep the existing metadata EXACTLY as it is.
+
+First, include the existing metadata section EXACTLY as it appears in the current itinerary (unless user specifically requests changes to dates/airports/types/budget):
+
+[Keep the existing trip summary, dates, airports, holiday types, and budget information EXACTLY as they currently appear]
+
+Then provide these sections:
+
+**Day-by-Day Itinerary**
+[For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points]
 
 **Getting There**
 • Flight recommendations and booking tips
@@ -205,9 +235,6 @@ You MUST return a complete itinerary with these exact sections in this order:
 • Accommodation recommendations (3-4 options across different price points)
 • Best neighborhoods to stay in
 • Booking tips and timing
-
-**Day-by-Day Itinerary**
-[For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points]
 
 **Travel Tips**
 • Local customs and etiquette
@@ -225,6 +252,7 @@ You MUST return a complete itinerary with these exact sections in this order:
 
 IMPORTANT: 
 - Apply the user's requested changes to the appropriate sections
+- PRESERVE the map/location pin, title, dates, airports, holiday types, and budget sections exactly as they are unless specifically asked to change them
 - When recommending venues from saved posts, mark them with [SAVED_REC:venue_name:user_name]
 - Include 1-2 internet-researched recommendations marked with [WEB_REC:venue_name:source_url]
 - Use bullet points for all sections

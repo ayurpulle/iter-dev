@@ -120,7 +120,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
         console.log('Itinerary updated, auto-saving permanently');
         
-        // Update the database with the new content - only update specific fields to preserve metadata
+        // Use a direct update approach that works with RLS policies for collaborators
         const updateData: any = {
           itinerary_content: data.updatedItinerary,
           updated_at: new Date().toISOString()
@@ -131,22 +131,17 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
           updateData.destination = data.newDestination;
         }
         
-        // Add date updates if needed
-        if (dateAdjustment !== 0) {
-          if (data.newEndDate) updateData.end_date = data.newEndDate;
-          if (data.newStartDate) updateData.start_date = data.newStartDate;
+        // Only update dates if they were changed
+        if (data.newStartDate) {
+          updateData.start_date = data.newStartDate;
+        }
+        if (data.newEndDate) {
+          updateData.end_date = data.newEndDate;
         }
         
-        // Use a direct update approach that works with RLS policies for collaborators
         const { error: updateError } = await supabase
           .from('saved_itineraries')
-          .update({
-            itinerary_content: data.updatedItinerary,
-            destination: data.newDestination || iterData.destination,
-            start_date: data.newStartDate || null,
-            end_date: data.newEndDate || null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', iterData.id);
 
         if (updateError) {

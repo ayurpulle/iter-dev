@@ -319,10 +319,17 @@ IMPORTANT:
     let newStartDate = null;
     let newEndDate = null;
 
-    // Extract destination changes
-    const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);
-    if (destinationMatch && destinationMatch[1] && destinationMatch[1].trim() !== destination) {
-      newDestination = destinationMatch[1].trim();
+    // Only extract destination changes if explicitly requested in the edit
+    const explicitDestinationChange = editRequest.toLowerCase().includes('destination') || 
+                                    editRequest.toLowerCase().includes('location') ||
+                                    editRequest.toLowerCase().includes('city') ||
+                                    editRequest.toLowerCase().includes('country');
+    
+    if (explicitDestinationChange) {
+      const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);
+      if (destinationMatch && destinationMatch[1] && destinationMatch[1].trim() !== destination) {
+        newDestination = destinationMatch[1].trim();
+      }
     }
 
     // Handle date adjustments
@@ -356,7 +363,7 @@ IMPORTANT:
   } catch (error) {
     console.error('Error in edit-itinerary function:', error);
     return new Response(JSON.stringify({
-      error: error.message || 'Unknown error',
+      error: (error as Error)?.message || 'Unknown error',
       details: 'Failed to edit itinerary'
     }), {
       status: 400,

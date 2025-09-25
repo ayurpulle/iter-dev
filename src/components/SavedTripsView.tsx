@@ -113,11 +113,13 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                     </p>
                   </div>
                   <div className="flex gap-2 ml-2" onClick={(e) => e.stopPropagation()}>
-                    <UnifiedItineraryShareDialog 
-                      itineraryId={itinerary.id}
-                      itineraryTitle={itinerary.title}
-                      isOwner={itinerary.is_owner}
-                    />
+                    {itinerary.is_owner && (
+                      <UnifiedItineraryShareDialog 
+                        itineraryId={itinerary.id}
+                        itineraryTitle={itinerary.title}
+                        isOwner={itinerary.is_owner}
+                      />
+                    )}
                     {itinerary.is_owner && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

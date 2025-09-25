@@ -450,8 +450,8 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
 
     const requestData = await req.json();
 
-    // Start the background itinerary generation
-    generateItineraryBackground(requestData, authHeader, user.id);
+    // Start the background itinerary generation and await it
+    await generateItineraryBackground(requestData, authHeader, user.id);
 
     // Return immediate response
     return new Response(JSON.stringify({ 

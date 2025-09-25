@@ -451,7 +451,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
     const requestData = await req.json();
 
     // Start the background itinerary generation
-    // EdgeRuntime.waitUntil(generateItineraryBackground(requestData, authHeader, user.id));
+    generateItineraryBackground(requestData, authHeader, user.id);
 
     // Return immediate response
     return new Response(JSON.stringify({ 

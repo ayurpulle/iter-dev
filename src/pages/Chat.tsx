@@ -538,6 +538,7 @@ const Chat = () => {
                         itineraryId={message.metadata.itinerary_id}
                         itineraryTitle={message.metadata.itinerary_title || 'Shared Itinerary'}
                         messageType="shared_itinerary"
+                        invitedBy={message.user_id}
                       />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}
@@ -552,6 +553,7 @@ const Chat = () => {
                         itineraryId={message.metadata.itinerary_id}
                         itineraryTitle={message.metadata.itinerary_title || 'Collaboration Invite'}
                         messageType="collaboration_invite"
+                        invitedBy={message.user_id}
                       />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}

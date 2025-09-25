@@ -14,9 +14,10 @@ interface SharedItineraryCardProps {
   itineraryTitle: string;
   itineraryContent?: string;
   messageType?: 'shared_itinerary' | 'collaboration_invite';
+  invitedBy?: string; // ID of the user who sent the invite
 }
 
-export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryContent, messageType = 'shared_itinerary' }: SharedItineraryCardProps) => {
+export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryContent, messageType = 'shared_itinerary', invitedBy }: SharedItineraryCardProps) => {
   const navigate = useNavigate();
   const { savedItineraries, saveItinerary } = useSavedItineraries();
   const { respondToInvite } = useItineraryCollaboration();
@@ -48,7 +49,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
               itinerary_id: itineraryId,
               user_id: user.id,
               permission: 'edit',
-              invited_by: user.id,
+              invited_by: invitedBy || user.id,
               status: 'accepted'
             }, {
               onConflict: 'itinerary_id,user_id'
@@ -62,7 +63,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
             itinerary_id: itineraryId,
             user_id: user.id,
             permission: 'view',
-            invited_by: user.id,
+            invited_by: invitedBy || user.id,
             status: 'accepted'
           }, {
             onConflict: 'itinerary_id,user_id'

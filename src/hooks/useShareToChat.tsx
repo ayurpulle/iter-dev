@@ -29,13 +29,23 @@ export const useShareToChat = () => {
       // Find or create conversation
       let conversationId = null;
       
-      // Check if conversation already exists
-      const { data: existingConv } = await supabase
+      // Check if conversation already exists - get all conversations
+      const { data: conversations, error: searchError } = await supabase
         .from('conversations')
-        .select('id')
-        .contains('participants', [user.id])
-        .contains('participants', [friendId])
-        .maybeSingle();
+        .select('id, participants');
+
+      let existingConv = null;
+      if (conversations && !searchError) {
+        // Find conversation that contains exactly both users
+        existingConv = conversations.find(conv => {
+          const participants = conv.participants || [];
+          return participants.length === 2 && 
+                 participants.includes(user.id) && 
+                 participants.includes(friendId);
+        });
+      }
+
+      if (searchError) throw searchError;
 
       if (existingConv) {
         conversationId = existingConv.id;

@@ -120,37 +120,40 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                         isOwner={itinerary.is_owner}
                       />
                     )}
-                    {itinerary.is_owner && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 text-destructive hover:text-destructive"
-                            disabled={deletingId === itinerary.id}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-destructive hover:text-destructive"
+                          disabled={deletingId === itinerary.id}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {itinerary.is_owner ? "Delete Iter" : "Remove from Saved"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {itinerary.is_owner 
+                              ? `Are you sure you want to delete "${itinerary.title}"? This action cannot be undone.`
+                              : `Are you sure you want to remove "${itinerary.title}" from your saved itineraries?`
+                            }
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(itinerary.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            <Trash2 size={16} />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Iter</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{itinerary.title}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(itinerary.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                            {itinerary.is_owner ? "Delete" : "Remove"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardHeader>

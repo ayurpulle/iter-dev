@@ -313,6 +313,7 @@ export const useSavedItineraries = () => {
     if (!user) return false;
 
     setLoading(true);
+    let isOwnerAction = false;
     const result = await executeQuery(async (client) => {
       // Check both tables to see which one contains this itinerary
       const { data: savedItinerary } = await client
@@ -327,28 +328,53 @@ export const useSavedItineraries = () => {
         .eq('id', id)
         .maybeSingle();
 
+      // Check if user is a collaborator
+      const { data: collaboration } = await client
+        .from('itinerary_collaborators')
+        .select('id')
+        .eq('itinerary_id', id)
+        .eq('user_id', user.id)
+        .eq('status', 'accepted')
+        .maybeSingle();
+
       if (savedItinerary) {
-        // Check ownership
-        if (savedItinerary.user_id !== user.id) {
-          throw new Error('You can only delete your own itineraries');
+        if (savedItinerary.user_id === user.id) {
+          // User owns the itinerary - delete it completely
+          isOwnerAction = true;
+          return client
+            .from('saved_itineraries')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+        } else if (collaboration) {
+          // User is a collaborator - remove collaboration record
+          isOwnerAction = false;
+          return client
+            .from('itinerary_collaborators')
+            .delete()
+            .eq('id', collaboration.id);
+        } else {
+          throw new Error('You do not have access to this itinerary');
         }
-        // Delete from saved_itineraries
-        return client
-          .from('saved_itineraries')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user.id);
       } else if (tripItinerary) {
-        // Check ownership
-        if (tripItinerary.user_id !== user.id) {
-          throw new Error('You can only delete your own itineraries');
+        if (tripItinerary.user_id === user.id) {
+          // User owns the trip - delete it completely
+          isOwnerAction = true;
+          return client
+            .from('trips')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+        } else if (collaboration) {
+          // User is a collaborator - remove collaboration record
+          isOwnerAction = false;
+          return client
+            .from('itinerary_collaborators')
+            .delete()
+            .eq('id', collaboration.id);
+        } else {
+          throw new Error('You do not have access to this itinerary');
         }
-        // Delete from trips
-        return client
-          .from('trips')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user.id);
       } else {
         // Itinerary doesn't exist, consider it already deleted
         return { data: null, error: null };
@@ -358,8 +384,10 @@ export const useSavedItineraries = () => {
     setLoading(false);
     if (result) {
       toast({
-        title: "Iter Deleted",
-        description: "Your iter has been deleted successfully.",
+        title: isOwnerAction ? "Iter Deleted" : "Iter Removed",
+        description: isOwnerAction 
+          ? "Your iter has been deleted successfully." 
+          : "The iter has been removed from your saved list.",
       });
       // Immediately update the local state to remove the deleted itinerary
       setSavedItineraries(prev => prev.filter(iter => iter.id !== id));

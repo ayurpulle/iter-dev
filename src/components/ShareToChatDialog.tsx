@@ -10,11 +10,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Share2, Send } from 'lucide-react';
+import { Share2, Send, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useShareToChat } from '@/hooks/useShareToChat';
 import { useFriends } from '@/hooks/useFriends';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareToChatDialogProps {
   itemType: 'itinerary' | 'post';
@@ -24,6 +25,14 @@ interface ShareToChatDialogProps {
   triggerText?: string;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg";
+}
+
+interface Conversation {
+  id: string;
+  type: 'friend' | 'group';
+  name: string;
+  avatar?: string;
+  user_id?: string; // for friend conversations
 }
 
 export const ShareToChatDialog = ({ 
@@ -36,18 +45,136 @@ export const ShareToChatDialog = ({
   size = "sm"
 }: ShareToChatDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<string>('');
+  const [selectedTarget, setSelectedTarget] = useState<string>('');
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const { shareToChat, loading } = useShareToChat();
   const { friends } = useFriends();
   const { user } = useAuth();
 
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchConversations();
+    }
+  }, [isOpen, user]);
+
+  const fetchConversations = async () => {
+    if (!user) return;
+
+    try {
+      // Get group chats
+      const { data: groupChats, error: groupError } = await supabase
+        .from('conversations')
+        .select('id, group_name, is_group_chat')
+        .contains('participants', [user.id])
+        .eq('is_group_chat', true);
+
+      if (groupError) throw groupError;
+
+      // Create conversation list from friends and group chats
+      const conversationList: Conversation[] = [];
+
+      // Add friends as individual conversations
+      friends.forEach(friend => {
+        const friendProfile = friend.profile;
+        const friendId = friend.user_id === user.id ? friend.friend_id : friend.user_id;
+        
+        conversationList.push({
+          id: friendId,
+          type: 'friend',
+          name: friendProfile?.name || friendProfile?.username || 'Unknown',
+          avatar: friendProfile?.avatar,
+          user_id: friendId
+        });
+      });
+
+      // Add group chats
+      (groupChats || []).forEach(group => {
+        conversationList.push({
+          id: group.id,
+          type: 'group',
+          name: group.group_name || 'Group Chat'
+        });
+      });
+
+      setConversations(conversationList);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
   const handleShare = async () => {
-    if (!selectedFriend) return;
+    if (!selectedTarget) return;
     
-    const success = await shareToChat(selectedFriend, itemType, itemId, itemTitle, content);
+    const target = conversations.find(conv => 
+      conv.type === 'friend' ? conv.user_id === selectedTarget : conv.id === selectedTarget
+    );
+    
+    if (!target) return;
+
+    let success = false;
+    if (target.type === 'friend' && target.user_id) {
+      success = await shareToChat(target.user_id, itemType, itemId, itemTitle, content);
+    } else if (target.type === 'group') {
+      // For group chats, we need to send directly to the conversation
+      success = await shareToGroupChat(target.id, itemType, itemId, itemTitle, content);
+    }
+    
     if (success) {
-      setSelectedFriend('');
+      setSelectedTarget('');
       setIsOpen(false);
+    }
+  };
+
+  const shareToGroupChat = async (
+    conversationId: string,
+    itemType: 'itinerary' | 'post',
+    itemId: string,
+    itemTitle: string,
+    content?: string
+  ) => {
+    if (!user) return false;
+
+    try {
+      let shareMessage = '';
+      let messageData = null;
+      
+      if (itemType === 'itinerary') {
+        shareMessage = `🗺️ I shared an itinerary with you: "${itemTitle}"`;
+        messageData = { 
+          type: 'shared_itinerary', 
+          itinerary_id: itemId,
+          itinerary_title: itemTitle 
+        };
+      } else {
+        shareMessage = `📸 I shared a post with you`;
+        messageData = { type: 'shared_post', post_id: itemId };
+      }
+
+      // Send the message to the group chat
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: shareMessage,
+          metadata: messageData
+        });
+
+      if (messageError) throw messageError;
+
+      // Update conversation last message
+      await supabase
+        .from('conversations')
+        .update({
+          last_message: shareMessage,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      return true;
+    } catch (error) {
+      console.error('Error sharing to group chat:', error);
+      return false;
     }
   };
 
@@ -68,37 +195,40 @@ export const ShareToChatDialog = ({
         </DialogHeader>
         
         <div className="space-y-4">
-          {friends.length === 0 ? (
+          {conversations.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
-              No friends to share with
+              No conversations available
             </p>
           ) : (
             <RadioGroup 
-              value={selectedFriend} 
-              onValueChange={setSelectedFriend}
+              value={selectedTarget} 
+              onValueChange={setSelectedTarget}
               className="max-h-60 overflow-y-auto space-y-2"
             >
-              {friends.map((friend) => {
-                const friendProfile = friend.profile;
-                // Get the friend's user ID (the one that's not the current user)
-                const friendId = friend.user_id !== friend.friend_id 
-                  ? (friend.user_id === user?.id ? friend.friend_id : friend.user_id)
-                  : friend.friend_id;
+              {conversations.map((conversation) => {
+                const targetValue = conversation.type === 'friend' ? conversation.user_id! : conversation.id;
                 
                 return (
-                  <div key={friend.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
-                    <RadioGroupItem value={friendId} id={friendId} />
-                    <Label htmlFor={friendId} className="flex items-center space-x-3 flex-1 cursor-pointer">
+                  <div key={`${conversation.type}-${conversation.id}`} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                    <RadioGroupItem value={targetValue} id={targetValue} />
+                    <Label htmlFor={targetValue} className="flex items-center space-x-3 flex-1 cursor-pointer">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={friendProfile?.avatar || ''} />
+                        <AvatarImage src={conversation.avatar || ''} />
                         <AvatarFallback>
-                          {friendProfile?.name?.charAt(0) || friendProfile?.username?.charAt(0) || '?'}
+                          {conversation.type === 'group' ? (
+                            <Users className="h-4 w-4" />
+                          ) : (
+                            conversation.name?.charAt(0) || '?'
+                          )}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="text-sm font-medium">
-                          {friendProfile?.name || friendProfile?.username || 'Unknown'}
+                          {conversation.name}
                         </p>
+                        {conversation.type === 'group' && (
+                          <p className="text-xs text-muted-foreground">Group Chat</p>
+                        )}
                       </div>
                     </Label>
                   </div>
@@ -113,7 +243,7 @@ export const ShareToChatDialog = ({
             </Button>
             <Button 
               onClick={handleShare} 
-              disabled={!selectedFriend || loading}
+              disabled={!selectedTarget || loading}
             >
               {loading ? 'Sending...' : (
                 <>

@@ -113,7 +113,8 @@ serve(async (req) => {
       travelStyle,
       userId: user.id,
       hasItineraryContent: !!itineraryContent,
-      itineraryContentLength: itineraryContent?.length
+      itineraryContentLength: itineraryContent?.length,
+      itineraryId: itineraryId
     });
 
     // Validate required fields
@@ -144,6 +145,18 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         error: 'Missing required fields: destination',
         details: 'Destination is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate required fields including itineraryId
+    if (!itineraryId || itineraryId.trim() === '') {
+      console.error('Missing itinerary ID');
+      return new Response(JSON.stringify({
+        error: 'Missing required fields: itineraryId',
+        details: 'Itinerary ID is required'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

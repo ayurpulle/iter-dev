@@ -28,7 +28,24 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
     try {
       if (!user) return;
 
-      // Check if user already has access
+      // First check if the itinerary exists and which table it's in
+      const { data: savedIter } = await supabase
+        .from('saved_itineraries')
+        .select('id, user_id')
+        .eq('id', itineraryId)
+        .maybeSingle();
+
+      const { data: tripIter } = await supabase
+        .from('trips')
+        .select('id, user_id')
+        .eq('id', itineraryId)
+        .maybeSingle();
+
+      if (!savedIter && !tripIter) {
+        throw new Error('Itinerary not found');
+      }
+
+      // Check if user already has collaboration access
       const { data: existingAccess, error: fetchError } = await supabase
         .from('itinerary_collaborators')
         .select('id, status, permission')
@@ -41,36 +58,41 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
         throw fetchError;
       }
 
-      if (existingAccess) {
-        // If user already has access but it's pending, accept it
-        if (existingAccess.status === 'pending') {
-          const { error: updateError } = await supabase
-            .from('itinerary_collaborators')
-            .update({ status: 'accepted' })
-            .eq('id', existingAccess.id);
+      // Only create/update collaboration if user doesn't own the itinerary
+      const isOwner = (savedIter?.user_id === user.id) || (tripIter?.user_id === user.id);
+      
+      if (!isOwner) {
+        if (existingAccess) {
+          // If user already has access but it's pending, accept it
+          if (existingAccess.status === 'pending') {
+            const { error: updateError } = await supabase
+              .from('itinerary_collaborators')
+              .update({ status: 'accepted' })
+              .eq('id', existingAccess.id);
 
-          if (updateError) {
-            console.error('Error accepting collaboration:', updateError);
-            throw updateError;
+            if (updateError) {
+              console.error('Error accepting collaboration:', updateError);
+              throw updateError;
+            }
           }
-        }
-      } else {
-        // Create new collaboration record with appropriate permissions
-        const permission = messageType === 'collaboration_invite' ? 'edit' : 'view';
-        
-        const { error: insertError } = await supabase
-          .from('itinerary_collaborators')
-          .insert({
-            itinerary_id: itineraryId,
-            user_id: user.id,
-            permission: permission,
-            invited_by: invitedBy || user.id,
-            status: 'accepted'
-          });
+        } else {
+          // Create new collaboration record with appropriate permissions
+          const permission = messageType === 'collaboration_invite' ? 'edit' : 'view';
+          
+          const { error: insertError } = await supabase
+            .from('itinerary_collaborators')
+            .insert({
+              itinerary_id: itineraryId,
+              user_id: user.id,
+              permission: permission,
+              invited_by: invitedBy || user.id,
+              status: 'accepted'
+            });
 
-        if (insertError) {
-          console.error('Error creating collaboration access:', insertError);
-          throw insertError;
+          if (insertError) {
+            console.error('Error creating collaboration access:', insertError);
+            throw insertError;
+          }
         }
       }
 
@@ -93,7 +115,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       
       toast({
         title: "Success",
-        description: "Collaboration access granted",
+        description: isOwner ? "Opened your itinerary" : "Collaboration access granted",
       });
     } catch (error) {
       console.error('Error handling shared itinerary:', error);

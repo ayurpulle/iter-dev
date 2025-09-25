@@ -216,13 +216,21 @@ export const useItineraryCollaboration = () => {
       // Find or create conversation
       let conversationId = null;
       
-      // Check if conversation already exists
-      const { data: existingConv, error: searchError } = await supabase
+      // Check if conversation already exists - get all conversations for current user
+      const { data: conversations, error: searchError } = await supabase
         .from('conversations')
-        .select('id')
-        .contains('participants', [user.id])
-        .contains('participants', [friendId])
-        .maybeSingle();
+        .select('id, participants')
+        .contains('participants', [user.id]);
+
+      let existingConv = null;
+      if (conversations && !searchError) {
+        // Find conversation that contains both users
+        existingConv = conversations.find(conv => 
+          conv.participants.includes(user.id) && 
+          conv.participants.includes(friendId) &&
+          conv.participants.length === 2
+        );
+      }
 
       if (searchError) {
         console.error('Error searching for existing conversation:', searchError);

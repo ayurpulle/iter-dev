@@ -163,35 +163,19 @@ export const UnifiedItineraryShareDialog = ({
       return target?.type === 'group';
     });
     
-    if (shareType === 'share') {
-      // Send via chat for view-only access
-      for (const targetId of friendTargets) {
-        await shareToChat(
-          targetId, 
-          'itinerary', 
-          itineraryId, 
-          itineraryTitle,
-          'Check out this itinerary!'
-        );
-      }
-      
-      // Send to group chats
-      for (const targetId of groupTargets) {
-        await shareToGroupChat(targetId);
-      }
-    } else {
-      // Send collaboration invites - only owners can give edit permission
-      const permission = isOwner ? 'edit' : 'view'; 
-      
-      if (friendTargets.length > 0) {
-        const success = await shareItinerary(itineraryId, friendTargets, itineraryTitle, permission);
-        if (!success) return;
-      }
-      
-      // For group chats in collaboration mode, still send to chat with collaboration message
-      for (const targetId of groupTargets) {
-        await shareToGroupChat(targetId);
-      }
+    // Determine permission based on share type
+    const permission = shareType === 'collaborate' ? 'edit' : 'view';
+    
+    // Always create collaboration records for both share and collaborate
+    // This ensures auto-saving to recipients' saved trips
+    if (friendTargets.length > 0) {
+      const success = await shareItinerary(itineraryId, friendTargets, itineraryTitle, permission);
+      if (!success) return;
+    }
+    
+    // Send to group chats
+    for (const targetId of groupTargets) {
+      await shareToGroupChat(targetId);
     }
     
     setSelectedTargets([]);

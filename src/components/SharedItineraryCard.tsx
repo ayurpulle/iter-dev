@@ -77,6 +77,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
           }
         } else {
           // Create new collaboration record with appropriate permissions
+          // 'shared_itinerary' = view-only, 'collaboration_invite' = edit access
           const permission = messageType === 'collaboration_invite' ? 'edit' : 'view';
           
           const { error: insertError } = await supabase

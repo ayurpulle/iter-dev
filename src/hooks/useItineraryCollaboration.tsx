@@ -241,7 +241,7 @@ export const useItineraryCollaboration = () => {
       // Create collaboration message
       const shareMessage = `🤝 I invited you to collaborate on: "${itineraryTitle}"`;
       const messageData = { 
-        type: 'collaboration_invite', 
+        type: 'shared_itinerary', 
         itinerary_id: itineraryId,
         itinerary_title: itineraryTitle 
       };

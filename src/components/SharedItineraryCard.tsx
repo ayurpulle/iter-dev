@@ -73,6 +73,14 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
           throw insertError;
         }
       }
+
+      // Mark any related notifications as read
+      await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('type', 'itinerary_invite')
+        .eq('data->>itinerary_id', itineraryId);
       
       // Force refetch of saved itineraries to include the newly accepted collaboration
       window.dispatchEvent(new CustomEvent('collaborationAccepted'));
@@ -82,6 +90,11 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       
       // Navigate to view the itinerary
       navigate(`/?view=savedTrips&openIter=${itineraryId}`);
+      
+      toast({
+        title: "Success",
+        description: "Collaboration access granted",
+      });
     } catch (error) {
       console.error('Error handling shared itinerary:', error);
       toast({

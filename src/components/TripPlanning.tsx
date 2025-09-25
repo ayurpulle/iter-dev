@@ -167,21 +167,113 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     };
   }, [refetchSavedItineraries]);
 
+  // Fetch specific itinerary directly (bypasses race condition)
+  const fetchSpecificItinerary = async (itineraryId: string) => {
+    try {
+      // Check saved_itineraries first
+      const { data: savedIter, error: savedError } = await supabase
+        .from('saved_itineraries')
+        .select(`
+          id, title, destination, start_date, end_date, budget, interests, 
+          itinerary_content, friend_recommendations, created_at, updated_at,
+          user_id, profiles:user_id(name, username, avatar)
+        `)
+        .eq('id', itineraryId)
+        .maybeSingle();
+
+      if (savedIter && !savedError) {
+        // Check user permissions
+        const { data: permissions } = await supabase.rpc(
+          'get_user_itinerary_permissions',
+          { itinerary_uuid: itineraryId, user_uuid: user?.id }
+        );
+
+        if (permissions?.[0]?.can_view) {
+          return {
+            ...savedIter,
+            isOwner: savedIter.user_id === user?.id,
+            canEdit: permissions[0].can_edit || false,
+            source: 'saved_itineraries'
+          };
+        }
+      }
+
+      // Check trips table
+      const { data: tripIter, error: tripError } = await supabase
+        .from('trips')
+        .select(`
+          id, title, destination, start_date, end_date, 
+          created_at, updated_at, user_id,
+          profiles:user_id(name, username, avatar)
+        `)
+        .eq('id', itineraryId)
+        .maybeSingle();
+
+      if (tripIter && !tripError) {
+        // Check user permissions for trips
+        const { data: permissions } = await supabase.rpc(
+          'get_user_itinerary_permissions',
+          { itinerary_uuid: itineraryId, user_uuid: user?.id }
+        );
+
+        if (permissions?.[0]?.can_view) {
+          return {
+            ...tripIter,
+            isOwner: tripIter.user_id === user?.id,
+            canEdit: permissions[0].can_edit || false,
+            source: 'trips',
+            // Convert trip format to match saved itinerary format
+            itinerary_content: 'This is a background-generated trip.',
+            budget: null,
+            interests: [],
+            friend_recommendations: {}
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error fetching specific itinerary:', error);
+      return null;
+    }
+  };
+
   // Handle viewing shared itineraries from URL params or props
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const viewIterId = urlParams.get('viewIter') || openIterId;
     
-    if (viewIterId && savedItineraries.length > 0) {
+    if (viewIterId && user) {
+      // First try to find in already loaded itineraries
       const sharedIter = savedItineraries.find(iter => iter.id === viewIterId);
       if (sharedIter) {
         setViewingIter(sharedIter);
         setCurrentView('viewIter');
         // Clear the URL param
         window.history.replaceState({}, '', window.location.pathname);
+        return;
       }
+
+      // If not found in loaded itineraries, fetch directly
+      fetchSpecificItinerary(viewIterId).then(iter => {
+        if (iter) {
+          setViewingIter(iter);
+          setCurrentView('viewIter');
+          // Clear the URL param
+          window.history.replaceState({}, '', window.location.pathname);
+          // Trigger refetch to update the saved itineraries list
+          refetchSavedItineraries();
+        } else {
+          console.warn('Itinerary not found or access denied:', viewIterId);
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to view this itinerary.",
+            variant: "destructive"
+          });
+        }
+      });
     }
-  }, [savedItineraries, openIterId]);
+  }, [savedItineraries, openIterId, user]);
 
   // Auto-show saved trips view when openIterId is provided
   useEffect(() => {

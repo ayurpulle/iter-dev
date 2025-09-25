@@ -107,8 +107,8 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       // Force refetch of saved itineraries to include the newly accepted collaboration
       window.dispatchEvent(new CustomEvent('collaborationAccepted'));
       
-      // Small delay to ensure the collaboration record is updated before navigation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Longer delay to ensure the collaboration record is updated before navigation
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Navigate to view the itinerary
       navigate(`/?view=savedTrips&viewIter=${itineraryId}`);

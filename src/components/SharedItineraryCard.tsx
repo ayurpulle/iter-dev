@@ -111,7 +111,7 @@ export const SharedItineraryCard = ({ itineraryId, itineraryTitle, itineraryCont
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Navigate to view the itinerary
-      navigate(`/?view=savedTrips&openIter=${itineraryId}`);
+      navigate(`/?view=savedTrips&viewIter=${itineraryId}`);
       
       toast({
         title: "Success",

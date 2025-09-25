@@ -59,9 +59,12 @@ export const useSavedItineraries = () => {
       if (userCollabError) throw userCollabError;
 
       let collaborativeItineraries = [];
+      let collaborativeTrips = [];
+      
       if (userCollaborations && userCollaborations.length > 0) {
         const itineraryIds = userCollaborations.map(collab => collab.itinerary_id);
         
+        // Fetch from saved_itineraries table
         const { data: collabItineraries, error: collabError } = await client
           .from('saved_itineraries')
           .select(`
@@ -72,12 +75,56 @@ export const useSavedItineraries = () => {
 
         if (collabError) throw collabError;
         
+        // Fetch from trips table (for shared trips)
+        const { data: collabTripsData, error: collabTripsError } = await client
+          .from('trips')
+          .select(`
+            id,
+            title,
+            destination,
+            start_date,
+            end_date,
+            cost,
+            hashtags,
+            overall_budget,
+            description,
+            created_at,
+            updated_at,
+            user_id,
+            profiles!trips_user_id_profiles_fkey(username, name)
+          `)
+          .in('id', itineraryIds);
+
+        if (collabTripsError) throw collabTripsError;
+        
         // Combine itinerary data with collaboration info
         collaborativeItineraries = (collabItineraries || []).map(iter => {
           const collaboration = userCollaborations.find(collab => collab.itinerary_id === iter.id);
           return {
             ...iter,
             itinerary_collaborators: collaboration
+          };
+        });
+
+        // Combine trip data with collaboration info and convert to itinerary format
+        collaborativeTrips = (collabTripsData || []).map(trip => {
+          const collaboration = userCollaborations.find(collab => collab.itinerary_id === trip.id);
+          return {
+            id: trip.id,
+            title: trip.title,
+            destination: trip.destination,
+            start_date: trip.start_date,
+            end_date: trip.end_date,
+            budget: null, // trips don't have budget field like saved_itineraries
+            interests: [],
+            itinerary_content: trip.description || '',
+            friend_recommendations: {},
+            created_at: trip.created_at,
+            updated_at: trip.updated_at,
+            user_id: trip.user_id,
+            profiles: trip.profiles,
+            itinerary_collaborators: collaboration,
+            is_from_trips_table: true // Flag to identify this came from trips table
           };
         });
       }
@@ -115,8 +162,8 @@ export const useSavedItineraries = () => {
         can_edit: true // Owner can always edit
       }));
 
-      // Process collaborative itineraries
-      const processedCollaborative = (collaborativeItineraries || []).map(iter => {
+      // Process collaborative itineraries and trips
+      const processedCollaborative = [...(collaborativeItineraries || []), ...(collaborativeTrips || [])].map(iter => {
         console.log('Processing collaborative itinerary:', iter.title, 'collaborators:', iter.itinerary_collaborators);
         
         let collaboratorData = null;

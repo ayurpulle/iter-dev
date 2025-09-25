@@ -52,7 +52,7 @@ export const useSavedItineraries = () => {
       // First get collaboration records for the current user
       const { data: userCollaborations, error: userCollabError } = await client
         .from('itinerary_collaborators')
-        .select('itinerary_id, permission, status')
+        .select('itinerary_id, permission, status, user_id')
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 

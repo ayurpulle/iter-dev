@@ -537,6 +537,7 @@ const Chat = () => {
                       <SharedItineraryCard 
                         itineraryId={message.metadata.itinerary_id}
                         itineraryTitle={message.metadata.itinerary_title || 'Shared Itinerary'}
+                        messageType="shared_itinerary"
                       />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}
@@ -544,12 +545,13 @@ const Chat = () => {
                     </div>
                   );
                 } else if (message.metadata?.type === 'collaboration_invite' && message.metadata.itinerary_id) {
-                  console.log('Rendering CollaborationItineraryCard for itinerary:', message.metadata.itinerary_id);
+                  console.log('Rendering SharedItineraryCard for collaboration invite:', message.metadata.itinerary_id);
                   return (
                     <div className="max-w-xs w-full">
-                      <CollaborationItineraryCard 
+                      <SharedItineraryCard 
                         itineraryId={message.metadata.itinerary_id}
                         itineraryTitle={message.metadata.itinerary_title || 'Collaboration Invite'}
+                        messageType="collaboration_invite"
                       />
                       <p className="text-xs text-muted-foreground mt-1 text-center">
                         {formatTime(message.created_at)}

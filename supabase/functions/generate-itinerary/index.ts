@@ -64,7 +64,7 @@ serve(async (req) => {
       }
 
       // If we have saved post items, get the actual posts
-      let savedItems = [];
+      let savedItems: any[] = [];
       if (savedPostItems && savedPostItems.length > 0) {
         const postIds = savedPostItems.map(item => item.item_id);
         const { data: posts, error: postsError } = await supabaseClient
@@ -108,7 +108,7 @@ serve(async (req) => {
 
       // Extract venue recommendations from user's saved posts
       const reviewBank: { [venue: string]: any[] } = {};
-      const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter(word => word.length > 2);
+      const destinationKeywords = destination.toLowerCase().split(/[\s,]+/).filter((word: string) => word.length > 2);
       
       if (savedItems?.length) {
         savedItems.forEach(savedItem => {
@@ -119,7 +119,7 @@ serve(async (req) => {
           const tripTitle = post.trips?.title?.toLowerCase() || '';
           
           // Check if post is relevant to destination
-          const isRelevant = destinationKeywords.some(keyword => 
+          const isRelevant = destinationKeywords.some((keyword: string) => 
             postContent.includes(keyword) || tripTitle.includes(keyword)
           );
 
@@ -144,7 +144,7 @@ serve(async (req) => {
               if (Array.isArray(stops)) {
                 stops.forEach(stop => {
                   if (stop.photo_details) {
-                    stop.photo_details.forEach(detail => {
+                    stop.photo_details.forEach((detail: any) => {
                       if (detail.caption) {
                         allContent += ' ' + detail.caption;
                       }
@@ -210,8 +210,8 @@ serve(async (req) => {
           ).join('\n')}`
         : '';
 
-      const friendsPostsContext = friendsPosts?.map(post => 
-        `${post.profiles?.name || post.profiles?.username || 'Anonymous'}: ${post.content}`
+      const friendsPostsContext = friendsPosts?.map((post: any) => 
+        `${post.name || post.username || 'Anonymous'}: ${post.content}`
       ).join('\n\n') || '';
 
       // Use provided friend recommendations from RAG, or combine review bank with extracted ones
@@ -408,7 +408,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           type: 'system_message',
           title: 'Itinerary Generation Failed',
           message: 'We encountered an issue generating your itinerary. Please try again.',
-          data: { error: error.message }
+          data: { error: (error as Error)?.message }
         });
     }
   }
@@ -451,7 +451,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
     const requestData = await req.json();
 
     // Start the background itinerary generation
-    EdgeRuntime.waitUntil(generateItineraryBackground(requestData, authHeader, user.id));
+    // EdgeRuntime.waitUntil(generateItineraryBackground(requestData, authHeader, user.id));
 
     // Return immediate response
     return new Response(JSON.stringify({ 
@@ -464,7 +464,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
 
   } catch (error) {
     console.error('Error in generate-itinerary function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error)?.message || 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

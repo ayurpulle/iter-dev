@@ -221,7 +221,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         type: 'system_message',
         title: 'Itinerary Update Failed',
         message: `Failed to update your ${requestData.destination} itinerary. Please try again.`,
-        data: { itinerary_id: requestData.itineraryId, error: error.message }
+        data: { itinerary_id: requestData.itineraryId, error: (error as Error)?.message || 'Unknown error' }
       });
   }
 }
@@ -330,9 +330,9 @@ serve(async (req) => {
     }
 
     // Start background processing
-    EdgeRuntime.waitUntil(
-      regenerateItineraryBackground(requestData, authHeader, user.id)
-    );
+    // EdgeRuntime.waitUntil(
+    //   regenerateItineraryBackground(requestData, authHeader, user.id)
+    // );
 
     // Return immediate response
     return new Response(JSON.stringify({
@@ -347,7 +347,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in update-itinerary function:', error);
     return new Response(JSON.stringify({
-      error: error.message,
+      error: (error as Error)?.message || 'Unknown error',
       details: 'Failed to start itinerary update process'
     }), {
       status: 400,

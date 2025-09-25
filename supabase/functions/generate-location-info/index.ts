@@ -86,9 +86,9 @@ Make the description enthusiastic and appealing. Include 3 specific activities. 
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error)?.message || 'Unknown error',
         fallback: true,
-        name: req.json?.locationName || 'Unknown Location',
+        name: 'Unknown Location',
         country: 'Unknown',
         description: 'A beautiful destination offering unique experiences and cultural attractions.',
         thingsToDo: ['Explore local attractions', 'Experience local culture', 'Try regional cuisine'],

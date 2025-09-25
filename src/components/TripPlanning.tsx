@@ -198,12 +198,12 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         }
       }
 
-      // Check trips table
+      // Check trips table - need to get all fields including description
       const { data: tripIter, error: tripError } = await supabase
         .from('trips')
         .select(`
-          id, title, destination, start_date, end_date, 
-          created_at, updated_at, user_id,
+          id, title, destination, start_date, end_date, description,
+          created_at, updated_at, user_id, overall_caption, cost,
           profiles:user_id(name, username, avatar)
         `)
         .eq('id', itineraryId)
@@ -217,13 +217,16 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         );
 
         if (permissions?.[0]?.can_view) {
+          // Use description as itinerary_content for trips, or overall_caption as fallback
+          const itineraryContent = tripIter.description || tripIter.overall_caption || 'No detailed itinerary available for this trip.';
+          
           return {
             ...tripIter,
             isOwner: tripIter.user_id === user?.id,
             canEdit: permissions[0].can_edit || false,
             source: 'trips',
             // Convert trip format to match saved itinerary format
-            itinerary_content: 'This is a background-generated trip.',
+            itinerary_content: itineraryContent,
             budget: null,
             interests: [],
             friend_recommendations: {}

@@ -197,12 +197,55 @@ serve(async (req) => {
 
     const currentMetadata = extractCurrentMetadata(itineraryContent);
     
+    // Analyze the edit request type
+    const editRequestLower = editRequest.toLowerCase();
+    const isExtendingTrip = editRequestLower.includes('days longer') || editRequestLower.includes('add') && (editRequestLower.includes('days') || editRequestLower.includes('day'));
+    const dayExtension = editRequestLower.match(/(\d+)\s*days?\s*longer/) || editRequestLower.match(/add\s*(\d+)\s*days?/) || editRequestLower.match(/make\s*it\s*(\d+)\s*days?\s*longer/);
+    const numberOfDaysToAdd = dayExtension ? parseInt(dayExtension[1]) : 0;
+
     // Construct prompt for OpenAI - focus on targeted editing
     const conversationContext = conversationHistory && conversationHistory.length > 0 
       ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
       : '';
 
-    const prompt = `
+    let prompt;
+    
+    if (isExtendingTrip && numberOfDaysToAdd > 0) {
+      // Special prompt for extending trips
+      prompt = `
+You are a travel expert helping to extend an existing itinerary by adding ${numberOfDaysToAdd} more day(s). ONLY add new content - do not regenerate the existing itinerary.
+
+CURRENT ITINERARY:
+${itineraryContent}
+
+CONVERSATION HISTORY:
+${conversationContext}
+
+USER REQUEST:
+${editRequest}
+
+CRITICAL INSTRUCTIONS:
+1. ONLY ADD ${numberOfDaysToAdd} new day(s) of activities to the EXISTING itinerary
+2. Keep ALL existing content EXACTLY as is - do not modify any existing days
+3. Continue from where the current itinerary ends
+4. If the itinerary currently has Day 1, Day 2, etc., add Day X+1, Day X+2, etc.
+5. Match the exact format and structure of the existing days
+6. Include all sections that exist in current days (morning, afternoon, evening, etc.)
+7. NO ** around any text - use clean formatting
+8. Maintain the same level of detail as existing days
+9. Update any summary sections to reflect the new total duration
+10. Do not add "Trip Summary" or similar headers unless they already exist
+
+Format requirements:
+- Use consistent bullet points (•) for activities
+- No bold markdown (**text**)
+- Keep time periods in the same format as existing content
+- Maintain the same structure for recommendations
+
+Provide the complete itinerary with the new days added at the end.`;
+    } else {
+      // Regular targeted editing prompt
+      prompt = `
 You are a travel expert helping to make TARGETED edits to an existing itinerary. Make ONLY the specific changes requested - do not regenerate the entire itinerary.
 
 CURRENT ITINERARY:
@@ -218,19 +261,25 @@ CRITICAL INSTRUCTIONS:
 1. Make ONLY the specific changes requested - do not rewrite the entire itinerary
 2. Keep all existing content that isn't being modified EXACTLY as is
 3. Maintain the exact same format and structure
-4. For extending trips: Add new days/activities to existing content
+4. NO ** around any text - use clean formatting without markdown bold
 5. For budget changes: Update only price-related recommendations
 6. For activity additions: Insert into appropriate existing days
 7. For date changes: Update only date references
 8. NEVER change destination unless explicitly requested with words like "change destination to" or "go to [place] instead"
 
+FORMATTING REQUIREMENTS:
+- Use consistent bullet points (•) for activities
+- No bold markdown (**text**)
+- Keep time periods clean and consistent
+- Remove any ** styling from ChatGPT
+
 EXAMPLES of targeted edits:
-- "Add 1 day" → Insert new day content at the end, update duration if mentioned
 - "Make it more budget-friendly" → Update only accommodation/restaurant recommendations
 - "Add museum visit" → Insert museum activity into appropriate existing day
 - "Make day 2 more relaxing" → Replace only day 2 activities with relaxing ones
 
 Provide the complete updated itinerary with your targeted changes applied. Keep everything else EXACTLY the same.`;
+    }
 
     console.log('Calling OpenAI API for itinerary editing...');
     console.log('OpenAI API key present:', !!openAIApiKey);
@@ -280,7 +329,14 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
     }
 
     const data = await response.json();
-    const editedContent = data.choices[0].message.content;
+    let editedContent = data.choices[0].message.content;
+    
+    // Clean up any remaining markdown formatting issues
+    editedContent = editedContent
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold markdown
+      .replace(/\*([^*]+)\*/g, '$1')     // Remove italic markdown
+      .replace(/^#+\s+/gm, '')          // Remove markdown headers
+      .trim();
 
     console.log('Generated AI response');
 

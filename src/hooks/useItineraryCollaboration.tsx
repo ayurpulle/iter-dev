@@ -323,53 +323,45 @@ export const useItineraryCollaboration = () => {
     try {
       console.log('Sharing itinerary with friends:', friendIds, 'title:', itineraryTitle, 'permission:', permission);
       
+      // Create collaborator records for both view and edit permissions
+      const invites = friendIds.map(friendId => ({
+        itinerary_id: itineraryId,
+        user_id: friendId,
+        permission: permission,
+        invited_by: user.id,
+        status: 'pending'
+      }));
+
+      // Check for existing collaborations first
+      const { data: existingCollabs } = await supabase
+        .from('itinerary_collaborators')
+        .select('user_id')
+        .eq('itinerary_id', itineraryId)
+        .in('user_id', friendIds);
+
+      const existingUserIds = existingCollabs?.map(c => c.user_id) || [];
+      const newInvites = invites.filter(invite => !existingUserIds.includes(invite.user_id));
+
+      if (newInvites.length === 0) {
+        toast({
+          title: "Already Invited",
+          description: "User already invited!",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('itinerary_collaborators')
+        .insert(newInvites);
+
+      if (error) throw error;
+
+      // Send chat messages to successfully invited friends
+      const newFriendIds = newInvites.map(invite => invite.user_id);
       const isCollaboration = permission === 'edit';
-      
-      if (isCollaboration) {
-        // For collaboration, create collaborator records
-        const invites = friendIds.map(friendId => ({
-          itinerary_id: itineraryId,
-          user_id: friendId,
-          permission: permission,
-          invited_by: user.id,
-          status: 'pending'
-        }));
-
-        // Check for existing collaborations first
-        const { data: existingCollabs } = await supabase
-          .from('itinerary_collaborators')
-          .select('user_id')
-          .eq('itinerary_id', itineraryId)
-          .in('user_id', friendIds);
-
-        const existingUserIds = existingCollabs?.map(c => c.user_id) || [];
-        const newInvites = invites.filter(invite => !existingUserIds.includes(invite.user_id));
-
-        if (newInvites.length === 0) {
-          toast({
-            title: "Already Invited",
-            description: "User already invited for collaboration!",
-            variant: "destructive"
-          });
-          return false;
-        }
-
-        const { error } = await supabase
-          .from('itinerary_collaborators')
-          .insert(newInvites);
-
-        if (error) throw error;
-
-        // Send collaboration chat messages only to successfully invited friends
-        const newFriendIds = newInvites.map(invite => invite.user_id);
-        for (const friendId of newFriendIds) {
-          await sendChatMessage(friendId, itineraryId, itineraryTitle || 'Itinerary', true);
-        }
-      } else {
-        // For view-only sharing, just send chat messages without creating collaborator records
-        for (const friendId of friendIds) {
-          await sendChatMessage(friendId, itineraryId, itineraryTitle || 'Itinerary', false);
-        }
+      for (const friendId of newFriendIds) {
+        await sendChatMessage(friendId, itineraryId, itineraryTitle || 'Itinerary', isCollaboration);
       }
 
       const totalInvited = friendIds.length;

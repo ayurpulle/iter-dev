@@ -329,7 +329,7 @@ export const useItineraryCollaboration = () => {
         user_id: friendId,
         permission: permission,
         invited_by: user.id,
-        status: 'pending'
+        status: 'accepted' // Auto-accept for immediate saving to recipients' saved trips
       }));
 
       // Check for existing collaborations first

@@ -190,7 +190,7 @@ serve(async (req) => {
       : '';
 
     const prompt = `
-You are a travel expert helping to edit a travel itinerary. You must ALWAYS return a complete, properly structured itinerary while preserving essential metadata.
+You are a travel expert helping to make TARGETED edits to an existing itinerary. Make ONLY the specific changes requested - do not regenerate the entire itinerary.
 
 CURRENT ITINERARY:
 ${itineraryContent}
@@ -201,65 +201,23 @@ ${conversationContext}
 USER REQUEST:
 ${editRequest}
 
-ORIGINAL TRIP PARAMETERS:
-- Destination: ${destination}
-- Budget Level: ${budget ? '$'.repeat(budget) : 'Not specified'} (1=budget, 5=ultra-luxury)
-- Travel Interests: ${interests || 'General travel'}
-- Travel Style: ${travelStyle || 'Balanced exploration'}
-
-CURRENT METADATA TO PRESERVE:
-- Current Dates: ${currentMetadata.dates || 'Not specified'}
-- Current Airports: ${currentMetadata.airports || 'Not specified'}
-- Current Holiday Type: ${currentMetadata.type || 'Not specified'}
-- Current Budget Display: ${currentMetadata.budgetDisplay || 'Not specified'}
-
 CRITICAL INSTRUCTIONS:
-You MUST return a complete itinerary with these exact sections in this order.
-IMPORTANT: Unless the user specifically asks to change dates, airports, holiday types, or budget, keep the existing metadata EXACTLY as it is.
+1. Make ONLY the specific changes requested - do not rewrite the entire itinerary
+2. Keep all existing content that isn't being modified EXACTLY as is
+3. Maintain the exact same format and structure
+4. For extending trips: Add new days/activities to existing content
+5. For budget changes: Update only price-related recommendations
+6. For activity additions: Insert into appropriate existing days
+7. For date changes: Update only date references
+8. NEVER change destination unless explicitly requested with words like "change destination to" or "go to [place] instead"
 
-First, include the existing metadata section EXACTLY as it appears in the current itinerary (unless user specifically requests changes to dates/airports/types/budget):
+EXAMPLES of targeted edits:
+- "Add 1 day" → Insert new day content at the end, update duration if mentioned
+- "Make it more budget-friendly" → Update only accommodation/restaurant recommendations
+- "Add museum visit" → Insert museum activity into appropriate existing day
+- "Make day 2 more relaxing" → Replace only day 2 activities with relaxing ones
 
-[Keep the existing trip summary, dates, airports, holiday types, and budget information EXACTLY as they currently appear]
-
-Then provide these sections:
-
-**Day-by-Day Itinerary**
-[For each day, organize activities by time periods (Morning, Afternoon, Evening, Night) using bullet points]
-
-**Getting There**
-• Flight recommendations and booking tips
-• Airport transfer options  
-• Any travel documentation needed
-
-**Perfect Stay**  
-• Accommodation recommendations (3-4 options across different price points)
-• Best neighborhoods to stay in
-• Booking tips and timing
-
-**Travel Tips**
-• Local customs and etiquette
-• Transportation within the destination  
-• Money and payment tips
-• What to pack
-• Safety considerations
-• Best times to visit attractions
-
-**Booking & Tips**
-• Direct links to recommended hotels
-• Restaurant reservation information
-• Attraction tickets and tours
-• Transportation booking links
-
-IMPORTANT: 
-- Apply the user's requested changes to the appropriate sections
-- PRESERVE the map/location pin, title, dates, airports, holiday types, and budget sections exactly as they are unless specifically asked to change them
-- When recommending venues from saved posts, mark them with [SAVED_REC:venue_name:user_name]
-- Include 1-2 internet-researched recommendations marked with [WEB_REC:venue_name:source_url]
-- Use bullet points for all sections
-- Keep descriptions concise but well-written
-- Focus on experiences rather than rigid schedules
-- Maintain the exact section structure shown above
-`;
+Provide the complete updated itinerary with your targeted changes applied. Keep everything else EXACTLY the same.`;
 
     console.log('Calling OpenAI API for itinerary editing...');
     console.log('OpenAI API key present:', !!openAIApiKey);
@@ -309,52 +267,92 @@ IMPORTANT:
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    const editedContent = data.choices[0].message.content;
 
     console.log('Generated AI response');
 
-    // Always return the response as a complete itinerary since we're enforcing structure
-    const updatedItinerary = aiResponse;
-    let newDestination = null;
-    let newStartDate = null;
-    let newEndDate = null;
+    // Extract potential metadata changes from the response
+    let updatedDestination = destination;
+    let updatedStartDate = null;
+    let updatedEndDate = null;
 
-    // Only extract destination changes if explicitly requested in the edit
-    const explicitDestinationChange = editRequest.toLowerCase().includes('destination') || 
-                                    editRequest.toLowerCase().includes('location') ||
-                                    editRequest.toLowerCase().includes('city') ||
-                                    editRequest.toLowerCase().includes('country');
+    // Only update destination if explicitly mentioned in the edit request with clear intent
+    const destinationChangeKeywords = ['change destination to', 'go to', 'visit', 'travel to', 'instead of'];
+    const editLower = editRequest.toLowerCase();
+    const hasExplicitDestinationChange = destinationChangeKeywords.some(keyword => editLower.includes(keyword));
     
-    if (explicitDestinationChange) {
-      const destinationMatch = aiResponse.match(/(?:destination|visiting|trip to|traveling to)[:\s]*([^.\n]+)/i);
-      if (destinationMatch && destinationMatch[1] && destinationMatch[1].trim() !== destination) {
-        newDestination = destinationMatch[1].trim();
-      }
-    }
-
-    // Handle date adjustments
-    const { dateAdjustment } = requestBody;
-    if (dateAdjustment && dateAdjustment !== 0) {
-      // If date adjustment was requested, calculate new end date
-      const currentEndDateMatch = itineraryContent.match(/end.*date[:\s]*([^\n]+)/i);
-      if (currentEndDateMatch) {
-        try {
-          const currentEndDate = new Date(currentEndDateMatch[1]);
-          const newEndDateObj = new Date(currentEndDate.getTime() + (dateAdjustment * 24 * 60 * 60 * 1000));
-          newEndDate = newEndDateObj.toISOString().split('T')[0];
-        } catch (e) {
-          console.log('Could not parse date for adjustment');
+    if (hasExplicitDestinationChange) {
+      const destinationMatch = editLower.match(/(?:change destination to|go to|visit|travel to|instead of)\s+([^.!?]+)/i);
+      if (destinationMatch) {
+        const extractedDest = destinationMatch[1].trim();
+        if (extractedDest.length > 2 && extractedDest.length < 100) {
+          updatedDestination = extractedDest;
         }
       }
     }
 
+    // Extract dates if mentioned in the response
+    const datePattern = /(\d{4}-\d{2}-\d{2})/g;
+    const datesInResponse = editedContent.match(datePattern);
+    if (datesInResponse && datesInResponse.length >= 2) {
+      updatedStartDate = datesInResponse[0];
+      updatedEndDate = datesInResponse[datesInResponse.length - 1];
+    }
+
+    // Save the edited content back to the database
+    console.log('Saving edited content to database...');
+    
+    // Create service client for database operations
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseServiceKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+    }
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Try to update in saved_itineraries table first
+    const { error: updateError1 } = await supabaseService
+      .from('saved_itineraries')
+      .update({
+        itinerary_content: editedContent,
+        destination: updatedDestination,
+        start_date: updatedStartDate,
+        end_date: updatedEndDate,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestBody.itineraryId)
+      .eq('user_id', user.id);
+
+    // If not found in saved_itineraries, try trips table
+    if (updateError1) {
+      console.log('Not found in saved_itineraries, trying trips table...');
+      const { error: updateError2 } = await supabaseService
+        .from('trips')
+        .update({
+          description: editedContent,
+          destination: updatedDestination,
+          start_date: updatedStartDate,
+          end_date: updatedEndDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestBody.itineraryId)
+        .eq('user_id', user.id);
+
+      if (updateError2) {
+        console.error('Failed to update itinerary:', updateError2);
+        throw new Error(`Failed to save changes: ${updateError2.message}`);
+      }
+    }
+
+    console.log('Successfully saved edited content to database');
+
     // Return response
     return new Response(JSON.stringify({
-      response: aiResponse,
-      updatedItinerary,
-      newDestination,
-      newEndDate,
-      newStartDate
+      response: editedContent,
+      updatedItinerary: editedContent,
+      newDestination: updatedDestination !== destination ? updatedDestination : null,
+      newEndDate: updatedEndDate,
+      newStartDate: updatedStartDate,
+      saved: true
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

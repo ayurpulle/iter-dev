@@ -116,48 +116,13 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       const assistantMsgObj = { role: 'assistant' as const, content: data.response };
       addMessage(iterData.id, assistantMsgObj);
 
-      // If the itinerary was actually updated, auto-save it permanently
-      if (data.updatedItinerary && data.updatedItinerary !== iterData.itinerary_content) {
-        console.log('Itinerary updated, auto-saving permanently');
-        
-        // Use a direct update approach that works with RLS policies for collaborators
-        const updateData: any = {
-          itinerary_content: data.updatedItinerary,
-          updated_at: new Date().toISOString()
-        };
-        
-        // Only update destination if explicitly changed
-        if (data.newDestination && data.newDestination !== iterData.destination) {
-          updateData.destination = data.newDestination;
-        }
-        
-        // Only update dates if they were changed
-        if (data.newStartDate) {
-          updateData.start_date = data.newStartDate;
-        }
-        if (data.newEndDate) {
-          updateData.end_date = data.newEndDate;
-        }
-        
-        const { error: updateError } = await supabase
-          .from('saved_itineraries')
-          .update(updateData)
-          .eq('id', iterData.id);
-
-        if (updateError) {
-          console.error('Error auto-saving itinerary:', updateError);
-          toast({
-            title: "Save Failed",
-            description: "Changes were made but couldn't be saved permanently.",
-            variant: "destructive"
-          });
-        } else {
-          console.log('Itinerary auto-saved successfully');
-        }
+      // The content is already saved by the edge function, just update the UI
+      if (data.saved && data.updatedItinerary) {
+        console.log('Itinerary was saved by edge function, updating UI');
         
         onIterUpdated?.(data.updatedItinerary, data.newDestination);
         
-        // Also refresh the saved itineraries list
+        // Refresh the saved itineraries list
         window.dispatchEvent(new CustomEvent('refreshItineraries'));
         
         toast({

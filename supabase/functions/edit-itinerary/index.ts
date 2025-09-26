@@ -414,9 +414,23 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
 
     console.log('Successfully saved edited content to database');
 
-    // Return response
+    // Generate a brief confirmation message based on the edit type
+    let confirmationMessage;
+    if (isExtendingTrip && numberOfDaysToAdd > 0) {
+      confirmationMessage = `I'm making your trip ${numberOfDaysToAdd} day${numberOfDaysToAdd > 1 ? 's' : ''} longer. Check your itinerary for the updated journey!`;
+    } else if (editRequestLower.includes('budget')) {
+      confirmationMessage = "I've updated your itinerary with budget-friendly options. Check your itinerary for the changes!";
+    } else if (editRequestLower.includes('add') && !editRequestLower.includes('day')) {
+      confirmationMessage = "I've added the requested activities to your itinerary. Check it out for the updates!";
+    } else if (editRequestLower.includes('relax')) {
+      confirmationMessage = "I've made your itinerary more relaxing. Check your updated journey!";
+    } else {
+      confirmationMessage = "I've updated your itinerary based on your request. Check it out for the changes!";
+    }
+
+    // Return response with brief confirmation
     return new Response(JSON.stringify({
-      response: editedContent,
+      response: confirmationMessage,
       updatedItinerary: editedContent,
       newDestination: updatedDestination !== destination ? updatedDestination : null,
       newEndDate: updatedEndDate,

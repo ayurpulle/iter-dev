@@ -200,8 +200,13 @@ serve(async (req) => {
     // Analyze the edit request type
     const editRequestLower = editRequest.toLowerCase();
     const isExtendingTrip = editRequestLower.includes('days longer') || editRequestLower.includes('add') && (editRequestLower.includes('days') || editRequestLower.includes('day'));
+    const isShorteningTrip = editRequestLower.includes('days shorter') || editRequestLower.includes('shorter') || editRequestLower.includes('remove') && (editRequestLower.includes('days') || editRequestLower.includes('day'));
+    
     const dayExtension = editRequestLower.match(/(\d+)\s*days?\s*longer/) || editRequestLower.match(/add\s*(\d+)\s*days?/) || editRequestLower.match(/make\s*it\s*(\d+)\s*days?\s*longer/);
+    const dayReduction = editRequestLower.match(/(\d+)\s*days?\s*shorter/) || editRequestLower.match(/remove\s*(\d+)\s*days?/) || editRequestLower.match(/make\s*it\s*(\d+)\s*days?\s*shorter/);
+    
     const numberOfDaysToAdd = dayExtension ? parseInt(dayExtension[1]) : 0;
+    const numberOfDaysToRemove = dayReduction ? parseInt(dayReduction[1]) : 0;
 
     // Construct prompt for OpenAI - focus on targeted editing
     const conversationContext = conversationHistory && conversationHistory.length > 0 
@@ -243,6 +248,36 @@ Format requirements:
 - Maintain the same structure for recommendations
 
 Provide the complete itinerary with the new days added at the end.`;
+    } else if (isShorteningTrip && numberOfDaysToRemove > 0) {
+      // Special prompt for shortening trips
+      prompt = `
+You are a travel expert helping to shorten an existing itinerary by removing ${numberOfDaysToRemove} day(s). ONLY remove the specified number of days from the end - do not regenerate the entire itinerary.
+
+CURRENT ITINERARY:
+${itineraryContent}
+
+CONVERSATION HISTORY:
+${conversationContext}
+
+USER REQUEST:
+${editRequest}
+
+CRITICAL INSTRUCTIONS:
+1. ONLY REMOVE ${numberOfDaysToRemove} day(s) from the END of the itinerary
+2. Keep ALL other content EXACTLY as is - do not modify any remaining days
+3. Remove the last ${numberOfDaysToRemove} day(s) completely
+4. Update any summary sections to reflect the new shorter duration
+5. NO ** around any text - use clean formatting
+6. Maintain the exact same format and structure for remaining days
+7. Do not add "Trip Summary" or similar headers unless they already exist
+
+Format requirements:
+- Use consistent bullet points (•) for activities
+- No bold markdown (**text**)
+- Keep time periods in the same format as existing content
+- Maintain the same structure for recommendations
+
+Provide the complete itinerary with the last ${numberOfDaysToRemove} day(s) removed.`;
     } else {
       // Regular targeted editing prompt
       prompt = `
@@ -367,9 +402,11 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
       }
     }
 
-    // Handle date updates for trip extensions
-    if (isExtendingTrip && numberOfDaysToAdd > 0) {
-      console.log(`Processing trip extension: adding ${numberOfDaysToAdd} days`);
+    // Handle date updates for trip extensions and reductions
+    if ((isExtendingTrip && numberOfDaysToAdd > 0) || (isShorteningTrip && numberOfDaysToRemove > 0)) {
+      const daysChange = isExtendingTrip ? numberOfDaysToAdd : -numberOfDaysToRemove;
+      const action = isExtendingTrip ? 'extending' : 'shortening';
+      console.log(`Processing trip ${action}: ${Math.abs(daysChange)} days`);
       
       // Get current dates from database first
       let currentStartDate = null;
@@ -406,16 +443,16 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
           const endDate = new Date(currentEndDate);
           if (!isNaN(endDate.getTime())) {
             const newEndDate = new Date(endDate);
-            newEndDate.setDate(newEndDate.getDate() + numberOfDaysToAdd);
+            newEndDate.setDate(newEndDate.getDate() + daysChange);
             updatedEndDate = newEndDate.toISOString().split('T')[0];
             updatedStartDate = currentStartDate; // Keep the same start date
-            console.log(`Extended trip by ${numberOfDaysToAdd} days. New dates: ${updatedStartDate} to ${updatedEndDate}`);
+            console.log(`${isExtendingTrip ? 'Extended' : 'Shortened'} trip by ${Math.abs(daysChange)} days. New dates: ${updatedStartDate} to ${updatedEndDate}`);
           }
         } catch (error) {
           console.error('Error calculating new end date:', error);
         }
       } else {
-        console.warn('No current end date found in database for trip extension');
+        console.warn('No current end date found in database for trip modification');
       }
     } else {
       // Extract dates if mentioned in the response (for other types of edits)
@@ -498,6 +535,8 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
     let confirmationMessage;
     if (isExtendingTrip && numberOfDaysToAdd > 0) {
       confirmationMessage = `I'm making your trip ${numberOfDaysToAdd} day${numberOfDaysToAdd > 1 ? 's' : ''} longer. Check your itinerary for the updated journey!`;
+    } else if (isShorteningTrip && numberOfDaysToRemove > 0) {
+      confirmationMessage = `I'm making your trip ${numberOfDaysToRemove} day${numberOfDaysToRemove > 1 ? 's' : ''} shorter. Check your itinerary for the updated journey!`;
     } else if (editRequestLower.includes('budget')) {
       confirmationMessage = "I've updated your itinerary with budget-friendly options. Check your itinerary for the changes!";
     } else if (editRequestLower.includes('add') && !editRequestLower.includes('day')) {

@@ -119,6 +119,16 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
 
       // The content is already saved by the edge function, just update the UI
       if (data.saved && data.updatedItinerary) {
+        // Validate content before updating UI
+        if (data.updatedItinerary.length < 100) {
+          toast({
+            title: "Edit Failed",
+            description: "The edit didn't complete properly. Please try again with a more specific request.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         console.log('Itinerary was saved by edge function, updating UI');
         
         onIterUpdated?.(data.updatedItinerary, data.newDestination, data.newStartDate, data.newEndDate);

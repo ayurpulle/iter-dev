@@ -213,71 +213,57 @@ serve(async (req) => {
       ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
       : '';
 
-    let prompt;
-    
-    if (isExtendingTrip && numberOfDaysToAdd > 0) {
-      // Special prompt for extending trips - just add the new days
-      prompt = `
-You are a travel expert. Take this EXISTING itinerary and add ${numberOfDaysToAdd} more day(s) to the end.
+    // Improved system message for clarity
+    const systemMessage = `You are a travel itinerary editor. Your job is to modify travel itineraries based on user requests.
 
-CURRENT COMPLETE ITINERARY:
-${itineraryContent}
+CRITICAL RULES:
+1. ALWAYS output the COMPLETE itinerary, not just the changes
+2. Your response should contain the FULL itinerary with ALL days and activities
+3. Never summarize or abbreviate - include everything
+4. The output should be immediately usable as a complete itinerary
+5. Preserve the original structure and format
+6. Apply edits surgically - change only what's requested
+7. If adding days, append them to the end
+8. If removing days, remove from the end
+9. Never use markdown formatting in your response`;
 
-USER REQUEST: ${editRequest}
-
-CRITICAL INSTRUCTIONS:
-1. COPY the entire existing itinerary EXACTLY as written above
-2. Add ${numberOfDaysToAdd} new day(s) at the very end following the same format
-3. Keep ALL existing sections: Trip Summary, Getting There, Perfect Stay, Day-by-Day Itinerary, Travel Tips, Booking Links
-4. Do NOT rewrite or modify ANY existing content
-5. Only ADD new days at the end
-6. Remove all ** markdown formatting
-7. Keep bullet points as • characters
-
-Return the COMPLETE itinerary with the new days appended.`;
-    } else if (isShorteningTrip && numberOfDaysToRemove > 0) {
-      // Special prompt for shortening trips - just remove the last days
-      prompt = `
-You are a travel expert. Take this EXISTING itinerary and remove the last ${numberOfDaysToRemove} day(s).
-
-CURRENT COMPLETE ITINERARY:
-${itineraryContent}
-
-USER REQUEST: ${editRequest}
+    // For all edit types, use this more explicit prompt structure
+    const prompt = `
+You are editing a travel itinerary. Your response MUST contain the COMPLETE itinerary with edits applied.
 
 CRITICAL INSTRUCTIONS:
-1. COPY the entire existing itinerary EXACTLY as written above
-2. Remove only the last ${numberOfDaysToRemove} day(s) from the Day-by-Day section
-3. Keep ALL other sections unchanged: Trip Summary, Getting There, Perfect Stay, Travel Tips, Booking Links
-4. Do NOT rewrite or modify ANY other content
-5. Remove all ** markdown formatting
-6. Keep bullet points as • characters
+1. ALWAYS return the FULL itinerary - every day, every activity, every section
+2. NEVER return only changes or summaries
+3. NEVER return partial content
+4. If you're adding content, include ALL existing content PLUS the new additions
+5. If you're modifying content, include ALL content with modifications applied
+6. Your response should be AT LEAST as long as the original itinerary
 
-Return the COMPLETE itinerary with the last ${numberOfDaysToRemove} day(s) removed.`;
-    } else {
-      // For other edits, be extremely conservative
-      prompt = `
-You are a travel expert. Make ONLY the specific requested change to this itinerary while preserving ALL other content.
-
-CURRENT COMPLETE ITINERARY:
+CURRENT COMPLETE ITINERARY (${itineraryContent.length} characters):
+"""
 ${itineraryContent}
+"""
 
-USER REQUEST: ${editRequest}
+USER'S EDIT REQUEST:
+"${editRequest}"
 
-CRITICAL INSTRUCTIONS:
-1. COPY the entire existing itinerary structure EXACTLY
-2. Keep ALL sections: Trip Summary, Getting There, Perfect Stay, Day-by-Day Itinerary, Travel Tips, Booking Links
-3. Make ONLY the minimal change requested (e.g., add sports activities, make more luxurious, etc.)
-4. For "sports activities" - insert sports options into existing days where appropriate
-5. For "more luxurious" - upgrade only hotel/restaurant recommendations while keeping structure
-6. Do NOT rewrite the entire itinerary
-7. Do NOT change the overall structure or format
-8. Remove all ** markdown formatting
-9. Keep bullet points as • characters
-10. Preserve all existing activities and just enhance them or add to them
+${conversationContext ? `CONVERSATION HISTORY:\n${conversationContext}\n` : ''}
 
-Return the COMPLETE itinerary with your minimal targeted changes applied.`;
-    }
+${isExtendingTrip && numberOfDaysToAdd > 0 ? 
+  `SPECIFIC INSTRUCTION: Add ${numberOfDaysToAdd} new day(s) at the end. Keep ALL existing days exactly as they are.` : ''}
+
+${isShorteningTrip && numberOfDaysToRemove > 0 ? 
+  `SPECIFIC INSTRUCTION: Remove the last ${numberOfDaysToRemove} day(s). Keep all other days exactly as they are.` : ''}
+
+NOW PROVIDE THE COMPLETE EDITED ITINERARY:
+- Include ALL days from the original
+- Include ALL activities and recommendations
+- Apply the requested edits while preserving everything else
+- Use the same format as the original
+- Remove markdown formatting (no **, no ##)
+- Your response must be a complete, standalone itinerary
+
+COMPLETE EDITED ITINERARY:`;
 
     console.log('Calling OpenAI API for itinerary editing...');
     console.log('OpenAI API key present:', !!openAIApiKey);
@@ -303,14 +289,14 @@ Return the COMPLETE itinerary with your minimal targeted changes applied.`;
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful travel expert who creates complete, structured travel itineraries. Always provide the full itinerary with proper sections even when making edits.'
+            content: systemMessage
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 3000,
+        max_completion_tokens: 4000, // Increase to ensure full content
       }),
     });
 
@@ -335,6 +321,105 @@ Return the COMPLETE itinerary with your minimal targeted changes applied.`;
       .replace(/\*([^*]+)\*/g, '$1')     // Remove italic markdown
       .replace(/^#+\s+/gm, '')          // Remove markdown headers
       .trim();
+
+    // CRITICAL: Validate the edited content
+    if (!editedContent || editedContent.length < 100) {
+      console.error('LLM returned insufficient content:', editedContent);
+      console.log('Falling back to original itinerary content with warning');
+      
+      // If LLM failed to return proper content, keep the original
+      editedContent = itineraryContent;
+      
+      // Return error response to user
+      return new Response(JSON.stringify({
+        error: 'Failed to generate proper edits',
+        details: 'The AI did not return a complete itinerary. Please try rephrasing your request.',
+        response: 'I encountered an issue editing your itinerary. Please try again with a more specific request.',
+        updatedItinerary: itineraryContent, // Return original content
+        saved: false
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Additional validation: Check if content seems like a complete itinerary
+    const hasBasicItineraryStructure = 
+      editedContent.includes('Day') || 
+      editedContent.includes('Morning') || 
+      editedContent.includes('Afternoon') ||
+      editedContent.includes('Evening');
+
+    if (!hasBasicItineraryStructure) {
+      console.error('LLM response lacks itinerary structure:', editedContent.substring(0, 200));
+      
+      // Try to recover by re-prompting with more explicit instructions
+      const recoveryPrompt = `
+The previous response was incomplete. Please provide the COMPLETE itinerary with ALL days and activities.
+
+ORIGINAL COMPLETE ITINERARY:
+${itineraryContent}
+
+USER'S EDIT REQUEST:
+${editRequest}
+
+CRITICAL: Return the ENTIRE itinerary with the requested edits applied. Include ALL days, ALL sections, and ALL activities. Do not return only the changes or a summary.`;
+
+      // Make another API call with clearer instructions
+      const recoveryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            {
+              role: 'system',
+              content: 'You MUST return the complete travel itinerary with all days, activities, and sections. Never return partial content or only the changes.'
+            },
+            {
+              role: 'user',
+              content: recoveryPrompt
+            }
+          ],
+          max_completion_tokens: 4000, // Increase token limit for recovery
+        }),
+      });
+
+      if (recoveryResponse.ok) {
+        const recoveryData = await recoveryResponse.json();
+        editedContent = recoveryData.choices[0].message.content
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\*([^*]+)\*/g, '$1')
+          .replace(/^#+\s+/gm, '')
+          .trim();
+        
+        // Check recovery attempt
+        if (editedContent.length < 100) {
+          // Recovery failed, return original
+          console.error('Recovery attempt also failed');
+          editedContent = itineraryContent;
+        }
+      } else {
+        // Recovery API call failed, keep original
+        editedContent = itineraryContent;
+      }
+    }
+
+    // Log content length for debugging
+    console.log('Final edited content length:', editedContent.length);
+    console.log('Original content length:', itineraryContent.length);
+
+    // Warn if edited content is significantly shorter than original
+    if (editedContent.length < itineraryContent.length * 0.5) {
+      console.warn('Edited content is significantly shorter than original. This might indicate an issue.');
+      // But proceed if it has basic structure
+      if (!hasBasicItineraryStructure) {
+        editedContent = itineraryContent;
+      }
+    }
 
     console.log('Generated AI response');
 

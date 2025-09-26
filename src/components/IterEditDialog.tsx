@@ -23,7 +23,7 @@ interface IterEditDialogProps {
     is_owner?: boolean;
     can_edit?: boolean;
   };
-  onIterUpdated?: (newContent: string, newDestination?: string) => void;
+  onIterUpdated?: (newContent: string, newDestination?: string, newStartDate?: string, newEndDate?: string) => void;
 }
 
 export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps) => {
@@ -121,7 +121,7 @@ export const IterEditDialog = ({ iterData, onIterUpdated }: IterEditDialogProps)
       if (data.saved && data.updatedItinerary) {
         console.log('Itinerary was saved by edge function, updating UI');
         
-        onIterUpdated?.(data.updatedItinerary, data.newDestination);
+        onIterUpdated?.(data.updatedItinerary, data.newDestination, data.newStartDate, data.newEndDate);
         
         // Refresh the saved itineraries list
         window.dispatchEvent(new CustomEvent('refreshItineraries'));

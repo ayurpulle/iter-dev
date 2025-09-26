@@ -24,7 +24,7 @@ interface ItineraryUpdateDropdownProps {
   };
   hasChanges: boolean;
   onUpdate: () => void;
-  onIterUpdated?: (newContent: string, newDestination?: string) => void;
+  onIterUpdated?: (newContent: string, newDestination?: string, newStartDate?: string, newEndDate?: string) => void;
   className?: string;
 }
 

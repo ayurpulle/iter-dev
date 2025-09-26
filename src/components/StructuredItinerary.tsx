@@ -56,7 +56,7 @@ interface StructuredItineraryProps {
     budget?: number | null;
     interests?: string[] | null;
   };
-  onIterUpdated?: (newContent: string, newDestination?: string) => void;
+  onIterUpdated?: (newContent: string, newDestination?: string, newStartDate?: string, newEndDate?: string) => void;
 }
 
 export const StructuredItinerary = ({ 

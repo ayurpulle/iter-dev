@@ -800,20 +800,23 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               budget: viewingIter.budget,
               interests: viewingIter.interests
             }}
-            onIterUpdated={async (newContent, newDestination) => {
-              // Update the viewing itinerary with new content
+            onIterUpdated={async (newContent, newDestination, newStartDate, newEndDate) => {
+              // Update the viewing itinerary with new content and dates
               setViewingIter(prev => ({
                 ...prev,
                 itinerary_content: newContent,
-                destination: newDestination || prev.destination
+                destination: newDestination || prev.destination,
+                start_date: newStartDate || prev.start_date,
+                end_date: newEndDate || prev.end_date
               }));
 
               // Also update in saved itineraries list
               refetchSavedItineraries();
 
-              toast({
-                title: "Iter Updated!",
-                description: "Your iter has been updated successfully.",
+              console.log('Updated viewing iter with new dates:', {
+                newStartDate,
+                newEndDate,
+                destination: newDestination
               });
             }}
             onUpdateItinerary={async (changes) => {

@@ -360,12 +360,35 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
       }
     }
 
-    // Extract dates if mentioned in the response
-    const datePattern = /(\d{4}-\d{2}-\d{2})/g;
-    const datesInResponse = editedContent.match(datePattern);
-    if (datesInResponse && datesInResponse.length >= 2) {
-      updatedStartDate = datesInResponse[0];
-      updatedEndDate = datesInResponse[datesInResponse.length - 1];
+    // Handle date updates for trip extensions
+    if (isExtendingTrip && numberOfDaysToAdd > 0) {
+      // Extract current dates from the itinerary metadata
+      const currentMetadata = extractCurrentMetadata(itineraryContent);
+      if (currentMetadata.dates) {
+        // Try to parse current dates to extend them
+        const dateMatch = currentMetadata.dates.match(/(\w+\s+\d+,?\s+\d+)\s+to\s+(\w+\s+\d+,?\s+\d+)/i);
+        if (dateMatch) {
+          try {
+            const currentEndDate = new Date(dateMatch[2]);
+            if (!isNaN(currentEndDate.getTime())) {
+              const newEndDate = new Date(currentEndDate);
+              newEndDate.setDate(newEndDate.getDate() + numberOfDaysToAdd);
+              updatedEndDate = newEndDate.toISOString().split('T')[0];
+              console.log(`Extended trip by ${numberOfDaysToAdd} days. New end date: ${updatedEndDate}`);
+            }
+          } catch (error) {
+            console.error('Error parsing dates for extension:', error);
+          }
+        }
+      }
+    } else {
+      // Extract dates if mentioned in the response (for other types of edits)
+      const datePattern = /(\d{4}-\d{2}-\d{2})/g;
+      const datesInResponse = editedContent.match(datePattern);
+      if (datesInResponse && datesInResponse.length >= 2) {
+        updatedStartDate = datesInResponse[0];
+        updatedEndDate = datesInResponse[datesInResponse.length - 1];
+      }
     }
 
     // Save the edited content back to the database

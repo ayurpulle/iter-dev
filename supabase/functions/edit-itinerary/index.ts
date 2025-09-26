@@ -430,8 +430,13 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
     // Save the edited content back to the database
     console.log('Saving edited content to database...');
     
+    // First, determine which table contains this itinerary
+    let updateSuccess = false;
+    let finalError = null;
+
     // Try to update in saved_itineraries table first
-    const { error: updateError1 } = await supabaseService
+    console.log('Attempting to update saved_itineraries table...');
+    const { data: savedIterResult, error: updateError1 } = await supabaseService
       .from('saved_itineraries')
       .update({
         itinerary_content: editedContent,
@@ -441,12 +446,23 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
         updated_at: new Date().toISOString()
       })
       .eq('id', itineraryId)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select();
 
-    // If not found in saved_itineraries, try trips table
     if (updateError1) {
-      console.log('Not found in saved_itineraries, trying trips table...');
-      const { error: updateError2 } = await supabaseService
+      console.log('Error updating saved_itineraries:', updateError1.message);
+      finalError = updateError1;
+    } else if (savedIterResult && savedIterResult.length > 0) {
+      console.log('Successfully updated saved_itineraries table');
+      updateSuccess = true;
+    } else {
+      console.log('No rows updated in saved_itineraries, trying trips table...');
+    }
+
+    // If saved_itineraries update didn't work, try trips table
+    if (!updateSuccess) {
+      console.log('Attempting to update trips table...');
+      const { data: tripsResult, error: updateError2 } = await supabaseService
         .from('trips')
         .update({
           description: editedContent,
@@ -456,12 +472,24 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
           updated_at: new Date().toISOString()
         })
         .eq('id', itineraryId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (updateError2) {
-        console.error('Failed to update itinerary:', updateError2);
-        throw new Error(`Failed to save changes: ${updateError2.message}`);
+        console.error('Error updating trips table:', updateError2.message);
+        finalError = updateError2;
+      } else if (tripsResult && tripsResult.length > 0) {
+        console.log('Successfully updated trips table');
+        updateSuccess = true;
+      } else {
+        console.log('No rows updated in trips table either');
       }
+    }
+
+    // If neither update worked, throw an error
+    if (!updateSuccess) {
+      console.error('Failed to update itinerary in either table:', finalError);
+      throw new Error(`Failed to save changes: ${finalError?.message || 'No rows updated in either table'}`);
     }
 
     console.log('Successfully saved edited content to database');

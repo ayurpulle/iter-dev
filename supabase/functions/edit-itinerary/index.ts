@@ -263,7 +263,6 @@ Requirements:
 - No markdown formatting (**text**)
 - Return the COMPLETE itinerary with minimal edits applied`;
     }
-    }
 
     console.log('Calling OpenAI API for itinerary editing...');
     console.log('OpenAI API key present:', !!openAIApiKey);

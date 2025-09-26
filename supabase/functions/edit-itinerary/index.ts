@@ -216,104 +216,53 @@ serve(async (req) => {
     let prompt;
     
     if (isExtendingTrip && numberOfDaysToAdd > 0) {
-      // Special prompt for extending trips
+      // Special prompt for extending trips - just add the new days
       prompt = `
-You are a travel expert helping to extend an existing itinerary by adding ${numberOfDaysToAdd} more day(s). ONLY add new content - do not regenerate the existing itinerary.
-
 CURRENT ITINERARY:
 ${itineraryContent}
 
-CONVERSATION HISTORY:
-${conversationContext}
+USER REQUEST: ${editRequest}
 
-USER REQUEST:
-${editRequest}
+INSTRUCTIONS: Add ${numberOfDaysToAdd} more day(s) to the END of this itinerary. Keep ALL existing content EXACTLY as written. Only add new days continuing from where it ends. Return the COMPLETE itinerary with new days appended.
 
-CRITICAL INSTRUCTIONS:
-1. ONLY ADD ${numberOfDaysToAdd} new day(s) of activities to the EXISTING itinerary
-2. Keep ALL existing content EXACTLY as is - do not modify any existing days
-3. Continue from where the current itinerary ends
-4. If the itinerary currently has Day 1, Day 2, etc., add Day X+1, Day X+2, etc.
-5. Match the exact format and structure of the existing days
-6. Include all sections that exist in current days (morning, afternoon, evening, etc.)
-7. NO ** around any text - use clean formatting
-8. Maintain the same level of detail as existing days
-9. Update any summary sections to reflect the new total duration
-10. Do not add "Trip Summary" or similar headers unless they already exist
-
-Format requirements:
-- Use consistent bullet points (•) for activities
-- No bold markdown (**text**)
-- Keep time periods in the same format as existing content
-- Maintain the same structure for recommendations
-
-Provide the complete itinerary with the new days added at the end.`;
+Requirements:
+- Keep existing content 100% unchanged
+- Add ${numberOfDaysToAdd} new day(s) at the end
+- Match the exact format of existing days
+- No markdown formatting (**text**)
+- Use bullet points (•) consistently`;
     } else if (isShorteningTrip && numberOfDaysToRemove > 0) {
-      // Special prompt for shortening trips
+      // Special prompt for shortening trips - just remove the last days
       prompt = `
-You are a travel expert helping to shorten an existing itinerary by removing ${numberOfDaysToRemove} day(s). ONLY remove the specified number of days from the end - do not regenerate the entire itinerary.
-
 CURRENT ITINERARY:
 ${itineraryContent}
 
-CONVERSATION HISTORY:
-${conversationContext}
+USER REQUEST: ${editRequest}
 
-USER REQUEST:
-${editRequest}
+INSTRUCTIONS: Remove the last ${numberOfDaysToRemove} day(s) from this itinerary. Keep ALL remaining content EXACTLY as written. Return the COMPLETE itinerary with the last ${numberOfDaysToRemove} day(s) removed.
 
-CRITICAL INSTRUCTIONS:
-1. ONLY REMOVE ${numberOfDaysToRemove} day(s) from the END of the itinerary
-2. Keep ALL other content EXACTLY as is - do not modify any remaining days
-3. Remove the last ${numberOfDaysToRemove} day(s) completely
-4. Update any summary sections to reflect the new shorter duration
-5. NO ** around any text - use clean formatting
-6. Maintain the exact same format and structure for remaining days
-7. Do not add "Trip Summary" or similar headers unless they already exist
-
-Format requirements:
-- Use consistent bullet points (•) for activities
-- No bold markdown (**text**)
-- Keep time periods in the same format as existing content
-- Maintain the same structure for recommendations
-
-Provide the complete itinerary with the last ${numberOfDaysToRemove} day(s) removed.`;
+Requirements:
+- Keep remaining content 100% unchanged
+- Remove only the last ${numberOfDaysToRemove} day(s)
+- Maintain exact format and structure
+- No markdown formatting (**text**)`;
     } else {
-      // Regular targeted editing prompt
+      // For other edits, use a more conservative approach
       prompt = `
-You are a travel expert helping to make TARGETED edits to an existing itinerary. Make ONLY the specific changes requested - do not regenerate the entire itinerary.
-
 CURRENT ITINERARY:
 ${itineraryContent}
 
-CONVERSATION HISTORY:
-${conversationContext}
+USER REQUEST: ${editRequest}
 
-USER REQUEST:
-${editRequest}
+INSTRUCTIONS: Make ONLY the specific change requested. Keep ALL other content EXACTLY as written. For "more luxurious" requests, only upgrade accommodations and dining recommendations while keeping all activities, times, and structure identical.
 
-CRITICAL INSTRUCTIONS:
-1. Make ONLY the specific changes requested - do not rewrite the entire itinerary
-2. Keep all existing content that isn't being modified EXACTLY as is
-3. Maintain the exact same format and structure
-4. NO ** around any text - use clean formatting without markdown bold
-5. For budget changes: Update only price-related recommendations
-6. For activity additions: Insert into appropriate existing days
-7. For date changes: Update only date references
-8. NEVER change destination unless explicitly requested with words like "change destination to" or "go to [place] instead"
-
-FORMATTING REQUIREMENTS:
-- Use consistent bullet points (•) for activities
-- No bold markdown (**text**)
-- Keep time periods clean and consistent
-- Remove any ** styling from ChatGPT
-
-EXAMPLES of targeted edits:
-- "Make it more budget-friendly" → Update only accommodation/restaurant recommendations
-- "Add museum visit" → Insert museum activity into appropriate existing day
-- "Make day 2 more relaxing" → Replace only day 2 activities with relaxing ones
-
-Provide the complete updated itinerary with your targeted changes applied. Keep everything else EXACTLY the same.`;
+Requirements:
+- Keep 95% of content completely unchanged
+- Make minimal targeted changes only
+- Maintain exact format and structure
+- No markdown formatting (**text**)
+- Return the COMPLETE itinerary with minimal edits applied`;
+    }
     }
 
     console.log('Calling OpenAI API for itinerary editing...');

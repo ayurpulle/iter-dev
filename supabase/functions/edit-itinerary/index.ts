@@ -218,50 +218,65 @@ serve(async (req) => {
     if (isExtendingTrip && numberOfDaysToAdd > 0) {
       // Special prompt for extending trips - just add the new days
       prompt = `
-CURRENT ITINERARY:
+You are a travel expert. Take this EXISTING itinerary and add ${numberOfDaysToAdd} more day(s) to the end.
+
+CURRENT COMPLETE ITINERARY:
 ${itineraryContent}
 
 USER REQUEST: ${editRequest}
 
-INSTRUCTIONS: Add ${numberOfDaysToAdd} more day(s) to the END of this itinerary. Keep ALL existing content EXACTLY as written. Only add new days continuing from where it ends. Return the COMPLETE itinerary with new days appended.
+CRITICAL INSTRUCTIONS:
+1. COPY the entire existing itinerary EXACTLY as written above
+2. Add ${numberOfDaysToAdd} new day(s) at the very end following the same format
+3. Keep ALL existing sections: Trip Summary, Getting There, Perfect Stay, Day-by-Day Itinerary, Travel Tips, Booking Links
+4. Do NOT rewrite or modify ANY existing content
+5. Only ADD new days at the end
+6. Remove all ** markdown formatting
+7. Keep bullet points as • characters
 
-Requirements:
-- Keep existing content 100% unchanged
-- Add ${numberOfDaysToAdd} new day(s) at the end
-- Match the exact format of existing days
-- No markdown formatting (**text**)
-- Use bullet points (•) consistently`;
+Return the COMPLETE itinerary with the new days appended.`;
     } else if (isShorteningTrip && numberOfDaysToRemove > 0) {
       // Special prompt for shortening trips - just remove the last days
       prompt = `
-CURRENT ITINERARY:
+You are a travel expert. Take this EXISTING itinerary and remove the last ${numberOfDaysToRemove} day(s).
+
+CURRENT COMPLETE ITINERARY:
 ${itineraryContent}
 
 USER REQUEST: ${editRequest}
 
-INSTRUCTIONS: Remove the last ${numberOfDaysToRemove} day(s) from this itinerary. Keep ALL remaining content EXACTLY as written. Return the COMPLETE itinerary with the last ${numberOfDaysToRemove} day(s) removed.
+CRITICAL INSTRUCTIONS:
+1. COPY the entire existing itinerary EXACTLY as written above
+2. Remove only the last ${numberOfDaysToRemove} day(s) from the Day-by-Day section
+3. Keep ALL other sections unchanged: Trip Summary, Getting There, Perfect Stay, Travel Tips, Booking Links
+4. Do NOT rewrite or modify ANY other content
+5. Remove all ** markdown formatting
+6. Keep bullet points as • characters
 
-Requirements:
-- Keep remaining content 100% unchanged
-- Remove only the last ${numberOfDaysToRemove} day(s)
-- Maintain exact format and structure
-- No markdown formatting (**text**)`;
+Return the COMPLETE itinerary with the last ${numberOfDaysToRemove} day(s) removed.`;
     } else {
-      // For other edits, use a more conservative approach
+      // For other edits, be extremely conservative
       prompt = `
-CURRENT ITINERARY:
+You are a travel expert. Make ONLY the specific requested change to this itinerary while preserving ALL other content.
+
+CURRENT COMPLETE ITINERARY:
 ${itineraryContent}
 
 USER REQUEST: ${editRequest}
 
-INSTRUCTIONS: Make ONLY the specific change requested. Keep ALL other content EXACTLY as written. For "more luxurious" requests, only upgrade accommodations and dining recommendations while keeping all activities, times, and structure identical.
+CRITICAL INSTRUCTIONS:
+1. COPY the entire existing itinerary structure EXACTLY
+2. Keep ALL sections: Trip Summary, Getting There, Perfect Stay, Day-by-Day Itinerary, Travel Tips, Booking Links
+3. Make ONLY the minimal change requested (e.g., add sports activities, make more luxurious, etc.)
+4. For "sports activities" - insert sports options into existing days where appropriate
+5. For "more luxurious" - upgrade only hotel/restaurant recommendations while keeping structure
+6. Do NOT rewrite the entire itinerary
+7. Do NOT change the overall structure or format
+8. Remove all ** markdown formatting
+9. Keep bullet points as • characters
+10. Preserve all existing activities and just enhance them or add to them
 
-Requirements:
-- Keep 95% of content completely unchanged
-- Make minimal targeted changes only
-- Maintain exact format and structure
-- No markdown formatting (**text**)
-- Return the COMPLETE itinerary with minimal edits applied`;
+Return the COMPLETE itinerary with your minimal targeted changes applied.`;
     }
 
     console.log('Calling OpenAI API for itinerary editing...');
@@ -414,6 +429,9 @@ Requirements:
 
     // Save the edited content back to the database
     console.log('Saving edited content to database...');
+    console.log('Itinerary ID:', itineraryId);
+    console.log('User ID:', user.id);
+    console.log('Updated content length:', editedContent.length);
     
     // First, determine which table contains this itinerary
     let updateSuccess = false;
@@ -438,10 +456,11 @@ Requirements:
       console.log('Error updating saved_itineraries:', updateError1.message);
       finalError = updateError1;
     } else if (savedIterResult && savedIterResult.length > 0) {
-      console.log('Successfully updated saved_itineraries table');
+      console.log('Successfully updated saved_itineraries table, rows affected:', savedIterResult.length);
+      console.log('Updated saved_itineraries data:', JSON.stringify(savedIterResult[0], null, 2));
       updateSuccess = true;
     } else {
-      console.log('No rows updated in saved_itineraries, trying trips table...');
+      console.log('No rows updated in saved_itineraries (no matching record found), trying trips table...');
     }
 
     // If saved_itineraries update didn't work, try trips table
@@ -464,17 +483,18 @@ Requirements:
         console.error('Error updating trips table:', updateError2.message);
         finalError = updateError2;
       } else if (tripsResult && tripsResult.length > 0) {
-        console.log('Successfully updated trips table');
+        console.log('Successfully updated trips table, rows affected:', tripsResult.length);
+        console.log('Updated trips data:', JSON.stringify(tripsResult[0], null, 2));
         updateSuccess = true;
       } else {
-        console.log('No rows updated in trips table either');
+        console.log('No rows updated in trips table either (no matching record found)');
       }
     }
 
     // If neither update worked, throw an error
     if (!updateSuccess) {
       console.error('Failed to update itinerary in either table:', finalError);
-      throw new Error(`Failed to save changes: ${finalError?.message || 'No rows updated in either table'}`);
+      throw new Error(`Failed to save changes: ${finalError?.message || 'No rows updated in either table - itinerary not found'}`);
     }
 
     console.log('Successfully saved edited content to database');

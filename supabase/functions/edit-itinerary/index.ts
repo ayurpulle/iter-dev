@@ -265,18 +265,27 @@ NOW PROVIDE THE COMPLETE EDITED ITINERARY:
 
 COMPLETE EDITED ITINERARY:`;
 
-    console.log('Calling OpenAI API for itinerary editing...');
-    console.log('OpenAI API key present:', !!openAIApiKey);
-    
-    if (!openAIApiKey) {
-      return new Response(JSON.stringify({
-        error: 'OpenAI API key not configured',
-        details: 'Server configuration error'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Log the original content for debugging
+    console.log('Original itinerary content length:', itineraryContent.length);
+    console.log('Edit request:', editRequest);
+
+    // CRITICAL: More explicit system prompt
+    const systemPrompt = `You are a travel itinerary editor. Your ONLY job is to return COMPLETE travel itineraries.
+
+CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
+1. ALWAYS return the COMPLETE itinerary - every single section, every single day
+2. Your response MUST be at least ${Math.floor(itineraryContent.length * 0.8)} characters long
+3. Your response MUST include ALL of these sections if they exist in the original:
+   - Trip Summary
+   - Getting There
+   - Perfect Stay  
+   - Day-by-Day Itinerary (with ALL days)
+   - Travel Tips
+   - Booking Links
+4. NEVER return just the changes or a summary
+5. NEVER say "rest remains the same" or similar
+6. The output must be a standalone, complete itinerary
+7. Apply edits while preserving 95% of the original content`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -289,14 +298,15 @@ COMPLETE EDITED ITINERARY:`;
         messages: [
           {
             role: 'system',
-            content: systemMessage
+            content: systemPrompt
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 4000, // Increase to ensure full content
+        max_completion_tokens: 5000, // Increased from 3000
+        temperature: 0.3, // Lower temperature for more consistent output
       }),
     });
 
@@ -322,20 +332,22 @@ COMPLETE EDITED ITINERARY:`;
       .replace(/^#+\s+/gm, '')          // Remove markdown headers
       .trim();
 
-    // CRITICAL: Validate the edited content
-    if (!editedContent || editedContent.length < 100) {
-      console.error('LLM returned insufficient content:', editedContent);
-      console.log('Falling back to original itinerary content with warning');
+    console.log('Generated AI response length:', editedContent.length);
+    console.log('First 500 chars of response:', editedContent.substring(0, 500));
+
+    // CRITICAL VALIDATION SECTION
+    const minAcceptableLength = Math.min(500, itineraryContent.length * 0.3); // At least 30% of original or 500 chars
+    
+    // Check 1: Basic length validation
+    if (!editedContent || editedContent.length < minAcceptableLength) {
+      console.error(`LLM returned insufficient content. Length: ${editedContent.length}, Min required: ${minAcceptableLength}`);
+      console.log('Full LLM response:', editedContent);
       
-      // If LLM failed to return proper content, keep the original
-      editedContent = itineraryContent;
-      
-      // Return error response to user
+      // Return error without saving
       return new Response(JSON.stringify({
-        error: 'Failed to generate proper edits',
-        details: 'The AI did not return a complete itinerary. Please try rephrasing your request.',
-        response: 'I encountered an issue editing your itinerary. Please try again with a more specific request.',
-        updatedItinerary: itineraryContent, // Return original content
+        error: 'Content validation failed',
+        response: 'I encountered an issue generating the complete itinerary. Please try your request again.',
+        updatedItinerary: itineraryContent, // Return original
         saved: false
       }), {
         status: 400,
@@ -343,29 +355,53 @@ COMPLETE EDITED ITINERARY:`;
       });
     }
 
-    // Additional validation: Check if content seems like a complete itinerary
-    const hasBasicItineraryStructure = 
-      editedContent.includes('Day') || 
-      editedContent.includes('Morning') || 
-      editedContent.includes('Afternoon') ||
-      editedContent.includes('Evening');
-
-    if (!hasBasicItineraryStructure) {
-      console.error('LLM response lacks itinerary structure:', editedContent.substring(0, 200));
+    // Check 2: Verify it has itinerary structure
+    const hasItineraryStructure = (content: string) => {
+      const requiredElements = [
+        content.toLowerCase().includes('day') || content.toLowerCase().includes('week'),
+        content.length > 1000, // Reasonable minimum for a full itinerary
+        // Check for multiple sections (look for line breaks and content patterns)
+        (content.match(/\n\n/g) || []).length > 3,
+        // Check for time-based content
+        content.toLowerCase().includes('morning') || 
+        content.toLowerCase().includes('afternoon') || 
+        content.toLowerCase().includes('evening') ||
+        content.toLowerCase().includes('am') ||
+        content.toLowerCase().includes('pm')
+      ];
       
-      // Try to recover by re-prompting with more explicit instructions
-      const recoveryPrompt = `
-The previous response was incomplete. Please provide the COMPLETE itinerary with ALL days and activities.
+      const elementsPresent = requiredElements.filter(Boolean).length;
+      return elementsPresent >= 3; // At least 3 out of 4 elements
+    };
 
-ORIGINAL COMPLETE ITINERARY:
+    if (!hasItineraryStructure(editedContent)) {
+      console.error('LLM response lacks proper itinerary structure');
+      console.log('Attempting recovery with more explicit prompt...');
+      
+      // Recovery attempt with ultra-explicit prompt
+      const recoveryPrompt = `CRITICAL: Your previous response was incomplete. 
+
+HERE IS THE COMPLETE ORIGINAL ITINERARY (${itineraryContent.length} characters):
+"""
 ${itineraryContent}
+"""
 
-USER'S EDIT REQUEST:
-${editRequest}
+USER WANTS TO: ${editRequest}
 
-CRITICAL: Return the ENTIRE itinerary with the requested edits applied. Include ALL days, ALL sections, and ALL activities. Do not return only the changes or a summary.`;
+YOUR TASK:
+1. Take the ENTIRE itinerary above (all ${itineraryContent.length} characters)
+2. Make ONLY the change requested: "${editRequest}"
+3. Return the COMPLETE itinerary with that change applied
 
-      // Make another API call with clearer instructions
+REQUIREMENTS:
+- Your response MUST be at least ${Math.floor(itineraryContent.length * 0.8)} characters
+- Include EVERY section from the original
+- Include EVERY day from the original  
+- Make only the minimal edit requested
+- Do not summarize or abbreviate anything
+
+START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
+
       const recoveryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -377,51 +413,90 @@ CRITICAL: Return the ENTIRE itinerary with the requested edits applied. Include 
           messages: [
             {
               role: 'system',
-              content: 'You MUST return the complete travel itinerary with all days, activities, and sections. Never return partial content or only the changes.'
+              content: 'Return the COMPLETE itinerary. Your response must be the full itinerary text, not a summary or partial content.'
             },
             {
               role: 'user',
               content: recoveryPrompt
             }
           ],
-          max_completion_tokens: 4000, // Increase token limit for recovery
+          max_completion_tokens: 6000, // Even more tokens for recovery
+          temperature: 0.2, // Even lower temperature
         }),
       });
 
       if (recoveryResponse.ok) {
         const recoveryData = await recoveryResponse.json();
-        editedContent = recoveryData.choices[0].message.content
+        const recoveredContent = recoveryData.choices[0].message.content
           .replace(/\*\*([^*]+)\*\*/g, '$1')
           .replace(/\*([^*]+)\*/g, '$1')
           .replace(/^#+\s+/gm, '')
           .trim();
         
-        // Check recovery attempt
-        if (editedContent.length < 100) {
-          // Recovery failed, return original
-          console.error('Recovery attempt also failed');
-          editedContent = itineraryContent;
+        console.log('Recovery attempt generated content length:', recoveredContent.length);
+        
+        // Check if recovery was successful
+        if (recoveredContent.length >= minAcceptableLength && hasItineraryStructure(recoveredContent)) {
+          editedContent = recoveredContent;
+          console.log('Recovery successful, using recovered content');
+        } else {
+          console.error('Recovery also failed, reverting to original content');
+          // Return error without saving
+          return new Response(JSON.stringify({
+            error: 'Failed to generate complete itinerary',
+            response: 'I had trouble processing your edit request. Please try rephrasing it or make a more specific request.',
+            updatedItinerary: itineraryContent, // Return original
+            saved: false
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
       } else {
-        // Recovery API call failed, keep original
-        editedContent = itineraryContent;
+        console.error('Recovery API call failed');
+        return new Response(JSON.stringify({
+          error: 'Recovery attempt failed',
+          response: 'I encountered an error processing your request. Please try again.',
+          updatedItinerary: itineraryContent,
+          saved: false
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
-    // Log content length for debugging
-    console.log('Final edited content length:', editedContent.length);
-    console.log('Original content length:', itineraryContent.length);
-
-    // Warn if edited content is significantly shorter than original
+    // Check 3: Warn if content is suspiciously short compared to original
     if (editedContent.length < itineraryContent.length * 0.5) {
-      console.warn('Edited content is significantly shorter than original. This might indicate an issue.');
-      // But proceed if it has basic structure
-      if (!hasBasicItineraryStructure) {
-        editedContent = itineraryContent;
+      console.warn(`Warning: Edited content (${editedContent.length} chars) is much shorter than original (${itineraryContent.length} chars)`);
+      
+      // For simple edits that shouldn't reduce content, this is suspicious
+      if (!isShorteningTrip && !editRequestLower.includes('remove') && !editRequestLower.includes('shorter')) {
+        console.error('Content unexpectedly shortened for a non-reduction edit');
+        
+        // One more check - does it at least have the key sections?
+        const hasKeySections = 
+          editedContent.toLowerCase().includes('day') &&
+          editedContent.toLowerCase().includes('trip') &&
+          (editedContent.match(/\n/g) || []).length > 20; // At least 20 line breaks
+        
+        if (!hasKeySections) {
+          return new Response(JSON.stringify({
+            error: 'Content validation failed',
+            response: 'The edit resulted in incomplete content. Please try again with a clearer request.',
+            updatedItinerary: itineraryContent,
+            saved: false
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
     }
 
-    console.log('Generated AI response');
+    // If we get here, the content passed validation
+    console.log('Content validation passed. Proceeding to save...');
+    console.log(`Final content stats: ${editedContent.length} chars (original: ${itineraryContent.length} chars)`);
 
     // Create service client for database operations first (needed for date calculations)
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

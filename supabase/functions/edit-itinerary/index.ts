@@ -340,6 +340,13 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
 
     console.log('Generated AI response');
 
+    // Create service client for database operations first (needed for date calculations)
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseServiceKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+    }
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+
     // Extract potential metadata changes from the response
     let updatedDestination = destination;
     let updatedStartDate = null;
@@ -362,24 +369,53 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
 
     // Handle date updates for trip extensions
     if (isExtendingTrip && numberOfDaysToAdd > 0) {
-      // Extract current dates from the itinerary metadata
-      const currentMetadata = extractCurrentMetadata(itineraryContent);
-      if (currentMetadata.dates) {
-        // Try to parse current dates to extend them
-        const dateMatch = currentMetadata.dates.match(/(\w+\s+\d+,?\s+\d+)\s+to\s+(\w+\s+\d+,?\s+\d+)/i);
-        if (dateMatch) {
-          try {
-            const currentEndDate = new Date(dateMatch[2]);
-            if (!isNaN(currentEndDate.getTime())) {
-              const newEndDate = new Date(currentEndDate);
-              newEndDate.setDate(newEndDate.getDate() + numberOfDaysToAdd);
-              updatedEndDate = newEndDate.toISOString().split('T')[0];
-              console.log(`Extended trip by ${numberOfDaysToAdd} days. New end date: ${updatedEndDate}`);
-            }
-          } catch (error) {
-            console.error('Error parsing dates for extension:', error);
-          }
+      console.log(`Processing trip extension: adding ${numberOfDaysToAdd} days`);
+      
+      // Get current dates from database first
+      let currentStartDate = null;
+      let currentEndDate = null;
+      
+      // Try to get from saved_itineraries first
+      const { data: savedIter } = await supabaseService
+        .from('saved_itineraries')
+        .select('start_date, end_date')
+        .eq('id', itineraryId)
+        .single();
+      
+      if (savedIter) {
+        currentStartDate = savedIter.start_date;
+        currentEndDate = savedIter.end_date;
+      } else {
+        // Try trips table
+        const { data: tripData } = await supabaseService
+          .from('trips')
+          .select('start_date, end_date')
+          .eq('id', itineraryId)
+          .single();
+        
+        if (tripData) {
+          currentStartDate = tripData.start_date;
+          currentEndDate = tripData.end_date;
         }
+      }
+      
+      console.log('Current dates from database:', { currentStartDate, currentEndDate });
+      
+      if (currentEndDate) {
+        try {
+          const endDate = new Date(currentEndDate);
+          if (!isNaN(endDate.getTime())) {
+            const newEndDate = new Date(endDate);
+            newEndDate.setDate(newEndDate.getDate() + numberOfDaysToAdd);
+            updatedEndDate = newEndDate.toISOString().split('T')[0];
+            updatedStartDate = currentStartDate; // Keep the same start date
+            console.log(`Extended trip by ${numberOfDaysToAdd} days. New dates: ${updatedStartDate} to ${updatedEndDate}`);
+          }
+        } catch (error) {
+          console.error('Error calculating new end date:', error);
+        }
+      } else {
+        console.warn('No current end date found in database for trip extension');
       }
     } else {
       // Extract dates if mentioned in the response (for other types of edits)
@@ -393,13 +429,6 @@ Provide the complete updated itinerary with your targeted changes applied. Keep 
 
     // Save the edited content back to the database
     console.log('Saving edited content to database...');
-    
-    // Create service client for database operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!supabaseServiceKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
-    }
-    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
     
     // Try to update in saved_itineraries table first
     const { error: updateError1 } = await supabaseService

@@ -129,16 +129,45 @@ serve(async (req) => {
       itineraryId: itineraryId
     });
 
-    // Validate required fields
-    if (!itineraryContent || itineraryContent.trim() === '') {
-      console.error('Missing itinerary content');
-      return new Response(JSON.stringify({
-        error: 'Missing required fields: itineraryContent',
-        details: 'Itinerary content is required'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Validate required fields - if no content provided, fetch from database
+    let finalItineraryContent = itineraryContent;
+    if (!itineraryContent || itineraryContent.trim() === '' || itineraryContent.length < 100) {
+      console.log('Missing or insufficient itinerary content, fetching from database...');
+      
+      // Try to fetch from saved_itineraries first, then trips table
+      const { data: savedIter, error: savedError } = await supabase
+        .from('saved_itineraries')
+        .select('content')
+        .eq('id', itineraryId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (savedIter?.content && savedIter.content.length > 100) {
+        finalItineraryContent = savedIter.content;
+        console.log('Found content in saved_itineraries:', finalItineraryContent.length);
+      } else {
+        // Try trips table
+        const { data: tripData, error: tripError } = await supabase
+          .from('trips')
+          .select('description')
+          .eq('id', itineraryId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (tripData?.description && tripData.description.length > 100) {
+          finalItineraryContent = tripData.description;
+          console.log('Found content in trips table:', finalItineraryContent.length);
+        } else {
+          console.error('No valid itinerary content found in database');
+          return new Response(JSON.stringify({
+            error: 'No itinerary content found',
+            details: 'Could not find itinerary content to edit'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
     }
 
     if (!editRequest || editRequest.trim() === '') {
@@ -207,7 +236,7 @@ serve(async (req) => {
       };
     };
 
-    const currentMetadata = extractCurrentMetadata(itineraryContent);
+    const currentMetadata = extractCurrentMetadata(finalItineraryContent);
     
     // Analyze the edit request type
     const editRequestLower = editRequest.toLowerCase();
@@ -251,9 +280,9 @@ CRITICAL INSTRUCTIONS:
 5. If you're modifying content, include ALL content with modifications applied
 6. Your response should be AT LEAST as long as the original itinerary
 
-CURRENT COMPLETE ITINERARY (${itineraryContent.length} characters):
+CURRENT COMPLETE ITINERARY (${finalItineraryContent.length} characters):
 """
-${itineraryContent}
+${finalItineraryContent}
 """
 
 USER'S EDIT REQUEST:
@@ -278,7 +307,7 @@ NOW PROVIDE THE COMPLETE EDITED ITINERARY:
 COMPLETE EDITED ITINERARY:`;
 
     // Log the original content for debugging
-    console.log('Original itinerary content length:', itineraryContent.length);
+    console.log('Original itinerary content length:', finalItineraryContent.length);
     console.log('Edit request:', editRequest);
 
     // CRITICAL: More explicit system prompt
@@ -286,7 +315,7 @@ COMPLETE EDITED ITINERARY:`;
 
 CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
 1. ALWAYS return the COMPLETE itinerary - every single section, every single day
-2. Your response MUST be at least ${Math.floor(itineraryContent.length * 0.8)} characters long
+2. Your response MUST be at least ${Math.floor(finalItineraryContent.length * 0.8)} characters long
 3. Your response MUST include ALL of these sections if they exist in the original:
    - Trip Summary
    - Getting There
@@ -348,7 +377,7 @@ CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
     console.log('First 500 chars of response:', editedContent.substring(0, 500));
 
     // CRITICAL VALIDATION SECTION
-    const minAcceptableLength = Math.min(500, itineraryContent.length * 0.3); // At least 30% of original or 500 chars
+    const minAcceptableLength = Math.min(500, finalItineraryContent.length * 0.3); // At least 30% of original or 500 chars
     
     // Check 1: Basic length validation
     if (!editedContent || editedContent.length < minAcceptableLength) {
@@ -359,7 +388,7 @@ CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
       return new Response(JSON.stringify({
         error: 'Content validation failed',
         response: 'I encountered an issue generating the complete itinerary. Please try your request again.',
-        updatedItinerary: itineraryContent, // Return original
+        updatedItinerary: finalItineraryContent, // Return original
         saved: false
       }), {
         status: 400,
@@ -393,9 +422,9 @@ CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
       // Recovery attempt with ultra-explicit prompt
       const recoveryPrompt = `CRITICAL: Your previous response was incomplete. 
 
-HERE IS THE COMPLETE ORIGINAL ITINERARY (${itineraryContent.length} characters):
+HERE IS THE COMPLETE ORIGINAL ITINERARY (${finalItineraryContent.length} characters):
 """
-${itineraryContent}
+${finalItineraryContent}
 """
 
 USER WANTS TO: ${editRequest}
@@ -406,7 +435,7 @@ YOUR TASK:
 3. Return the COMPLETE itinerary with that change applied
 
 REQUIREMENTS:
-- Your response MUST be at least ${Math.floor(itineraryContent.length * 0.8)} characters
+- Your response MUST be at least ${Math.floor(finalItineraryContent.length * 0.8)} characters
 - Include EVERY section from the original
 - Include EVERY day from the original  
 - Make only the minimal edit requested
@@ -457,7 +486,7 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
           return new Response(JSON.stringify({
             error: 'Failed to generate complete itinerary',
             response: 'I had trouble processing your edit request. Please try rephrasing it or make a more specific request.',
-            updatedItinerary: itineraryContent, // Return original
+            updatedItinerary: finalItineraryContent, // Return original
             saved: false
           }), {
             status: 400,
@@ -469,7 +498,7 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
         return new Response(JSON.stringify({
           error: 'Recovery attempt failed',
           response: 'I encountered an error processing your request. Please try again.',
-          updatedItinerary: itineraryContent,
+          updatedItinerary: finalItineraryContent,
           saved: false
         }), {
           status: 500,
@@ -479,8 +508,8 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
     }
 
     // Check 3: Warn if content is suspiciously short compared to original
-    if (editedContent.length < itineraryContent.length * 0.5) {
-      console.warn(`Warning: Edited content (${editedContent.length} chars) is much shorter than original (${itineraryContent.length} chars)`);
+    if (editedContent.length < finalItineraryContent.length * 0.5) {
+      console.warn(`Warning: Edited content (${editedContent.length} chars) is much shorter than original (${finalItineraryContent.length} chars)`);
       
       // For simple edits that shouldn't reduce content, this is suspicious
       if (!isShorteningTrip && !editRequestLower.includes('remove') && !editRequestLower.includes('shorter')) {
@@ -496,7 +525,7 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
           return new Response(JSON.stringify({
             error: 'Content validation failed',
             response: 'The edit resulted in incomplete content. Please try again with a clearer request.',
-            updatedItinerary: itineraryContent,
+            updatedItinerary: finalItineraryContent,
             saved: false
           }), {
             status: 400,
@@ -508,7 +537,7 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
 
     // If we get here, the content passed validation
     console.log('Content validation passed. Proceeding to save...');
-    console.log(`Final content stats: ${editedContent.length} chars (original: ${itineraryContent.length} chars)`);
+    console.log(`Final content stats: ${editedContent.length} chars (original: ${finalItineraryContent.length} chars)`);
 
     // Create service client for database operations first (needed for date calculations)
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

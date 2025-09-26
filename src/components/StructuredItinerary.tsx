@@ -322,8 +322,8 @@ export const StructuredItinerary = ({
       ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
       : 7; // Default to 7 days if no dates
     
-    // Split into main sections based on headers
-    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*)/);
+    // Split into main sections based on headers (support both markdown and plain text)
+    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*|^Trip Summary|^Getting There|^Perfect Stay|^Day-by-Day Itinerary|^Travel Tips|^Booking Links|^Flights)/m);
     
     const parsed = {
       summary: '',
@@ -337,14 +337,14 @@ export const StructuredItinerary = ({
 
     sections.forEach(section => {
       const trimmed = section.trim();
-      if (trimmed.startsWith('**Trip Summary**')) {
-        parsed.summary = trimmed.replace('**Trip Summary**', '').trim();
-      } else if (trimmed.startsWith('**Getting There**') || trimmed.startsWith('**Flights**')) {
-        parsed.gettingThere = trimmed.replace(/\*\*(Getting There|Flights)\*\*/, '').trim();
-      } else if (trimmed.startsWith('**Perfect Stay**')) {
-        parsed.perfectStay = trimmed.replace('**Perfect Stay**', '').trim();
-      } else if (trimmed.startsWith('**Day-by-Day Itinerary**')) {
-        const content = trimmed.replace('**Day-by-Day Itinerary**', '').trim();
+      if (trimmed.startsWith('**Trip Summary**') || trimmed.startsWith('Trip Summary')) {
+        parsed.summary = trimmed.replace(/(\*\*)?Trip Summary(\*\*)?/, '').trim();
+      } else if (trimmed.startsWith('**Getting There**') || trimmed.startsWith('**Flights**') || trimmed.startsWith('Getting There') || trimmed.startsWith('Flights')) {
+        parsed.gettingThere = trimmed.replace(/(\*\*)?(Getting There|Flights)(\*\*)?/, '').trim();
+      } else if (trimmed.startsWith('**Perfect Stay**') || trimmed.startsWith('Perfect Stay')) {
+        parsed.perfectStay = trimmed.replace(/(\*\*)?Perfect Stay(\*\*)?/, '').trim();
+      } else if (trimmed.startsWith('**Day-by-Day Itinerary**') || trimmed.startsWith('Day-by-Day Itinerary')) {
+        const content = trimmed.replace(/(\*\*)?Day-by-Day Itinerary(\*\*)?/, '').trim();
         
         if (tripLength <= 7) {
           // For 1-7 days: Show detailed daily breakdown with morning/afternoon/evening for each individual day
@@ -435,10 +435,10 @@ export const StructuredItinerary = ({
             });
           }
         }
-      } else if (trimmed.startsWith('**Travel Tips**') || trimmed.startsWith('**Essential Travel Tips**')) {
-        parsed.travelTips = trimmed.replace(/\*\*(Travel Tips|Essential Travel Tips)\*\*/, '').trim();
-      } else if (trimmed.startsWith('**Booking Links**') || trimmed.startsWith('**Booking & Tips**')) {
-        parsed.bookingLinks = trimmed.replace(/\*\*(Booking Links|Booking & Tips)\*\*/, '').trim();
+      } else if (trimmed.startsWith('**Travel Tips**') || trimmed.startsWith('**Essential Travel Tips**') || trimmed.startsWith('Travel Tips') || trimmed.startsWith('Essential Travel Tips')) {
+        parsed.travelTips = trimmed.replace(/(\*\*)?(Travel Tips|Essential Travel Tips)(\*\*)?/, '').trim();
+      } else if (trimmed.startsWith('**Booking Links**') || trimmed.startsWith('**Booking & Tips**') || trimmed.startsWith('Booking Links') || trimmed.startsWith('Booking & Tips')) {
+        parsed.bookingLinks = trimmed.replace(/(\*\*)?(Booking Links|Booking & Tips)(\*\*)?/, '').trim();
       }
     });
 

@@ -45,6 +45,14 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
       .replace(/\*([^*]+)\*/g, '$1'); // Remove * markdown formatting
     
+    // Remove exposed URLs and create web recommendation markers
+    cleanedText = cleanedText
+      .replace(/\(booking link:\s*(https?:\/\/[^\)]+)\)/gi, '') // Remove booking link URLs
+      .replace(/booking link:\s*(https?:\/\/[^\s,;.]+)/gi, '') // Remove standalone booking links
+      .replace(/\b(https?:\/\/[^\s,;.]+)/gi, '') // Remove any other exposed URLs
+      .replace(/\s+/g, ' ') // Clean up multiple spaces
+      .trim();
+    
     // Split text by lines and process each line
     return cleanedText.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;

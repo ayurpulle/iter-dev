@@ -12,11 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { SavedRecommendationModal } from './SavedRecommendationModal';
+import { WebRecommendationModal } from './WebRecommendationModal';
 import { ItineraryUpdateDropdown } from './ItineraryUpdateDropdown';
 import InteractiveIter from './InteractiveItinerary';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { encodeHolidayTypes, encodeBudget, decodeHolidayTypes, decodeBudget } from '@/utils/itineraryConstants';
+import { extractWebRecommendations } from '@/utils/recommendationExtractor';
 
 interface FriendRecommendation {
   name: string;
@@ -108,6 +110,17 @@ export const StructuredItinerary = ({
   }, [onIterUpdated, onUpdateItinerary]);
   
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
+  const [selectedWebVenue, setSelectedWebVenue] = useState<string | null>(null);
+  
+  // Extract web recommendations from the current itinerary
+  const extractedWebRecommendations = useMemo(() => {
+    return extractWebRecommendations(currentItinerary);
+  }, [currentItinerary]);
+  
+  // Combine provided web recommendations with extracted ones
+  const allWebRecommendations = useMemo(() => {
+    return { ...webRecommendations, ...extractedWebRecommendations };
+  }, [webRecommendations, extractedWebRecommendations]);
   
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
@@ -884,7 +897,7 @@ export const StructuredItinerary = ({
                    <InteractiveIter 
                      itinerary={parsed.gettingThere} 
                      friendRecommendations={friendRecommendations}
-                     webRecommendations={webRecommendations}
+                     webRecommendations={allWebRecommendations}
                    />
                  </div>
               </div>
@@ -919,7 +932,7 @@ export const StructuredItinerary = ({
                    <InteractiveIter 
                      itinerary={parsed.perfectStay} 
                      friendRecommendations={friendRecommendations}
-                     webRecommendations={webRecommendations}
+                     webRecommendations={allWebRecommendations}
                    />
                  </div>
               </div>
@@ -954,7 +967,7 @@ export const StructuredItinerary = ({
                    <InteractiveIter 
                      itinerary={parsed.travelTips} 
                      friendRecommendations={friendRecommendations}
-                     webRecommendations={webRecommendations}
+                     webRecommendations={allWebRecommendations}
                    />
                  </div>
               </div>
@@ -989,7 +1002,7 @@ export const StructuredItinerary = ({
                    <InteractiveIter 
                      itinerary={parsed.bookingLinks} 
                      friendRecommendations={friendRecommendations}
-                     webRecommendations={webRecommendations}
+                     webRecommendations={allWebRecommendations}
                    />
                  </div>
               </div>
@@ -1006,7 +1019,16 @@ export const StructuredItinerary = ({
         }}
         venueName={selectedVenue || ""}
         recommendations={selectedVenue ? (friendRecommendations[selectedVenue] || []) : []}
-      />
-    </div>
-  );
-};
+       />
+       
+       {selectedWebVenue && allWebRecommendations[selectedWebVenue] && (
+         <WebRecommendationModal
+           isOpen={!!selectedWebVenue}
+           onClose={() => setSelectedWebVenue(null)}
+           venueName={selectedWebVenue}
+           recommendations={allWebRecommendations[selectedWebVenue]}
+         />
+       )}
+     </div>
+   );
+ };

@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -12,7 +13,18 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
+  }
+
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -688,13 +700,29 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
-    console.error('Error in edit-itinerary function:', error);
+  } catch (err: any) {
+    console.error('Error in edit-itinerary function:', err);
+    
+    // Handle specific timeout errors
+    if (err.message?.includes('timeout') || err.code === 'TIMEOUT') {
+      return new Response(JSON.stringify({
+        error: 'Request timeout',
+        response: 'The edit request is taking longer than expected. Please try again with a simpler request.',
+        details: 'The operation timed out',
+        saved: false
+      }), {
+        status: 408,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     return new Response(JSON.stringify({
-      error: (error as Error)?.message || 'Unknown error',
-      details: 'Failed to edit itinerary'
+      error: 'Internal server error',
+      response: 'Sorry, I encountered an error processing your edit. Please try again.',
+      details: err.message || 'An unexpected error occurred',
+      saved: false
     }), {
-      status: 400,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

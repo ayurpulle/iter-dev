@@ -159,6 +159,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-4">{line.substring(2)}</p>;
         }
         return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-4">{line.substring(2)}</p>;
+      } else if (/^(Morning|Afternoon|Evening|Night):/i.test(line.trim())) {
+        // Handle time-of-day headers that aren't bullet points
+        return <p key={lineIdx} className="text-sm font-medium text-muted-foreground mb-2 mt-3">{line.trim()}</p>;
       } else {
         return <p key={lineIdx} className="text-sm text-foreground mb-2">{line}</p>;
       }

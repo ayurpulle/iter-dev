@@ -53,6 +53,25 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .replace(/\s+/g, ' ') // Clean up multiple spaces
       .trim();
     
+    // Split content by time periods and format as bullet points
+    const timePattern = /(Morning|Afternoon|Evening|Night):\s*/gi;
+    const parts = cleanedText.split(timePattern);
+    
+    if (parts.length > 1) {
+      // Reconstruct with proper bullet point formatting
+      let reconstructed = parts[0]; // Keep any content before first time period
+      for (let i = 1; i < parts.length; i += 2) {
+        if (parts[i] && parts[i + 1]) {
+          const timePeriod = parts[i].trim();
+          const content = parts[i + 1].trim();
+          
+          // Add bullet point formatting
+          reconstructed += `\n- ${timePeriod}: ${content}`;
+        }
+      }
+      cleanedText = reconstructed;
+    }
+    
     // Split text by lines and process each line
     return cleanedText.split('\n').map((line, lineIdx) => {
       if (line.trim() === '') return <div key={lineIdx} className="h-2" />;

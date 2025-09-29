@@ -21,6 +21,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   // Form data
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -89,10 +90,21 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   };
 
   const handleProfileSetup = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !username.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide your name, email, and password.",
+        description: "Please provide your name, email, password, and username.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate username format (alphanumeric and underscores only)
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username)) {
+      toast({
+        title: "Invalid Username",
+        description: "Username can only contain letters, numbers, and underscores.",
         variant: "destructive"
       });
       return;
@@ -100,7 +112,27 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
     setLoading(true);
     try {
-      // First, create the account
+      // First, check if username already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username.toLowerCase())
+        .maybeSingle();
+
+      if (checkError) {
+        throw checkError;
+      }
+
+      if (existingUser) {
+        toast({
+          title: "Username Already Exists",
+          description: "This username is already taken. Please try another one.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create the account
       const redirectUrl = `${window.location.origin}/`;
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -118,12 +150,24 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           .from('profiles')
           .upsert({
             user_id: data.user.id,
+            username: username.toLowerCase(),
             name: name.trim(),
             bio: bio.trim() || null,
             interests: interests.length > 0 ? interests : null,
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // Handle username uniqueness constraint violation
+          if (profileError.code === '23505' && profileError.message.includes('unique_username')) {
+            toast({
+              title: "Username Already Exists",
+              description: "This username is already taken. Please try another one.",
+              variant: "destructive"
+            });
+            return;
+          }
+          throw profileError;
+        }
       }
 
       toast({
@@ -280,6 +324,23 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">@</span>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="your_username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    required
+                    className="pl-8"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Only letters, numbers, and underscores allowed</p>
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="name">Display Name</Label>
                 <Input
                   id="name"
@@ -332,7 +393,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const canGoNext = () => {
     switch (steps[currentStep].content) {
       case "profile":
-        return name.trim().length > 0 && email.trim().length > 0 && password.trim().length > 0;
+        return name.trim().length > 0 && email.trim().length > 0 && password.trim().length > 0 && username.trim().length > 0;
       default:
         return true;
     }

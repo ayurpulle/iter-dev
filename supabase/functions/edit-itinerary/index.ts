@@ -135,15 +135,32 @@ serve(async (req) => {
       console.log('Missing or insufficient itinerary content, fetching from database...');
       
       // Try to fetch from saved_itineraries first, then trips table
+      // Check if user has edit permissions (owner or collaborator)
+      const { data: permissions } = await supabase
+        .rpc('get_user_itinerary_permissions', {
+          itinerary_uuid: itineraryId,
+          user_uuid: user.id
+        });
+      
+      if (!permissions?.can_edit) {
+        console.error('User does not have edit permissions for this itinerary');
+        return new Response(JSON.stringify({
+          error: 'Permission denied',
+          details: 'You do not have permission to edit this itinerary'
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const { data: savedIter, error: savedError } = await supabase
         .from('saved_itineraries')
-        .select('content')
+        .select('itinerary_content')
         .eq('id', itineraryId)
-        .eq('user_id', user.id)
         .single();
 
-      if (savedIter?.content && savedIter.content.length > 100) {
-        finalItineraryContent = savedIter.content;
+      if (savedIter?.itinerary_content && savedIter.itinerary_content.length > 100) {
+        finalItineraryContent = savedIter.itinerary_content;
         console.log('Found content in saved_itineraries:', finalItineraryContent.length);
       } else {
         // Try trips table
@@ -151,7 +168,6 @@ serve(async (req) => {
           .from('trips')
           .select('description')
           .eq('id', itineraryId)
-          .eq('user_id', user.id)
           .single();
 
         if (tripData?.description && tripData.description.length > 100) {
@@ -650,7 +666,6 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
         updated_at: new Date().toISOString()
       })
       .eq('id', itineraryId)
-      .eq('user_id', user.id)
       .select();
 
     if (updateError1) {
@@ -677,7 +692,6 @@ START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
           updated_at: new Date().toISOString()
         })
         .eq('id', itineraryId)
-        .eq('user_id', user.id)
         .select();
 
       if (updateError2) {

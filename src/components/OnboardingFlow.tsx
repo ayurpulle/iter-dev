@@ -89,10 +89,10 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   };
 
   const handleProfileSetup = async () => {
-    if (!name.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide your name.",
+        description: "Please provide your name, email, and password.",
         variant: "destructive"
       });
       return;
@@ -100,33 +100,42 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("No authenticated user found");
+      // First, create the account
+      const redirectUrl = `${window.location.origin}/`;
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      if (signUpError) throw signUpError;
+
+      // If signup successful, create the profile
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: data.user.id,
+            name: name.trim(),
+            bio: bio.trim() || null,
+            interests: interests.length > 0 ? interests : null,
+          });
+
+        if (profileError) throw profileError;
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          name: name.trim(),
-          bio: bio.trim() || null,
-          interests: interests.length > 0 ? interests : null,
-        });
-
-      if (error) throw error;
-
       toast({
-        title: "Profile Complete!",
-        description: "You're all set to start exploring!",
+        title: "Welcome to Iter!",
+        description: "Your account and profile are now set up!",
       });
       
       onComplete();
     } catch (error: any) {
       toast({
-        title: "Profile Setup Error",
-        description: error.message || "Failed to setup profile.",
+        title: "Setup Error",
+        description: error.message || "Failed to create account and profile.",
         variant: "destructive",
       });
     } finally {
@@ -235,6 +244,42 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a secure password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="name">Display Name</Label>
                 <Input
                   id="name"
@@ -287,7 +332,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const canGoNext = () => {
     switch (steps[currentStep].content) {
       case "profile":
-        return name.trim().length > 0;
+        return name.trim().length > 0 && email.trim().length > 0 && password.trim().length > 0;
       default:
         return true;
     }

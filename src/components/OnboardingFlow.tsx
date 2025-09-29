@@ -32,7 +32,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const steps = [
     {
-      title: "Welcome to Wayfarer Weave",
+      title: "Welcome to Iter",
       subtitle: "Your travel companion awaits",
       content: "intro"
     },
@@ -40,11 +40,6 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       title: "Features Overview",
       subtitle: "Discover what you can do",
       content: "features"
-    },
-    {
-      title: "Create Your Account",
-      subtitle: "Join the travel community",
-      content: "signup"
     },
     {
       title: "Complete Your Profile",
@@ -78,7 +73,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
       toast({
         title: "Account Created!",
-        description: "Welcome to Wayfarer Weave!",
+        description: "Welcome to Iter!",
       });
       
       setCurrentStep(currentStep + 1);
@@ -158,7 +153,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               <Globe className="w-12 h-12 text-white" />
             </div>
             <div className="space-y-4">
-              <h1 className="text-3xl font-bold text-foreground">Wayfarer Weave</h1>
+              <h1 className="text-3xl font-bold text-foreground">Iter</h1>
               <p className="text-lg text-muted-foreground max-w-md mx-auto">
                 Share your travel adventures, discover new destinations, and connect with fellow explorers around the world.
               </p>
@@ -230,55 +225,6 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             </div>
           </div>
         );
-        
-      case "signup":
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold">Create Your Account</h2>
-              <p className="text-sm text-muted-foreground mt-1">Join thousands of travelers worldwide</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a secure password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
       case "profile":
         return (
           <div className="space-y-6">
@@ -340,8 +286,6 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const canGoNext = () => {
     switch (steps[currentStep].content) {
-      case "signup":
-        return email && password;
       case "profile":
         return name.trim().length > 0;
       default:
@@ -352,9 +296,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const handleNext = () => {
     const step = steps[currentStep];
     
-    if (step.content === "signup") {
-      handleSignUp();
-    } else if (step.content === "profile") {
+    if (step.content === "profile") {
       handleProfileSetup();
     } else {
       setCurrentStep(currentStep + 1);

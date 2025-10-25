@@ -605,7 +605,7 @@ export const StructuredItinerary = ({
   const summary = getItinerarySummary();
 
   return (
-    <div className="w-full p-3 space-y-6">
+    <div className="w-full p-2 space-y-4">
       {/* Edit and Update Controls at the top */}
       {iterData && (
         <div className="flex justify-end">

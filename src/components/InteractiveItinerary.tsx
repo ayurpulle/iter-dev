@@ -40,16 +40,24 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
   };
 
   const renderIterWithRecommendations = (text: string) => {
-    // Clean up markdown formatting first
+    // First, ensure time periods are on their own lines
     let cleanedText = text
-      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
-      .replace(/\*([^*]+)\*/g, '$1'); // Remove * markdown formatting
+      // Split inline time periods onto separate lines
+      .replace(/\s+(Morning|Afternoon|Evening|Night):/g, '\n$1:')
+      // Ensure travel tips sections are on separate lines
+      .replace(/\s+(Local Customs?|Transportation|Money|What to Pack|Safety|Best Times? to Visit):/gi, '\n• $1:')
+      // Ensure subsection titles are on separate lines
+      .replace(/\s+(Flight Recommendations?|Booking Tips?|Airport Transfer|Travel Documentation|Accommodation Recommendations?|Budget|Mid-Range|Luxury|Best Neighborhoods?|Booking Tips & Timing|Car Rental):/gi, '\n• $1:');
     
-    // Normalize bullet points to • and ensure proper line breaks
+    // Clean up markdown formatting but preserve structure
     cleanedText = cleanedText
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
+      .replace(/\*([^*]+)\*/g, '$1') // Remove * markdown formatting
       .replace(/^[\s]*[-]\s*/gm, '• ') // Convert - to •
-      .replace(/\s+/g, ' ') // Clean up multiple spaces
-      .trim();
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n');
     
     // Helper function to parse markdown links and recommendations inline
     const parseInlineContent = (content: string) => {

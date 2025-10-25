@@ -203,7 +203,7 @@ const Profile = () => {
     }
     
     // Private profile - check if they're friends
-    if (friendshipStatus?.mutualStatus === 'accepted') {
+    if (friendshipStatus?.isMutual) {
       setCanViewPosts(true);
     } else {
       setCanViewPosts(false);
@@ -278,7 +278,7 @@ const Profile = () => {
 
     if (!friendshipStatus) return null;
 
-    if (friendshipStatus.mutualStatus === 'accepted') {
+    if (friendshipStatus.isMutual) {
       return (
         <Button 
           variant="secondary" 
@@ -290,7 +290,7 @@ const Profile = () => {
       );
     }
 
-    if (friendshipStatus.outgoingStatus === 'pending') {
+    if (friendshipStatus.outgoing?.status === 'pending') {
       return (
         <Button variant="outline" className="w-full" disabled>
           Request Sent

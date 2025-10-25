@@ -497,7 +497,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
         const selectedFolder = folders.find(f => f.id === formData.inspirationFolder);
         const folderName = selectedFolder ? selectedFolder.name : formData.inspirationFolder;
         
-        const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
+        const { ragContext, friendRecommendations: ragFriendRecs } = await generateRAGPrompt(
           formData.destination,
           formData.holidayTypes,
           formData.startDate || undefined,
@@ -565,7 +565,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
       const selectedFolder = folders.find(f => f.id === formData.inspirationFolder);
       const folderName = selectedFolder ? selectedFolder.name : formData.inspirationFolder;
       
-      const { ragContext, friendRecommendations: ragFriendRecs } = generateRAGPrompt(
+      const { ragContext, friendRecommendations: ragFriendRecs } = await generateRAGPrompt(
         formData.destination,
         formData.holidayTypes,
         formData.startDate || undefined,

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import UnifiedPostCard from "@/components/UnifiedPostCard";
 import { FollowersDialog } from "@/components/FollowersDialog";
+import { FabricConnectionToggle } from "@/components/FabricConnectionToggle";
 
 interface SavedPost {
   id: string;
@@ -781,6 +782,8 @@ const Account = () => {
               <Globe size={20} />
               My World
             </h2>
+            
+            <FabricConnectionToggle />
             
             <TravelMap 
               visitedCountries={visitedCountries}

@@ -1,5 +1,7 @@
 import { useSavedPosts } from "./useSavedPosts";
 import { useFriends } from "./useFriends";
+import { useFabricRecommendations } from "./useFabricRecommendations";
+import { formatFabricContextForRAG } from "@/utils/fabricFormatter";
 
 export interface FriendRecommendation {
   name: string;
@@ -13,6 +15,7 @@ export interface FriendRecommendation {
 export const useRAGIter = () => {
   const { savedPosts } = useSavedPosts();
   const { friends } = useFriends();
+  const { isConnected: isFabricConnected, fetchRecommendations: fetchFabricRecs } = useFabricRecommendations();
 
   const extractLocationKeywords = (destination: string): string[] => {
     // Extract common location keywords that might match with posts
@@ -161,10 +164,22 @@ export const useRAGIter = () => {
     return { activity: null, season: null };
   };
 
-  const generateRAGPrompt = (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string, folderName?: string) => {
+  const generateRAGPrompt = async (destination: string, interests?: string[], startDate?: Date, endDate?: Date, budget?: number, inspirationSource?: string, inspirationFolder?: string, folderName?: string) => {
     const friendExperiences = findRelevantFriendExperiences(destination, interests, inspirationSource, inspirationFolder);
     const venuesWithFriends = Object.keys(friendExperiences);
     const { activity, season } = detectDestinationContext(destination, startDate);
+
+    // Fetch Fabric recommendations if connected
+    let fabricContext = '';
+    if (isFabricConnected) {
+      try {
+        const fabricRecs = await fetchFabricRecs(destination, interests);
+        fabricContext = formatFabricContextForRAG(fabricRecs, destination);
+      } catch (error) {
+        console.error('Error fetching Fabric recommendations:', error);
+        // Continue without Fabric context
+      }
+    }
 
     let ragContext = '';
     if (venuesWithFriends.length > 0) {
@@ -197,6 +212,11 @@ Prioritize these recommended places in your itinerary as they come from trusted 
 Include 1-2 internet-researched recommendations with high ratings/reviews, marked as [WEB_REC:VenueName:source_url] for display purposes.`;
     }
 
+    // Append Fabric context if available
+    if (fabricContext) {
+      ragContext += fabricContext;
+    }
+
     return {
       ragContext,
       friendRecommendations: friendExperiences
@@ -206,6 +226,7 @@ Include 1-2 internet-researched recommendations with high ratings/reviews, marke
   return {
     findRelevantFriendExperiences,
     generateRAGPrompt,
-    extractVenuesFromText
+    extractVenuesFromText,
+    isFabricConnected
   };
 };

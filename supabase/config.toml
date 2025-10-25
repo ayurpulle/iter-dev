@@ -83,3 +83,6 @@ verify_jwt = true
 
 [functions.fabric-oauth-callback]
 verify_jwt = false
+
+[functions.fetch-fabric-recommendations]
+verify_jwt = true

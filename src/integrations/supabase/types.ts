@@ -98,6 +98,51 @@ export type Database = {
         }
         Relationships: []
       }
+      fabric_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          created_at: string
+          fabric_user_id: string | null
+          id: string
+          last_synced_at: string | null
+          metadata: Json | null
+          refresh_token: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          created_at?: string
+          fabric_user_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          created_at?: string
+          fabric_user_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       friends: {
         Row: {
           created_at: string
@@ -643,14 +688,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_unread_message_count: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
+      get_current_user_id: { Args: never; Returns: string }
+      get_unread_message_count: { Args: { user_uuid: string }; Returns: number }
       get_unread_notification_count: {
         Args: { user_uuid: string }
         Returns: number

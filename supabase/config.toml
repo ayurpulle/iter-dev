@@ -80,3 +80,6 @@ verify_jwt = true
 
 [functions.manual-moderate-content]
 verify_jwt = true
+
+[functions.fabric-oauth-callback]
+verify_jwt = false

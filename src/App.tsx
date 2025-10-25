@@ -28,6 +28,7 @@ import Profile from "./pages/Profile";
 
 import Settings from "./pages/Settings";
 import PostDetail from "./pages/PostDetail";
+import FabricCallback from "./pages/FabricCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,7 @@ const App = () => {
                   <Settings />
                 </ProtectedRoute>
               } />
+              <Route path="/fabric-callback" element={<FabricCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

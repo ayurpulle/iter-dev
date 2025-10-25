@@ -89,9 +89,14 @@ const Profile = () => {
       if (userProfile.user_id !== user.id) {
         checkFriendshipStatus();
       }
-      determinePostVisibility();
     }
   }, [userProfile, user]);
+
+  useEffect(() => {
+    if (userProfile && user) {
+      determinePostVisibility();
+    }
+  }, [userProfile, user, friendshipStatus]);
 
   const loadUserProfile = async () => {
     if (!username) return;

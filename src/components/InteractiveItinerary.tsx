@@ -153,9 +153,11 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       
       // Regular line formatting with parsed content
       if (line.startsWith('# ')) {
-        return <h1 key={lineIdx} className="text-xl font-bold mb-3 text-foreground">{parseInlineContent(line.substring(2))}</h1>;
+        return <h1 key={lineIdx} className="text-2xl font-bold mb-4 mt-6 text-foreground">{parseInlineContent(line.substring(2))}</h1>;
       } else if (line.startsWith('## ')) {
-        return <h2 key={lineIdx} className="text-lg font-semibold mb-2 text-foreground">{parseInlineContent(line.substring(3))}</h2>;
+        return <h2 key={lineIdx} className="text-xl font-bold mb-3 mt-4 text-foreground">{parseInlineContent(line.substring(3))}</h2>;
+      } else if (line.startsWith('### ')) {
+        return <h3 key={lineIdx} className="text-lg font-bold mb-2 mt-3 text-foreground">{parseInlineContent(line.substring(4))}</h3>;
       } else if (line.startsWith('• ') || line.startsWith('- ')) {
         // Standardize bullet points
         const lineContent = line.startsWith('• ') ? line.substring(2) : line.substring(2);
@@ -168,13 +170,29 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <p key={lineIdx} className="text-sm mb-2 ml-4">
-              <span className="font-semibold text-foreground">{timePeriod}:</span>{' '}
-              <span className="text-muted-foreground">{parseInlineContent(rest)}</span>
-            </p>
+            <div key={lineIdx} className="mb-3 ml-4">
+              <div className="font-bold text-base text-foreground mb-1">{timePeriod}:</div>
+              <div className="text-sm text-muted-foreground ml-4">{parseInlineContent(rest)}</div>
+            </div>
           );
         }
-        return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-4">• {content}</p>;
+        
+        // Check for bolded section titles (like "Getting There:", "Perfect Stay:")
+        const sectionPattern = /^([^:]+):\s*(.*)$/;
+        const sectionMatch = lineContent.match(sectionPattern);
+        
+        if (sectionMatch && sectionMatch[1].length < 50) {
+          const title = sectionMatch[1];
+          const description = sectionMatch[2];
+          return (
+            <div key={lineIdx} className="mb-3 ml-4">
+              <span className="font-bold text-sm text-foreground">{title}:</span>
+              {description && <span className="text-sm text-muted-foreground ml-1">{parseInlineContent(description)}</span>}
+            </div>
+          );
+        }
+        
+        return <p key={lineIdx} className="text-sm text-muted-foreground mb-2 ml-4 leading-relaxed">• {content}</p>;
       } else if (/^(Morning|Afternoon|Evening|Night):/i.test(line.trim())) {
         // Handle time-of-day headers that aren't bullet points
         const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
@@ -184,16 +202,16 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <p key={lineIdx} className="text-sm mb-2 mt-3">
-              <span className="font-semibold text-foreground">{timePeriod}:</span>{' '}
-              <span className="text-muted-foreground">{parseInlineContent(rest)}</span>
-            </p>
+            <div key={lineIdx} className="mb-3 mt-4">
+              <div className="font-bold text-base text-foreground mb-1">{timePeriod}:</div>
+              <div className="text-sm text-muted-foreground ml-4">{parseInlineContent(rest)}</div>
+            </div>
           );
         }
       }
       
       // Default paragraph
-      return <p key={lineIdx} className="text-sm text-foreground mb-2">{content}</p>;
+      return <p key={lineIdx} className="text-sm text-foreground mb-2 leading-relaxed">{content}</p>;
     });
   };
 

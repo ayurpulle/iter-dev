@@ -284,9 +284,26 @@ CRITICAL RULES:
 8. If removing days, remove from the end
 9. PRESERVE all [FRIEND_REC:VenueName] markers exactly as they appear
 10. PRESERVE all [WEB_REC:VenueName:URL] markers exactly as they appear
-11. Use bullet points • for all lists
-12. For Day-by-Day sections, maintain Morning/Afternoon/Evening/Night structure
-13. Embed all URLs as markdown hyperlinks [Text](URL), never show raw URLs`;
+
+CRITICAL FORMATTING - PRESERVE STRUCTURE WITH THESE RULES:
+- Use bullet points • for all lists - ONE per line
+- For day-by-day sections, EACH time period on SEPARATE LINES:
+  • Morning:
+  • [activity]
+  • Afternoon:
+  • [activity]
+  • Evening:
+  • [activity]
+  • Night:
+  • [activity]
+- For Getting There, Perfect Stay, Travel Tips sections, EACH subsection on SEPARATE LINES:
+  • Flight Recommendations & Booking Tips:
+  • [content]
+  • Budget:
+  • [content]
+  • Local Customs:
+  • [content]
+- Embed all URLs as markdown hyperlinks [Text](URL), never show raw URLs`;
 
     // For all edit types, use this more explicit prompt structure
     const prompt = `
@@ -302,18 +319,52 @@ CRITICAL INSTRUCTIONS:
 
 FORMATTING REQUIREMENTS - CRITICAL TO PRESERVE:
 - ALL recommendation markers MUST be preserved: [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL]
-- Use bullet points • (not dashes or asterisks) for all lists
-- For Day-by-Day itinerary, ALWAYS use this structure for EACH day:
+- Use bullet points • (not dashes or asterisks) for all lists - ONE bullet point per line
+- For Day-by-Day itinerary, EACH time period MUST be on a SEPARATE LINE:
   **Day X: [Title]**
   
-  **Morning:** • Activity 1 • Activity 2 • Activity 3
+  • Morning:
+  • Activity 1 with description
+  • Activity 2 with description
   
-  **Afternoon:** • Activity 1 • Activity 2 • Activity 3
+  • Afternoon:
+  • Activity 1 with description
+  • Activity 2 with description
   
-  **Evening:** • Activity 1 • Activity 2
+  • Evening:
+  • Activity 1 with description
   
-  **Night:** • Activity or note
-- For "Getting There", "Perfect Stay", "Essential Travel Tips", "Booking Links" sections: use bullet points • for each item
+  • Night:
+  • Activity or note
+  
+- For "Getting There" section, EACH subsection on SEPARATE LINES:
+  • Flight Recommendations & Booking Tips:
+  • [content on separate line]
+  • Airport Transfer Options:
+  • [content on separate line]
+  
+- For "Perfect Stay" section, EACH subsection on SEPARATE LINES:
+  • Budget:
+  • [hotel recommendation on separate line]
+  • Mid-Range:
+  • [hotel recommendation on separate line]
+  • Luxury:
+  • [hotel recommendation on separate line]
+  
+- For "Essential Travel Tips", EACH tip category on SEPARATE LINES:
+  • Local Customs:
+  • [content on separate line]
+  • Transportation:
+  • [content on separate line]
+  • Money:
+  • [content on separate line]
+  • What to Pack:
+  • [content on separate line]
+  • Safety:
+  • [content on separate line]
+  • Best Times to Visit:
+  • [content on separate line]
+  
 - Embed all URLs as markdown hyperlinks: [Text](URL) - NEVER show raw URLs
 - Keep concise, actionable content in each section
 

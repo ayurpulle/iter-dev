@@ -96,17 +96,28 @@ Structure your response with these exact sections:
 [2-3 sentences describing the updated trip overview, highlighting what makes this itinerary special]
 
 **Getting There**
-[Transportation recommendations in bullet points format using bullet points • for each item]
-• Flight recommendations and booking tips
-• Airport transfer options
-• Entry requirements and documentation
+[Transportation recommendations - EACH subsection on SEPARATE LINES]
+• Flight Recommendations & Booking Tips:
+• [content on separate line]
+• Airport Transfer Options:
+• [content on separate line]
+• Travel Documentation:
+• [content on separate line]
 [Keep concise and actionable]
 
 **Perfect Stay**
-[Accommodation recommendations in bullet points format]
-• Best neighborhoods with brief descriptions
-• Accommodation options by category (Luxury/Ultra-Luxury/Boutique/Private Residences)
-• Specific hotel/residence recommendations with key features
+[Accommodation recommendations - EACH subsection on SEPARATE LINES]
+• Accommodation Recommendations:
+• Budget:
+• [hotel recommendation on separate line]
+• Mid-Range:
+• [hotel recommendation on separate line]
+• Luxury:
+• [hotel recommendation on separate line]
+• Best Neighborhoods:
+• [neighborhood recommendation on separate line]
+• Booking Tips & Timing:
+• [tips on separate line]
 [Keep concise and organized by category]
 
 **Day-by-Day Itinerary**
@@ -115,25 +126,42 @@ Structure your response with these exact sections:
 - For trips 7-14 days: Group as "Days 1-2:", "Days 3-4:", etc.
 - For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.]
 
-For EACH day, structure activities by time period:
+For EACH day, structure activities by time period ON SEPARATE LINES:
 **Day X: [Day Title]**
 
-**Morning:** • [Activity 1] • [Activity 2] • [Activity 3]
+• Morning:
+• [Activity 1 with brief description]
+• [Activity 2 with brief description]
+• [Activity 3 with brief description]
 
-**Afternoon:** • [Activity 1] • [Activity 2] • [Activity 3]
+• Afternoon:
+• [Activity 1 with brief description]
+• [Activity 2 with brief description]
+• [Activity 3 with brief description]
 
-**Evening:** • [Activity 1] • [Activity 2]
+• Evening:
+• [Activity 1 with brief description]
+• [Activity 2 with brief description]
 
-**Night:** • [Activity or note about nighttime]
+• Night:
+• [Activity or note about nighttime]
 
-[Use bullet points • for each activity within each time period]
+[Each time period and bullet point MUST be on its own line]
 
 **Essential Travel Tips**
-[Practical advice in bullet points format]
-• Local customs and etiquette tips
-• Getting around advice
-• Money and payment tips
-• What to pack recommendations
+[Practical advice - EACH category on SEPARATE LINES]
+• Local Customs:
+• [content on separate line]
+• Transportation:
+• [content on separate line]
+• Money:
+• [content on separate line]
+• What to Pack:
+• [content on separate line]
+• Safety:
+• [content on separate line]
+• Best Times to Visit:
+• [content on separate line]
 [Keep concise and actionable]
 
 **Booking Links**
@@ -143,16 +171,19 @@ For EACH day, structure activities by time period:
 • Useful booking platforms or services
 
 **FORMATTING REQUIREMENTS:**
-1. Use bullet points • (not dashes or asterisks) for all lists
-2. For Day-by-Day section, ALWAYS structure each day with Morning/Afternoon/Evening/Night subsections
-3. Each time period should have bullet points for activities
-4. DO NOT use asterisks around single words - write naturally
-5. For emphasis, use **bold** sparingly only for section headers
-6. Embed all URLs as clickable hyperlinks in markdown format: [Link Text](URL)
-7. Do NOT show raw URLs in the text - always embed them
-8. Keep tone conversational but informative
-9. Include specific venue names, prices when relevant, and insider tips
-10. PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers from friend recommendations
+1. Use bullet points • (not dashes or asterisks) for all lists - ONE bullet point per line
+2. For Day-by-Day section, EACH time period MUST be on a SEPARATE LINE
+3. Morning, Afternoon, Evening, Night - each on its own line with • bullet
+4. Each activity as a separate bullet point under its time period
+5. For Getting There, Perfect Stay, Travel Tips - EACH subsection on SEPARATE LINES
+6. Subsection headers (Flight Recommendations, Budget, Local Customs, etc.) on separate lines with • bullet
+7. DO NOT use asterisks around single words - write naturally
+8. For emphasis, use **bold** sparingly only for section headers
+9. Embed all URLs as clickable hyperlinks in markdown format: [Link Text](URL)
+10. Do NOT show raw URLs in the text - always embed them
+11. Keep tone conversational but informative
+12. Include specific venue names, prices when relevant, and insider tips
+13. PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers from friend recommendations
 
 Keep the same engaging, personal tone while updating the content to match the new parameters. Include specific recommendations that align with the specified budget and interests.
 `;

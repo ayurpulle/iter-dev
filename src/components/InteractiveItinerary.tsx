@@ -45,14 +45,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
       .replace(/\*([^*]+)\*/g, '$1'); // Remove * markdown formatting
     
-    // Split inline time periods (Morning:, Afternoon:, Evening:, Night:) onto separate lines
+    // Normalize bullet points to • and ensure proper line breaks
     cleanedText = cleanedText
-      .replace(/•\s*(Morning|Afternoon|Evening|Night):/gi, '\n• $1:')
-      .replace(/\.\s+(Morning|Afternoon|Evening|Night):/gi, '.\n• $1:');
-    
-    // Normalize bullet points to •
-    cleanedText = cleanedText
-      .replace(/^[\s]*[•\-]\s*/gm, '• ') // Normalize bullets
+      .replace(/^[\s]*[-]\s*/gm, '• ') // Convert - to •
       .replace(/\s+/g, ' ') // Clean up multiple spaces
       .trim();
     
@@ -168,63 +163,78 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         const lineContent = line.startsWith('• ') ? line.substring(2) : line.substring(2);
         
         // Check if this is a time-of-day bullet point with special formatting
-        const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
+        const timePattern = /^(Morning|Afternoon|Evening|Night):?\s*(.*)$/i;
         const timeMatch = lineContent.match(timePattern);
         
         if (timeMatch) {
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <div key={lineIdx} className="mb-4 ml-4">
-              <div className="font-bold text-base text-foreground mb-2">{timePeriod}:</div>
-              {rest && <div className="text-sm text-muted-foreground ml-4 break-words">{parseInlineContent(rest)}</div>}
+            <div key={lineIdx} className="mb-2 ml-4">
+              <div className="font-bold text-lg text-foreground mt-4 mb-3">{timePeriod}:</div>
+              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 mb-2 break-words leading-relaxed">{parseInlineContent(rest)}</div>}
             </div>
           );
         }
         
         // Check for travel tips section titles (Local Customs, Transportation, Money, What to Pack, Safety, Best Times to Visit)
-        const travelTipsPattern = /^(Local Customs?|Transportation|Money|What to Pack|Safety|Best Times? to Visit)(?:\s*&\s*\w+)?:\s*(.*)$/i;
+        const travelTipsPattern = /^(Local Customs?|Transportation|Money|What to Pack|Safety|Best Times? to Visit)(?:\s*&\s*[\w\s]+)?:?\s*(.*)$/i;
         const travelTipsMatch = lineContent.match(travelTipsPattern);
         
         if (travelTipsMatch) {
           const title = travelTipsMatch[1];
           const description = travelTipsMatch[2];
           return (
-            <div key={lineIdx} className="mb-4 ml-4">
-              <div className="font-bold text-base text-foreground mb-2">{title}:</div>
-              {description && <div className="text-sm text-muted-foreground ml-4 break-words">{parseInlineContent(description)}</div>}
+            <div key={lineIdx} className="mb-3 ml-4">
+              <div className="font-bold text-base text-foreground mt-3 mb-2">{title}:</div>
+              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 break-words leading-relaxed">{parseInlineContent(description)}</div>}
             </div>
           );
         }
         
-        // Check for bolded section titles (like "Getting There:", "Perfect Stay:")
+        // Check for subsection titles in Getting There, Perfect Stay, etc.
+        const subsectionPattern = /^(Flight Recommendations?|Booking Tips?|Airport Transfer|Travel Documentation|Accommodation Recommendations?|Budget|Mid-Range|Luxury|Best Neighborhoods?|Booking Tips & Timing|Car Rental)(?:\s*&\s*[\w\s]+)?:?\s*(.*)$/i;
+        const subsectionMatch = lineContent.match(subsectionPattern);
+        
+        if (subsectionMatch) {
+          const title = subsectionMatch[1];
+          const description = subsectionMatch[2];
+          return (
+            <div key={lineIdx} className="mb-3 ml-4">
+              <div className="font-bold text-base text-foreground mt-2 mb-2">{title}:</div>
+              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 break-words leading-relaxed">{parseInlineContent(description)}</div>}
+            </div>
+          );
+        }
+        
+        // Check for other bolded section titles (shorter ones)
         const sectionPattern = /^([^:]+):\s*(.*)$/;
         const sectionMatch = lineContent.match(sectionPattern);
         
-        if (sectionMatch && sectionMatch[1].length < 50) {
+        if (sectionMatch && sectionMatch[1].length < 40 && !sectionMatch[1].includes('•')) {
           const title = sectionMatch[1];
           const description = sectionMatch[2];
           return (
-            <div key={lineIdx} className="mb-3 ml-4">
+            <div key={lineIdx} className="mb-2 ml-4">
               <span className="font-bold text-sm text-foreground">{title}:</span>
-              {description && <span className="text-sm text-muted-foreground ml-1 break-words">{parseInlineContent(description)}</span>}
+              {description && description.trim() !== '' && <span className="text-sm text-muted-foreground ml-2 break-words">{parseInlineContent(description)}</span>}
             </div>
           );
         }
         
         return <p key={lineIdx} className="text-sm text-muted-foreground mb-2 ml-4 leading-relaxed break-words">• {content}</p>;
-      } else if (/^(Morning|Afternoon|Evening|Night):/i.test(line.trim())) {
+      } else if (/^(Morning|Afternoon|Evening|Night):?/i.test(line.trim())) {
         // Handle time-of-day headers that aren't bullet points
-        const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
+        const timePattern = /^(Morning|Afternoon|Evening|Night):?\s*(.*)$/i;
         const timeMatch = line.trim().match(timePattern);
         
         if (timeMatch) {
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <div key={lineIdx} className="mb-3 mt-4">
-              <div className="font-bold text-base text-foreground mb-1">{timePeriod}:</div>
-              <div className="text-sm text-muted-foreground ml-4">{parseInlineContent(rest)}</div>
+            <div key={lineIdx} className="mb-2 mt-4">
+              <div className="font-bold text-lg text-foreground mb-3">{timePeriod}:</div>
+              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 mb-2 break-words leading-relaxed">{parseInlineContent(rest)}</div>}
             </div>
           );
         }

@@ -311,7 +311,60 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           messages: [
             { 
               role: 'system', 
-              content: 'You are an expert travel planner that creates detailed, practical itineraries with proper day grouping based on trip duration. Always format venue recommendations from saved posts with [SAVED_REC:venue_name:user_name] markers.'
+              content: `You are an expert travel planner creating detailed itineraries. 
+              
+CRITICAL FORMATTING RULES - FOLLOW EXACTLY:
+1. Use clear markdown headings (##, ###)
+2. ONE bullet point per line using • symbol
+3. For day-by-day sections, format time periods on SEPARATE LINES:
+   • Morning:
+   • [activity with brief description]
+   • [activity with brief description]
+   • Afternoon:
+   • [activity with brief description]
+   • Evening:
+   • [activity with brief description]
+   • Night:
+   • [activity with brief description]
+
+4. For "Getting There" section, format each subsection on SEPARATE LINES:
+   • Flight Recommendations & Booking Tips:
+   • [content]
+   • Airport Transfer Options:
+   • [content]
+   • Travel Documentation:
+   • [content]
+
+5. For "Perfect Stay" section, format each subsection on SEPARATE LINES:
+   • Accommodation Recommendations:
+   • Budget:
+   • [hotel recommendation]
+   • Mid-Range:
+   • [hotel recommendation]
+   • Luxury:
+   • [hotel recommendation]
+   • Best Neighborhoods:
+   • [recommendations]
+   • Booking Tips & Timing:
+   • [tips]
+
+6. For "Essential Travel Tips", format each tip on SEPARATE LINES:
+   • Local Customs:
+   • [content]
+   • Transportation:
+   • [content]
+   • Money:
+   • [content]
+   • What to Pack:
+   • [content]
+   • Safety:
+   • [content]
+   • Best Times to Visit:
+   • [content]
+
+7. Embed ALL web links as markdown hyperlinks: [Link Text](URL)
+8. For saved venue recommendations, use [SAVED_REC:venue_name:user_name]
+9. For web recommendations, use [WEB_REC:venue_name:URL]`
             },
             { role: 'user', content: prompt }
           ],

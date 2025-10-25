@@ -45,6 +45,11 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
       .replace(/\*([^*]+)\*/g, '$1'); // Remove * markdown formatting
     
+    // Split inline time periods (Morning:, Afternoon:, Evening:, Night:) onto separate lines
+    cleanedText = cleanedText
+      .replace(/•\s*(Morning|Afternoon|Evening|Night):/gi, '\n• $1:')
+      .replace(/\.\s+(Morning|Afternoon|Evening|Night):/gi, '.\n• $1:');
+    
     // Normalize bullet points to •
     cleanedText = cleanedText
       .replace(/^[\s]*[•\-]\s*/gm, '• ') // Normalize bullets
@@ -170,9 +175,24 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <div key={lineIdx} className="mb-3 ml-4">
-              <div className="font-bold text-base text-foreground mb-1">{timePeriod}:</div>
-              <div className="text-sm text-muted-foreground ml-4">{parseInlineContent(rest)}</div>
+            <div key={lineIdx} className="mb-4 ml-4">
+              <div className="font-bold text-base text-foreground mb-2">{timePeriod}:</div>
+              {rest && <div className="text-sm text-muted-foreground ml-4 break-words">{parseInlineContent(rest)}</div>}
+            </div>
+          );
+        }
+        
+        // Check for travel tips section titles (Local Customs, Transportation, Money, What to Pack, Safety, Best Times to Visit)
+        const travelTipsPattern = /^(Local Customs?|Transportation|Money|What to Pack|Safety|Best Times? to Visit)(?:\s*&\s*\w+)?:\s*(.*)$/i;
+        const travelTipsMatch = lineContent.match(travelTipsPattern);
+        
+        if (travelTipsMatch) {
+          const title = travelTipsMatch[1];
+          const description = travelTipsMatch[2];
+          return (
+            <div key={lineIdx} className="mb-4 ml-4">
+              <div className="font-bold text-base text-foreground mb-2">{title}:</div>
+              {description && <div className="text-sm text-muted-foreground ml-4 break-words">{parseInlineContent(description)}</div>}
             </div>
           );
         }
@@ -187,12 +207,12 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           return (
             <div key={lineIdx} className="mb-3 ml-4">
               <span className="font-bold text-sm text-foreground">{title}:</span>
-              {description && <span className="text-sm text-muted-foreground ml-1">{parseInlineContent(description)}</span>}
+              {description && <span className="text-sm text-muted-foreground ml-1 break-words">{parseInlineContent(description)}</span>}
             </div>
           );
         }
         
-        return <p key={lineIdx} className="text-sm text-muted-foreground mb-2 ml-4 leading-relaxed">• {content}</p>;
+        return <p key={lineIdx} className="text-sm text-muted-foreground mb-2 ml-4 leading-relaxed break-words">• {content}</p>;
       } else if (/^(Morning|Afternoon|Evening|Night):/i.test(line.trim())) {
         // Handle time-of-day headers that aren't bullet points
         const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
@@ -217,7 +237,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
 
   return (
     <>
-      <div className="prose prose-sm max-w-none text-foreground">
+      <div className="prose prose-sm max-w-none text-foreground overflow-hidden break-words">
         {renderIterWithRecommendations(itinerary)}
       </div>
       

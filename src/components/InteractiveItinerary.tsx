@@ -68,7 +68,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       let idx = 0;
       
       // Combined pattern for markdown links and recommendations
-      const pattern = /\[([^\]]+)\]\(([^\)]+)\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC):([^\]]+)\]/g;
+      const pattern = /\[([^\]]+)\]\s*\(([^\)]+)\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       

@@ -838,11 +838,11 @@ export const StructuredItinerary = ({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="mt-2 p-6 border rounded-lg bg-background">
+            <div className="mt-2 p-3 border rounded-lg bg-background">
               {parsed.days.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {parsed.days.map((day, index) => (
-                    <div key={index} className="border-l-2 border-blue-200 pl-4">
+                    <div key={index} className="border-l-2 border-blue-200 pl-3">
                       <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
                           {day.isRange ? `Days ${day.number}-${day.endDay}` : `Day ${day.number}`}
@@ -851,7 +851,7 @@ export const StructuredItinerary = ({
                           <span className="text-foreground/80">{day.title}</span>
                         )}
                       </h3>
-                       <div className="space-y-2">
+                       <div>
                          <InteractiveIter 
                            itinerary={day.content} 
                            friendRecommendations={friendRecommendations}
@@ -892,8 +892,8 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg bg-background">
-                 <div className="space-y-2">
+              <div className="mt-2 p-3 border rounded-lg bg-background">
+                 <div>
                    <InteractiveIter 
                      itinerary={parsed.gettingThere} 
                      friendRecommendations={friendRecommendations}
@@ -927,8 +927,8 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg bg-background">
-                 <div className="space-y-2">
+              <div className="mt-2 p-3 border rounded-lg bg-background">
+                 <div>
                    <InteractiveIter 
                      itinerary={parsed.perfectStay} 
                      friendRecommendations={friendRecommendations}
@@ -962,8 +962,8 @@ export const StructuredItinerary = ({
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-2 p-6 border rounded-lg bg-background">
-                 <div className="space-y-2">
+              <div className="mt-2 p-3 border rounded-lg bg-background">
+                 <div>
                    <InteractiveIter 
                      itinerary={parsed.travelTips} 
                      friendRecommendations={friendRecommendations}

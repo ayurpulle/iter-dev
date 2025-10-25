@@ -154,18 +154,18 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
     
     // Split text by lines and process each line
     return cleanedText.split('\n').map((line, lineIdx) => {
-      if (line.trim() === '') return <div key={lineIdx} className="h-2" />;
+      if (line.trim() === '') return null;
       
       // Parse inline content (links and recommendations)
       const content = parseInlineContent(line);
       
       // Regular line formatting with parsed content
       if (line.startsWith('# ')) {
-        return <h1 key={lineIdx} className="text-2xl font-bold mb-4 mt-6 text-foreground">{parseInlineContent(line.substring(2))}</h1>;
+        return <h1 key={lineIdx} className="text-2xl font-bold mb-2 mt-3 text-foreground">{parseInlineContent(line.substring(2))}</h1>;
       } else if (line.startsWith('## ')) {
-        return <h2 key={lineIdx} className="text-xl font-bold mb-3 mt-4 text-foreground">{parseInlineContent(line.substring(3))}</h2>;
+        return <h2 key={lineIdx} className="text-xl font-bold mb-2 mt-2 text-foreground">{parseInlineContent(line.substring(3))}</h2>;
       } else if (line.startsWith('### ')) {
-        return <h3 key={lineIdx} className="text-lg font-bold mb-2 mt-3 text-foreground">{parseInlineContent(line.substring(4))}</h3>;
+        return <h3 key={lineIdx} className="text-lg font-bold mb-1 mt-2 text-foreground">{parseInlineContent(line.substring(4))}</h3>;
       } else if (line.startsWith('• ') || line.startsWith('- ')) {
         // Standardize bullet points
         const lineContent = line.startsWith('• ') ? line.substring(2) : line.substring(2);
@@ -178,9 +178,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <div key={lineIdx} className="mb-2 ml-4">
-              <div className="font-bold text-lg text-foreground mt-4 mb-3">{timePeriod}:</div>
-              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 mb-2 break-words leading-relaxed">{parseInlineContent(rest)}</div>}
+            <div key={lineIdx} className="mb-1 ml-2">
+              <div className="font-bold text-base text-foreground mt-2 mb-1">{timePeriod}:</div>
+              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-3 mb-1 break-words leading-snug">{parseInlineContent(rest)}</div>}
             </div>
           );
         }
@@ -193,9 +193,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const title = travelTipsMatch[1];
           const description = travelTipsMatch[2];
           return (
-            <div key={lineIdx} className="mb-3 ml-4">
-              <div className="font-bold text-base text-foreground mt-3 mb-2">{title}:</div>
-              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 break-words leading-relaxed">{parseInlineContent(description)}</div>}
+            <div key={lineIdx} className="mb-1 ml-2">
+              <div className="font-bold text-sm text-foreground mt-1 mb-1">{title}:</div>
+              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-3 break-words leading-snug">{parseInlineContent(description)}</div>}
             </div>
           );
         }
@@ -208,9 +208,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const title = subsectionMatch[1];
           const description = subsectionMatch[2];
           return (
-            <div key={lineIdx} className="mb-3 ml-4">
-              <div className="font-bold text-base text-foreground mt-2 mb-2">{title}:</div>
-              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 break-words leading-relaxed">{parseInlineContent(description)}</div>}
+            <div key={lineIdx} className="mb-1 ml-2">
+              <div className="font-bold text-sm text-foreground mt-1 mb-1">{title}:</div>
+              {description && description.trim() !== '' && <div className="text-sm text-muted-foreground ml-3 break-words leading-snug">{parseInlineContent(description)}</div>}
             </div>
           );
         }
@@ -223,14 +223,14 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const title = sectionMatch[1];
           const description = sectionMatch[2];
           return (
-            <div key={lineIdx} className="mb-2 ml-4">
+            <div key={lineIdx} className="mb-1 ml-2">
               <span className="font-bold text-sm text-foreground">{title}:</span>
               {description && description.trim() !== '' && <span className="text-sm text-muted-foreground ml-2 break-words">{parseInlineContent(description)}</span>}
             </div>
           );
         }
         
-        return <p key={lineIdx} className="text-sm text-muted-foreground mb-2 ml-4 leading-relaxed break-words">• {content}</p>;
+        return <p key={lineIdx} className="text-sm text-muted-foreground mb-1 ml-2 leading-snug break-words">• {content}</p>;
       } else if (/^(Morning|Afternoon|Evening|Night):?/i.test(line.trim())) {
         // Handle time-of-day headers that aren't bullet points
         const timePattern = /^(Morning|Afternoon|Evening|Night):?\s*(.*)$/i;
@@ -240,16 +240,16 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const timePeriod = timeMatch[1];
           const rest = timeMatch[2];
           return (
-            <div key={lineIdx} className="mb-2 mt-4">
-              <div className="font-bold text-lg text-foreground mb-3">{timePeriod}:</div>
-              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-4 mb-2 break-words leading-relaxed">{parseInlineContent(rest)}</div>}
+            <div key={lineIdx} className="mb-1 mt-2">
+              <div className="font-bold text-base text-foreground mb-1">{timePeriod}:</div>
+              {rest && rest.trim() !== '' && <div className="text-sm text-muted-foreground ml-3 mb-1 break-words leading-snug">{parseInlineContent(rest)}</div>}
             </div>
           );
         }
       }
       
       // Default paragraph
-      return <p key={lineIdx} className="text-sm text-foreground mb-2 leading-relaxed">{content}</p>;
+      return <p key={lineIdx} className="text-sm text-foreground mb-1 leading-snug">{content}</p>;
     });
   };
 

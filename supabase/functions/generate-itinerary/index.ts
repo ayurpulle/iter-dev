@@ -313,10 +313,17 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
               role: 'system', 
               content: `You are an expert travel planner creating detailed, practical itineraries.
 
+CRITICAL WRITING STYLE:
+- Write in natural, conversational language - NOT like AI-generated content
+- Use simple, direct sentences after bullet points
+- Keep descriptions concise and human-sounding
+- Avoid flowery or overly enthusiastic language
+- Write like you're texting travel advice to a friend
+
 CRITICAL STRUCTURE REQUIREMENTS:
 - Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
 - For day-by-day section, ALWAYS use format: **Day 1: [Title]** (this is critical for parsing)
-- Use bullet points • for lists
+- Use bullet points • for lists in ALL sections
 - Embed links as markdown: [Text](URL)
 - Mark recommendations: [SAVED_REC:venue_name:user_name] for saved posts, [WEB_REC:venue_name:URL] for web sources
 
@@ -336,7 +343,7 @@ FORMATTING FOR EACH DAY:
 • Night:
 • Activity with brief description
 
-Keep each section clear and parseable. Maintain this exact structure.`
+Keep each section clear and parseable. Maintain this exact structure. Write naturally across all sections.`
             },
             { role: 'user', content: prompt }
           ],

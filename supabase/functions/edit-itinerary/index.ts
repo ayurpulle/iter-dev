@@ -273,6 +273,13 @@ serve(async (req) => {
     // Improved system message for clarity
     const systemMessage = `You are a travel itinerary editor. Your job is to modify travel itineraries based on user requests.
 
+CRITICAL WRITING STYLE:
+- Write in natural, conversational language - NOT like AI-generated content
+- Use simple, direct sentences after bullet points
+- Keep descriptions concise and human-sounding
+- Avoid flowery or overly enthusiastic language
+- Write like you're texting travel advice to a friend
+
 CRITICAL RULES:
 1. ALWAYS output the COMPLETE itinerary, not just the changes
 2. Your response should contain the FULL itinerary with ALL days and activities
@@ -287,9 +294,10 @@ CRITICAL RULES:
 
 FORMATTING:
 - Maintain section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
-- Use bullet points • for lists
+- Use bullet points • for lists in ALL sections
 - Each day: **Day X: [Title]** then • Morning: • Afternoon: • Evening: • Night: with activities
-- Embed URLs as markdown: [Text](URL)`;
+- Embed URLs as markdown: [Text](URL)
+- Write naturally across all sections`;
 
     // For all edit types, use this more explicit prompt structure
     const prompt = `

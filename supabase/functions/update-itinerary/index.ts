@@ -183,7 +183,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         messages: [
           {
             role: 'system',
-            content: 'You are an expert travel planner who creates detailed, personalized itineraries. Always follow the exact format requested and provide specific, actionable recommendations with proper day grouping based on trip duration.'
+            content: 'You are an expert travel planner who creates detailed, personalized itineraries. CRITICAL: Write in natural, conversational language - NOT like AI-generated content. Use simple, direct sentences after bullet points. Keep descriptions concise and human-sounding. Avoid flowery or overly enthusiastic language. Write like you\'re texting travel advice to a friend. Always follow the exact format requested with bullet points for all sections and provide specific, actionable recommendations with proper day grouping based on trip duration.'
           },
           {
             role: 'user',

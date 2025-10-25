@@ -282,7 +282,11 @@ CRITICAL RULES:
 6. Apply edits surgically - change only what's requested
 7. If adding days, append them to the end
 8. If removing days, remove from the end
-9. Never use markdown formatting in your response`;
+9. PRESERVE all [FRIEND_REC:VenueName] markers exactly as they appear
+10. PRESERVE all [WEB_REC:VenueName:URL] markers exactly as they appear
+11. Use bullet points • for all lists
+12. For Day-by-Day sections, maintain Morning/Afternoon/Evening/Night structure
+13. Embed all URLs as markdown hyperlinks [Text](URL), never show raw URLs`;
 
     // For all edit types, use this more explicit prompt structure
     const prompt = `
@@ -296,6 +300,23 @@ CRITICAL INSTRUCTIONS:
 5. If you're modifying content, include ALL content with modifications applied
 6. Your response should be AT LEAST as long as the original itinerary
 
+FORMATTING REQUIREMENTS - CRITICAL TO PRESERVE:
+- ALL recommendation markers MUST be preserved: [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL]
+- Use bullet points • (not dashes or asterisks) for all lists
+- For Day-by-Day itinerary, ALWAYS use this structure for EACH day:
+  **Day X: [Title]**
+  
+  **Morning:** • Activity 1 • Activity 2 • Activity 3
+  
+  **Afternoon:** • Activity 1 • Activity 2 • Activity 3
+  
+  **Evening:** • Activity 1 • Activity 2
+  
+  **Night:** • Activity or note
+- For "Getting There", "Perfect Stay", "Essential Travel Tips", "Booking Links" sections: use bullet points • for each item
+- Embed all URLs as markdown hyperlinks: [Text](URL) - NEVER show raw URLs
+- Keep concise, actionable content in each section
+
 CURRENT COMPLETE ITINERARY (${finalItineraryContent.length} characters):
 """
 ${finalItineraryContent}
@@ -307,7 +328,7 @@ USER'S EDIT REQUEST:
 ${conversationContext ? `CONVERSATION HISTORY:\n${conversationContext}\n` : ''}
 
 ${isExtendingTrip && numberOfDaysToAdd > 0 ? 
-  `SPECIFIC INSTRUCTION: Add ${numberOfDaysToAdd} new day(s) at the end. Keep ALL existing days exactly as they are.` : ''}
+  `SPECIFIC INSTRUCTION: Add ${numberOfDaysToAdd} new day(s) at the end with the same Morning/Afternoon/Evening/Night structure. Keep ALL existing days exactly as they are.` : ''}
 
 ${isShorteningTrip && numberOfDaysToRemove > 0 ? 
   `SPECIFIC INSTRUCTION: Remove the last ${numberOfDaysToRemove} day(s). Keep all other days exactly as they are.` : ''}
@@ -315,9 +336,11 @@ ${isShorteningTrip && numberOfDaysToRemove > 0 ?
 NOW PROVIDE THE COMPLETE EDITED ITINERARY:
 - Include ALL days from the original
 - Include ALL activities and recommendations
+- PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers
 - Apply the requested edits while preserving everything else
-- Use the same format as the original
-- Remove markdown formatting (no **, no ##)
+- Maintain Morning/Afternoon/Evening/Night structure for all day-by-day content
+- Use bullet points • for all lists
+- Embed URLs as hyperlinks, never show raw URLs
 - Your response must be a complete, standalone itinerary
 
 COMPLETE EDITED ITINERARY:`;
@@ -334,15 +357,19 @@ CRITICAL RULES - VIOLATION WILL RESULT IN FAILURE:
 2. Your response MUST be at least ${Math.floor(finalItineraryContent.length * 0.8)} characters long
 3. Your response MUST include ALL of these sections if they exist in the original:
    - Trip Summary
-   - Getting There
-   - Perfect Stay  
-   - Day-by-Day Itinerary (with ALL days)
-   - Travel Tips
-   - Booking Links
+   - Getting There (with bullet points •)
+   - Perfect Stay (with bullet points •)
+   - Day-by-Day Itinerary (with ALL days in Morning/Afternoon/Evening/Night format)
+   - Essential Travel Tips (with bullet points •)
+   - Booking Links (with bullet points •)
 4. NEVER return just the changes or a summary
 5. NEVER say "rest remains the same" or similar
 6. The output must be a standalone, complete itinerary
-7. Apply edits while preserving 95% of the original content`;
+7. Apply edits while preserving 95% of the original content
+8. PRESERVE all recommendation markers: [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL]
+9. Use bullet points • for all lists
+10. Maintain Morning/Afternoon/Evening/Night structure for day-by-day content
+11. Embed all URLs as markdown hyperlinks, never show raw URLs`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -456,6 +483,10 @@ REQUIREMENTS:
 - Include EVERY day from the original  
 - Make only the minimal edit requested
 - Do not summarize or abbreviate anything
+- PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers exactly
+- Use bullet points • for all lists
+- Maintain Morning/Afternoon/Evening/Night structure for day-by-day sections
+- Embed all URLs as hyperlinks [Text](URL), never show raw URLs
 
 START YOUR RESPONSE NOW WITH THE COMPLETE EDITED ITINERARY:`;
 

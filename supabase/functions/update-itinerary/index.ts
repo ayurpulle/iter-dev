@@ -83,17 +83,31 @@ Please update and enhance the existing itinerary based on the new parameters pro
 3. Activities and recommendations if interests changed
 4. Overall tone and recommendations to match the travel style
 
+**CRITICAL: PRESERVE ALL RECOMMENDATION MARKERS**
+When friend recommendations are present, you MUST include [FRIEND_REC:VenueName] markers immediately after the venue name in the text.
+When web recommendations are present, you MUST include [WEB_REC:VenueName:URL] markers with the full URL immediately after the venue name.
+Example: "Visit Blue Bottle Coffee [FRIEND_REC:Blue Bottle Coffee] for breakfast"
+Example: "Dine at Gary Danko [WEB_REC:Gary Danko:https://example.com]"
+
 **Required Format:**
 Structure your response with these exact sections:
 
 **Trip Summary**
-[2-3 sentences describing the updated trip overview, highlighting what makes this itinerary special for the specified interests and budget level]
+[2-3 sentences describing the updated trip overview, highlighting what makes this itinerary special]
 
 **Getting There**
-[Transportation recommendations including flights, airport transfers, and arrival logistics]
+[Transportation recommendations in bullet points format using bullet points • for each item]
+• Flight recommendations and booking tips
+• Airport transfer options
+• Entry requirements and documentation
+[Keep concise and actionable]
 
 **Perfect Stay**
-[Accommodation recommendations that match the budget level and location preferences]
+[Accommodation recommendations in bullet points format]
+• Best neighborhoods with brief descriptions
+• Accommodation options by category (Luxury/Ultra-Luxury/Boutique/Private Residences)
+• Specific hotel/residence recommendations with key features
+[Keep concise and organized by category]
 
 **Day-by-Day Itinerary**
 [IMPORTANT: Follow day grouping rules:
@@ -101,19 +115,46 @@ Structure your response with these exact sections:
 - For trips 7-14 days: Group as "Days 1-2:", "Days 3-4:", etc.
 - For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.]
 
-**Travel Tips**
-[Practical advice specific to the destination, budget level, and travel style]
+For EACH day, structure activities by time period:
+**Day X: [Day Title]**
+
+**Morning:** • [Activity 1] • [Activity 2] • [Activity 3]
+
+**Afternoon:** • [Activity 1] • [Activity 2] • [Activity 3]
+
+**Evening:** • [Activity 1] • [Activity 2]
+
+**Night:** • [Activity or note about nighttime]
+
+[Use bullet points • for each activity within each time period]
+
+**Essential Travel Tips**
+[Practical advice in bullet points format]
+• Local customs and etiquette tips
+• Getting around advice
+• Money and payment tips
+• What to pack recommendations
+[Keep concise and actionable]
 
 **Booking Links**
-[Relevant booking recommendations and tips for reservations]
+[Relevant booking recommendations in bullet points]
+• Flight and accommodation booking tips
+• Activity reservation recommendations
+• Useful booking platforms or services
 
-FORMATTING REQUIREMENTS:
-- Create a unique, engaging Trip Summary (not formulaic)
-- Use clean formatting without asterisks around single words like *night* - use **night** for bold instead
-- Keep tone casual but helpful with good grammar
-- Follow day grouping rules based on trip duration
+**FORMATTING REQUIREMENTS:**
+1. Use bullet points • (not dashes or asterisks) for all lists
+2. For Day-by-Day section, ALWAYS structure each day with Morning/Afternoon/Evening/Night subsections
+3. Each time period should have bullet points for activities
+4. DO NOT use asterisks around single words - write naturally
+5. For emphasis, use **bold** sparingly only for section headers
+6. Embed all URLs as clickable hyperlinks in markdown format: [Link Text](URL)
+7. Do NOT show raw URLs in the text - always embed them
+8. Keep tone conversational but informative
+9. Include specific venue names, prices when relevant, and insider tips
+10. PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers from friend recommendations
 
-Keep the same engaging, personal tone while updating the content to match the new parameters. Include specific recommendations for restaurants, activities, and experiences that align with the specified budget and interests.
+Keep the same engaging, personal tone while updating the content to match the new parameters. Include specific recommendations that align with the specified budget and interests.
 `;
 
     console.log('Calling OpenAI API for itinerary regeneration...');

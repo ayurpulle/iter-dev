@@ -279,6 +279,7 @@ CRITICAL WRITING STYLE:
 - Keep descriptions concise and human-sounding
 - Avoid flowery or overly enthusiastic language
 - Write like you're texting travel advice to a friend
+- For all links, use markdown format [Name](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs
 
 CRITICAL RULES:
 1. ALWAYS output the COMPLETE itinerary, not just the changes

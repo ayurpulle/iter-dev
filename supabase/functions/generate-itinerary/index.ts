@@ -324,7 +324,7 @@ CRITICAL STRUCTURE REQUIREMENTS:
 - Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
 - For day-by-day section, ALWAYS use format: **Day 1: [Title]** (this is critical for parsing)
 - Use bullet points • for lists in ALL sections
-- Embed links as markdown: [Text](URL)
+- Embed links as markdown: [Text](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs
 - Mark recommendations: [SAVED_REC:venue_name:user_name] for saved posts, [WEB_REC:venue_name:URL] for web sources
 
 FORMATTING FOR EACH DAY:

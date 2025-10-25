@@ -64,11 +64,11 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
     // Helper function to parse markdown links and recommendations inline
     const parseInlineContent = (content: string) => {
       const elements: JSX.Element[] = [];
-      let currentText = '';
       let idx = 0;
       
       // Combined pattern for markdown links and recommendations
-      const pattern = /\[([^\]]+)\]\s*\(([^\)]+)\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC):([^\]]+)\]/g;
+      // More flexible pattern to handle spaces in URLs and between brackets/parentheses
+      const pattern = /\[([^\]]+)\]\s*\(\s*([^\)]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       
@@ -83,16 +83,19 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         
         // Check if it's a markdown link
         if (match[1] && match[2]) {
-          // Markdown link [text](url)
+          // Markdown link [text](url) - clean up URL by removing spaces
+          const cleanUrl = match[2].trim().replace(/\s+/g, '');
+          const linkText = match[1].trim();
+          
           elements.push(
             <a
               key={`link-${idx++}`}
-              href={match[2]}
+              href={cleanUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-primary hover:text-primary/80 underline font-medium transition-colors"
             >
-              {match[1]}
+              {linkText}
             </a>
           );
         } else if (match[3]) {

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 interface FabricConnection {
   id: string;
@@ -72,63 +74,108 @@ export const useFabricConnection = () => {
       const consentUrl = new URL(fabricConsentUrl);
       consentUrl.searchParams.append('state', state);
 
-      // Open consent flow in popup
-      const popup = window.open(
-        consentUrl.toString(),
-        'Fabric OAuth',
-        'width=600,height=700,scrollbars=yes'
-      );
+      const isNative = Capacitor.isNativePlatform();
 
-      if (!popup) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
-
-      // Listen for OAuth callback
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
+      if (isNative) {
+        // For mobile: Open in system browser, will redirect back via deep link
+        await Browser.open({ url: consentUrl.toString() });
         
-        if (event.data.type === 'fabric-oauth-success') {
-          window.removeEventListener('message', handleMessage);
-          popup?.close();
+        // Listen for app resume (when user returns from browser)
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
           
-          // Fetch updated connection
-          await fetchConnection();
-          
-          toast({
-            title: "Success",
-            description: "Successfully connected to Fabric",
-          });
-          
-          setConnecting(false);
-        } else if (event.data.type === 'fabric-oauth-error') {
-          window.removeEventListener('message', handleMessage);
-          popup?.close();
-          
-          toast({
-            title: "Connection Failed",
-            description: event.data.error || "Failed to connect to Fabric",
-            variant: "destructive"
-          });
-          
-          setConnecting(false);
-        }
-      };
+          if (event.data.type === 'fabric-oauth-success') {
+            window.removeEventListener('message', handleMessage);
+            await Browser.close();
+            
+            await fetchConnection();
+            
+            toast({
+              title: "Success",
+              description: "Successfully connected to Fabric",
+            });
+            
+            setConnecting(false);
+          } else if (event.data.type === 'fabric-oauth-error') {
+            window.removeEventListener('message', handleMessage);
+            await Browser.close();
+            
+            toast({
+              title: "Connection Failed",
+              description: event.data.error || "Failed to connect to Fabric",
+              variant: "destructive"
+            });
+            
+            setConnecting(false);
+          }
+        };
 
-      window.addEventListener('message', handleMessage);
+        window.addEventListener('message', handleMessage);
 
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        window.removeEventListener('message', handleMessage);
-        if (popup && !popup.closed) {
-          popup.close();
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
           setConnecting(false);
-          toast({
-            title: "Timeout",
-            description: "Connection attempt timed out",
-            variant: "destructive"
-          });
+        }, 5 * 60 * 1000);
+
+      } else {
+        // For web: Use popup window
+        const popup = window.open(
+          consentUrl.toString(),
+          'Fabric OAuth',
+          'width=600,height=700,scrollbars=yes'
+        );
+
+        if (!popup) {
+          throw new Error('Popup blocked. Please allow popups for this site.');
         }
-      }, 5 * 60 * 1000);
+
+        // Listen for OAuth callback
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'fabric-oauth-success') {
+            window.removeEventListener('message', handleMessage);
+            popup?.close();
+            
+            await fetchConnection();
+            
+            toast({
+              title: "Success",
+              description: "Successfully connected to Fabric",
+            });
+            
+            setConnecting(false);
+          } else if (event.data.type === 'fabric-oauth-error') {
+            window.removeEventListener('message', handleMessage);
+            popup?.close();
+            
+            toast({
+              title: "Connection Failed",
+              description: event.data.error || "Failed to connect to Fabric",
+              variant: "destructive"
+            });
+            
+            setConnecting(false);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          if (popup && !popup.closed) {
+            popup.close();
+            setConnecting(false);
+            toast({
+              title: "Timeout",
+              description: "Connection attempt timed out",
+              variant: "destructive"
+            });
+          }
+        }, 5 * 60 * 1000);
+      }
 
     } catch (error) {
       console.error('Error initiating Fabric connection:', error);

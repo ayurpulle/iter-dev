@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Shield, Eye, Bell, Lock, HelpCircle, LogOut, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, Eye, Bell, Lock, HelpCircle, LogOut, Trash2, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FabricConnectionToggle } from "@/components/FabricConnectionToggle";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -297,6 +298,19 @@ const Settings = () => {
               <Lock size={16} className="mr-2" />
               Change Password
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Connections */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 size={20} />
+              Connections
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FabricConnectionToggle />
           </CardContent>
         </Card>
 

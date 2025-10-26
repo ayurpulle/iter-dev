@@ -64,21 +64,17 @@ export const useFabricConnection = () => {
         throw new Error('User not authenticated');
       }
 
-      // TODO: Replace with actual Fabric OAuth URL once provided by onFabric
-      const fabricClientId = 'YOUR_FABRIC_CLIENT_ID'; // This should come from environment
-      const redirectUri = `${window.location.origin}/fabric-callback`;
+      // Use the Fabric consent URL
+      const fabricConsentUrl = 'https://consent.onfabric.io/connect/92ae4143-7590-4ca9-944a-4c41177062be';
       const state = user.id; // Pass user ID for callback verification
       
-      const fabricAuthUrl = `https://auth.onfabric.com/authorize?` +
-        `client_id=${fabricClientId}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `state=${state}&` +
-        `scope=digital_self journeys`;
+      // Add state parameter to consent URL
+      const consentUrl = new URL(fabricConsentUrl);
+      consentUrl.searchParams.append('state', state);
 
-      // Open OAuth flow in popup
+      // Open consent flow in popup
       const popup = window.open(
-        fabricAuthUrl,
+        consentUrl.toString(),
         'Fabric OAuth',
         'width=600,height=700,scrollbars=yes'
       );

@@ -48,6 +48,56 @@ serve(async (req) => {
         inspirationFolder 
       });
 
+      // Fetch Fabric recommendations if user has connected Fabric
+      let fabricContext = '';
+      try {
+        console.log('Checking for Fabric connection...');
+        const { data: fabricConnection } = await supabaseClient
+          .from('fabric_connections')
+          .select('access_token, status')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (fabricConnection?.access_token) {
+          console.log('Fetching Fabric recommendations for destination:', destination);
+          
+          // Parse interests into array if it's a string
+          const interestsArray = typeof interests === 'string' 
+            ? interests.split(',').map((i: string) => i.trim()) 
+            : Array.isArray(interests) 
+              ? interests 
+              : [];
+
+          const { data: fabricRecs, error: fabricError } = await supabaseClient.functions.invoke(
+            'fetch-fabric-recommendations',
+            {
+              body: {
+                destination,
+                interests: interestsArray,
+                accessToken: fabricConnection.access_token
+              }
+            }
+          );
+
+          if (fabricError) {
+            console.error('Error fetching Fabric recommendations:', fabricError);
+          } else if (fabricRecs && Array.isArray(fabricRecs) && fabricRecs.length > 0) {
+            console.log(`Found ${fabricRecs.length} Fabric recommendations`);
+            fabricContext = `\n\nFABRIC PERSONALIZED RECOMMENDATIONS (from your digital self):\n${
+              fabricRecs.map((rec: any) => 
+                `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
+              ).join('\n')
+            }\n`;
+          }
+        } else {
+          console.log('No active Fabric connection found for user');
+        }
+      } catch (fabricErr) {
+        console.error('Failed to fetch Fabric recommendations:', fabricErr);
+        // Continue without Fabric recommendations
+      }
+
       // Get user's saved posts to use as review bank (filter by folder if specified)
       console.log('Fetching user saved posts for review bank...');
       
@@ -246,6 +296,8 @@ Trip Details:
 - Budget Level: ${budget ? '$'.repeat(parseInt(budget.toString())) : 'Not specified'}
 - Travel Style: ${travelStyle || 'Not specified'}  
 - Interests: ${interests || 'General travel'}
+
+${fabricContext}
 
 ${reviewBankContext}
 

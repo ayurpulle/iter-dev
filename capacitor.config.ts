@@ -12,6 +12,10 @@ const config: CapacitorConfig = {
   plugins: {
     Camera: {
       permissions: ['camera', 'photos']
+    },
+    // Add custom URL scheme for OAuth callbacks
+    App: {
+      customScheme: 'iterapp'
     }
   }
 };

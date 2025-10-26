@@ -65,7 +65,7 @@ export const useFabricConnection = () => {
       }
 
       // Use the Fabric consent URL
-      const fabricConsentUrl = 'https://consent.onfabric.io/connect/92ae4143-7590-4ca9-944a-4c41177062be';
+      const fabricConsentUrl = 'https://consent.onfabric.io/consent/google-3emvp074/generate-token';
       const state = user.id; // Pass user ID for callback verification
       
       // Add state parameter to consent URL

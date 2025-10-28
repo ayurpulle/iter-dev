@@ -170,6 +170,206 @@ export type Database = {
         }
         Relationships: []
       }
+      google_search_raw_threads: {
+        Row: {
+          asat: string | null
+          content: string | null
+          created_at: string
+          data_subtype: string | null
+          data_type: string | null
+          details: Json | null
+          fabric_item_id: string
+          id: string
+          interaction_type: string | null
+          is_health_related: boolean | null
+          is_pii: boolean | null
+          is_pornographic: boolean | null
+          payload: Json | null
+          preview: string | null
+          provider: string | null
+          provider_connection_id: string | null
+          updated_at: string
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          asat?: string | null
+          content?: string | null
+          created_at?: string
+          data_subtype?: string | null
+          data_type?: string | null
+          details?: Json | null
+          fabric_item_id: string
+          id?: string
+          interaction_type?: string | null
+          is_health_related?: boolean | null
+          is_pii?: boolean | null
+          is_pornographic?: boolean | null
+          payload?: Json | null
+          preview?: string | null
+          provider?: string | null
+          provider_connection_id?: string | null
+          updated_at?: string
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          asat?: string | null
+          content?: string | null
+          created_at?: string
+          data_subtype?: string | null
+          data_type?: string | null
+          details?: Json | null
+          fabric_item_id?: string
+          id?: string
+          interaction_type?: string | null
+          is_health_related?: boolean | null
+          is_pii?: boolean | null
+          is_pornographic?: boolean | null
+          payload?: Json | null
+          preview?: string | null
+          provider?: string | null
+          provider_connection_id?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_search_raw_threads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      google_search_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          summary_content: string | null
+          summary_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          summary_content?: string | null
+          summary_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          summary_content?: string | null
+          summary_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_search_summaries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      instagram_general: {
+        Row: {
+          content: string | null
+          created_at: string
+          data_type: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          data_type?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          data_type?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_general_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      instagram_interactions: {
+        Row: {
+          asat: string | null
+          content: string | null
+          created_at: string
+          details: Json | null
+          fabric_item_id: string
+          id: string
+          interaction_type: string | null
+          payload: Json | null
+          preview: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asat?: string | null
+          content?: string | null
+          created_at?: string
+          details?: Json | null
+          fabric_item_id: string
+          id?: string
+          interaction_type?: string | null
+          payload?: Json | null
+          preview?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asat?: string | null
+          content?: string | null
+          created_at?: string
+          details?: Json | null
+          fabric_item_id?: string
+          id?: string
+          interaction_type?: string | null
+          payload?: Json | null
+          preview?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_interactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       item_folders: {
         Row: {
           created_at: string

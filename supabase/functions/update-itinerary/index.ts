@@ -45,6 +45,75 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
     const userCurrency = profile?.default_currency || 'USD';
     const userLocation = profile?.base_location || 'United States';
 
+    // Fetch personalized Fabric data
+    let fabricContext = '';
+    try {
+      const { data: fabricConnection } = await supabase
+        .from('fabric_connections')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (fabricConnection) {
+        const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
+        
+        // Query Google Search data
+        const { data: searchData } = await supabase
+          .from('google_search_raw_threads')
+          .select('content, preview, details, asat')
+          .eq('user_id', userId)
+          .order('asat', { ascending: false })
+          .limit(50);
+
+        // Query Instagram interactions
+        const { data: instagramData } = await supabase
+          .from('instagram_interactions')
+          .select('content, preview, details')
+          .eq('user_id', userId)
+          .order('asat', { ascending: false })
+          .limit(30);
+
+        // Filter for destination-relevant content
+        const relevantSearches = searchData?.filter(item => {
+          const searchText = (item.content || item.preview || '').toLowerCase();
+          return destinationKeywords.some(keyword => 
+            searchText.includes(keyword) || 
+            searchText.includes('travel') || 
+            searchText.includes('hotel') || 
+            searchText.includes('flight') ||
+            searchText.includes('restaurant')
+          );
+        }) || [];
+
+        const relevantInstagram = instagramData?.filter(item => {
+          const postText = (item.content || item.preview || '').toLowerCase();
+          return destinationKeywords.some(keyword => postText.includes(keyword));
+        }) || [];
+
+        // Build context
+        if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
+          fabricContext = '\n\nFABRIC PERSONALIZED INSIGHTS:\n';
+          
+          if (relevantSearches.length > 0) {
+            fabricContext += '\nRecent Searches:\n';
+            relevantSearches.slice(0, 10).forEach(search => {
+              fabricContext += `- ${search.preview || search.content}\n`;
+            });
+          }
+
+          if (relevantInstagram.length > 0) {
+            fabricContext += '\nInstagram Activity:\n';
+            relevantInstagram.slice(0, 5).forEach(post => {
+              fabricContext += `- ${post.preview || post.content}\n`;
+            });
+          }
+        }
+      }
+    } catch (fabricErr) {
+      console.error('Failed to fetch Fabric data:', fabricErr);
+    }
+
     // Calculate trip duration
     let duration = '';
     if (requestData.startDate && requestData.endDate) {
@@ -69,6 +138,8 @@ You are a travel expert creating a detailed, personalized itinerary. Generate a 
 
 **Additional Context:**
 ${requestData.ragContext || 'No additional context provided'}
+
+${fabricContext}
 
 **Friend Recommendations:**
 ${JSON.stringify(requestData.friendRecommendations || {}, null, 2)}

@@ -48,54 +48,81 @@ serve(async (req) => {
         inspirationFolder 
       });
 
-      // Fetch Fabric recommendations if user has connected Fabric
+      // Fetch personalized Fabric data from user's digital history
       let fabricContext = '';
       try {
         console.log('Checking for Fabric connection...');
         const { data: fabricConnection } = await supabaseClient
           .from('fabric_connections')
-          .select('access_token, status')
+          .select('status')
           .eq('user_id', userId)
           .eq('status', 'active')
           .maybeSingle();
 
-        if (fabricConnection?.access_token) {
-          console.log('Fetching Fabric recommendations for destination:', destination);
+        if (fabricConnection) {
+          console.log('Fetching Fabric data for destination:', destination);
           
-          // Parse interests into array if it's a string
-          const interestsArray = typeof interests === 'string' 
-            ? interests.split(',').map((i: string) => i.trim()) 
-            : Array.isArray(interests) 
-              ? interests 
-              : [];
+          const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
+          
+          // Query Google Search data for travel-related searches
+          const { data: searchData } = await supabaseClient
+            .from('google_search_raw_threads')
+            .select('content, preview, details, asat')
+            .eq('user_id', userId)
+            .order('asat', { ascending: false })
+            .limit(50);
 
-          const { data: fabricRecs, error: fabricError } = await supabaseClient.functions.invoke(
-            'fetch-fabric-recommendations',
-            {
-              body: {
-                destination,
-                interests: interestsArray,
-                accessToken: fabricConnection.access_token
-              }
+          // Query Instagram interactions for location/travel posts
+          const { data: instagramData } = await supabaseClient
+            .from('instagram_interactions')
+            .select('content, preview, details')
+            .eq('user_id', userId)
+            .order('asat', { ascending: false })
+            .limit(30);
+
+          // Filter for destination-relevant content
+          const relevantSearches = searchData?.filter(item => {
+            const searchText = (item.content || item.preview || '').toLowerCase();
+            return destinationKeywords.some(keyword => 
+              searchText.includes(keyword) || 
+              searchText.includes('travel') || 
+              searchText.includes('hotel') || 
+              searchText.includes('flight') ||
+              searchText.includes('restaurant')
+            );
+          }) || [];
+
+          const relevantInstagram = instagramData?.filter(item => {
+            const postText = (item.content || item.preview || '').toLowerCase();
+            return destinationKeywords.some(keyword => postText.includes(keyword));
+          }) || [];
+
+          // Build context from Fabric data
+          if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
+            fabricContext = '\n\nFABRIC PERSONALIZED INSIGHTS (from your digital history):\n';
+            
+            if (relevantSearches.length > 0) {
+              fabricContext += '\nRecent Searches:\n';
+              relevantSearches.slice(0, 10).forEach(search => {
+                fabricContext += `- ${search.preview || search.content}\n`;
+              });
             }
-          );
 
-          if (fabricError) {
-            console.error('Error fetching Fabric recommendations:', fabricError);
-          } else if (fabricRecs && Array.isArray(fabricRecs) && fabricRecs.length > 0) {
-            console.log(`Found ${fabricRecs.length} Fabric recommendations`);
-            fabricContext = `\n\nFABRIC PERSONALIZED RECOMMENDATIONS (from your digital self):\n${
-              fabricRecs.map((rec: any) => 
-                `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
-              ).join('\n')
-            }\n`;
+            if (relevantInstagram.length > 0) {
+              fabricContext += '\nInstagram Activity:\n';
+              relevantInstagram.slice(0, 5).forEach(post => {
+                fabricContext += `- ${post.preview || post.content}\n`;
+              });
+            }
+            
+            console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
           }
         } else {
           console.log('No active Fabric connection found for user');
         }
       } catch (fabricErr) {
-        console.error('Failed to fetch Fabric recommendations:', fabricErr);
-        // Continue without Fabric recommendations
+        console.error('Failed to fetch Fabric data:', fabricErr);
+        // Continue without Fabric data
       }
 
       // Get user's saved posts to use as review bank (filter by folder if specified)

@@ -94,6 +94,7 @@ serve(async (req) => {
 
           // Also query local Fabric data tables
           const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
+          const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
           
           const { data: searchData } = await supabaseClient
             .from('google_search_raw_threads')
@@ -109,7 +110,7 @@ serve(async (req) => {
             .order('asat', { ascending: false })
             .limit(30);
 
-          // Filter for destination-relevant content
+          // Filter for destination-relevant content and extract keywords
           const relevantSearches = searchData?.filter(item => {
             const searchText = (item.content || item.preview || '').toLowerCase();
             return destinationKeywords.some(keyword => 
@@ -125,6 +126,42 @@ serve(async (req) => {
             const postText = (item.content || item.preview || '').toLowerCase();
             return destinationKeywords.some(keyword => postText.includes(keyword));
           }) || [];
+
+          // Extract specific keywords/venues from searches
+          relevantSearches.forEach(search => {
+            const text = search.preview || search.content || '';
+            // Extract potential venue names and keywords
+            const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)/gi);
+            if (venueMatches) {
+              venueMatches.forEach(match => {
+                const cleaned = match.trim().slice(0, 50);
+                if (!fabricKeywords.search.includes(cleaned)) {
+                  fabricKeywords.search.push(cleaned);
+                }
+              });
+            }
+            // Extract key topic words
+            const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+            words.slice(0, 3).forEach(word => {
+              if (!fabricKeywords.search.includes(word) && !['travel', 'hotel', 'flight', 'restaurant'].includes(word)) {
+                fabricKeywords.search.push(word);
+              }
+            });
+          });
+
+          // Extract specific venues/topics from Instagram
+          relevantInstagram.forEach(post => {
+            const text = post.preview || post.content || '';
+            const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
+            if (venueMatches) {
+              venueMatches.forEach(match => {
+                const cleaned = match.trim().slice(0, 50);
+                if (!fabricKeywords.instagram.includes(cleaned)) {
+                  fabricKeywords.instagram.push(cleaned);
+                }
+              });
+            }
+          });
 
           // Add local data to context
           if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
@@ -146,6 +183,9 @@ serve(async (req) => {
             
             console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
           }
+          
+          // Store keywords in the result to pass to the prompt
+          (result as any).fabricKeywords = fabricKeywords;
         } else {
           console.log('No active Fabric connection found for user');
         }
@@ -400,9 +440,17 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 IMPORTANT: 
 - When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post.
 - Include 1-2 highly-rated internet-researched recommendations per itinerary, marked with [WEB_REC:venue_name:source_url] where source_url is a real booking/review website URL.
+- When recommending venues related to the user's search history, mark them with [FABRIC_REC:venue_name:search:keyword] where keyword describes what they searched for (e.g., "tapas restaurant", "rooftop bar").
+- When recommending venues related to Instagram activity, mark them with [FABRIC_REC:venue_name:instagram:topic] where topic describes the Instagram content (e.g., "beach sunset", "street food").
 - For ${destination} in this season, prioritize the most popular activities (e.g., skiing for mountain destinations in winter).
 - Use bullet points for all sections.
 - Never show the recommendation markers in the final text - they should be invisible to users but clickable.
+
+${(result as any).fabricKeywords ? `
+FABRIC DATA CONTEXT (match these when recommending):
+Search Keywords: ${(result as any).fabricKeywords.search.slice(0, 20).join(', ')}
+Instagram Topics: ${(result as any).fabricKeywords.instagram.slice(0, 15).join(', ')}
+` : ''}
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 
@@ -433,7 +481,7 @@ CRITICAL STRUCTURE REQUIREMENTS:
 - For day-by-day section, ALWAYS use format: **Day 1: [Title]** (this is critical for parsing)
 - Use bullet points • for lists in ALL sections
 - Embed links as markdown: [Text](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs
-- Mark recommendations: [SAVED_REC:venue_name:user_name] for saved posts, [WEB_REC:venue_name:URL] for web sources
+- Mark recommendations: [SAVED_REC:venue_name:user_name] for saved posts, [WEB_REC:venue_name:URL] for web sources, [FABRIC_REC:venue_name:search:keyword] for search history, [FABRIC_REC:venue_name:instagram:topic] for Instagram activity
 
 FORMATTING FOR EACH DAY:
 **Day 1: [Arrival & Exploration]**

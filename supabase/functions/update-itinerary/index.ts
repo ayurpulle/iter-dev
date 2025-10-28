@@ -47,6 +47,8 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
 
     // Fetch personalized Fabric data from both API and local tables
     let fabricContext = '';
+    const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
+    
     try {
       const { data: fabricConnection } = await supabase
         .from('fabric_connections')
@@ -108,7 +110,7 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
           .order('asat', { ascending: false })
           .limit(30);
 
-        // Filter for destination-relevant content
+        // Filter for destination-relevant content and extract keywords
         const relevantSearches = searchData?.filter(item => {
           const searchText = (item.content || item.preview || '').toLowerCase();
           return destinationKeywords.some(keyword => 
@@ -124,6 +126,42 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
           const postText = (item.content || item.preview || '').toLowerCase();
           return destinationKeywords.some(keyword => postText.includes(keyword));
         }) || [];
+
+        // Extract specific keywords/venues from searches
+        relevantSearches.forEach(search => {
+          const text = search.preview || search.content || '';
+          // Extract potential venue names and keywords
+          const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)/gi);
+          if (venueMatches) {
+            venueMatches.forEach(match => {
+              const cleaned = match.trim().slice(0, 50);
+              if (!fabricKeywords.search.includes(cleaned)) {
+                fabricKeywords.search.push(cleaned);
+              }
+            });
+          }
+          // Also extract standalone words for broader matching
+          const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+          words.slice(0, 3).forEach(word => {
+            if (!fabricKeywords.search.includes(word) && word !== 'travel' && word !== 'hotel' && word !== 'flight') {
+              fabricKeywords.search.push(word);
+            }
+          });
+        });
+
+        // Extract specific venues/topics from Instagram
+        relevantInstagram.forEach(post => {
+          const text = post.preview || post.content || '';
+          const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
+          if (venueMatches) {
+            venueMatches.forEach(match => {
+              const cleaned = match.trim().slice(0, 50);
+              if (!fabricKeywords.instagram.includes(cleaned)) {
+                fabricKeywords.instagram.push(cleaned);
+              }
+            });
+          }
+        });
 
         // Add local data to context
         if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
@@ -191,8 +229,18 @@ Please update and enhance the existing itinerary based on the new parameters pro
 **CRITICAL: PRESERVE ALL RECOMMENDATION MARKERS**
 When friend recommendations are present, you MUST include [FRIEND_REC:VenueName] markers immediately after the venue name in the text.
 When web recommendations are present, you MUST include [WEB_REC:VenueName:URL] markers with the full URL immediately after the venue name.
+When a recommendation relates to user's search history, you MUST include [FABRIC_REC:VenueName:search:keyword] where keyword is the relevant search term.
+When a recommendation relates to user's Instagram activity, you MUST include [FABRIC_REC:VenueName:instagram:topic] where topic is the relevant Instagram content.
 Example: "Visit Blue Bottle Coffee [FRIEND_REC:Blue Bottle Coffee] for breakfast"
 Example: "Dine at Gary Danko [WEB_REC:Gary Danko:https://example.com]"
+Example: "Try La Bodega Tapas [FABRIC_REC:La Bodega Tapas:search:tapas restaurant] for authentic Spanish food"
+Example: "Visit Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset] for stunning views"
+
+**FABRIC DATA CONTEXT:**
+Search Keywords: ${fabricKeywords.search.slice(0, 20).join(', ')}
+Instagram Topics: ${fabricKeywords.instagram.slice(0, 15).join(', ')}
+
+When recommending venues that match these keywords or topics, add the appropriate [FABRIC_REC] marker.
 
 **Required Format:**
 Structure your response with these exact sections:

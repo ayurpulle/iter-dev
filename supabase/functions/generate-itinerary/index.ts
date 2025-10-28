@@ -465,20 +465,27 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 **CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
 YOU MUST include recommendation markers in your itinerary. This is NOT optional:
 
-1. **WEB_REC Markers (MANDATORY - MUST include at least 2-3 per day):**
-   - For restaurants, hotels, attractions, mark with [WEB_REC:venue_name:https://tripadvisor.com/...] or similar booking/review site
-   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
-   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
-
-2. **FABRIC_REC Markers (MANDATORY when user interests match):**
+1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
    - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
    - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
-   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:search:keyword] or [FABRIC_REC:venue_name:instagram:topic]
+   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:source_type:topic]
    - Example: If user searched for "Lakers", recommend "Visit Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers] for a basketball game"
    - Example: If user has Instagram activity about beaches, recommend "Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset]"
+   - These show as purple/pink highlighted text to indicate personalized recommendations based on their interests
+
+2. **WEB_REC Markers (SECONDARY PRIORITY - use for venues NOT covered by FABRIC_REC):**
+   - For restaurants, hotels, attractions NOT already recommended via FABRIC_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
+   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
+   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
+   - CRITICAL: Do NOT use WEB_REC for a venue if you already used FABRIC_REC for the same venue
 
 3. **SAVED_REC Markers (when from review bank):**
    - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
+
+**DEDUPLICATION RULE (CRITICAL):**
+- Each venue should have ONLY ONE type of recommendation marker
+- Priority order: FABRIC_REC > SAVED_REC > WEB_REC
+- If a venue matches user interests (Fabric data), use FABRIC_REC and do NOT add WEB_REC for the same venue
 
 ${fabricContext ? `
 **YOUR PERSONALIZATION DATA TO USE:**
@@ -512,13 +519,14 @@ CRITICAL WRITING STYLE:
 - Write like you're texting travel advice to a friend
 
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
-- YOU MUST include [WEB_REC:venue:URL] markers for 2-3 restaurants/attractions per day - this is MANDATORY
-- YOU MUST include [FABRIC_REC:venue:search:keyword] or [FABRIC_REC:venue:instagram:topic] when user's interests match - this is MANDATORY
-- Without these markers, the itinerary is INCOMPLETE and UNUSABLE
+- YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
+- PRIORITY ORDER: FABRIC_REC first, then WEB_REC for remaining venues (NO DUPLICATES)
+- FABRIC_REC format: [FABRIC_REC:venue:source:topic] where source is "search" or "instagram"
+- WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC
 - Examples:
-  * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle] for morning brew"
   * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers]"
   * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:beach sunset]"
+  * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle]" (only if no Fabric match)
 
 CRITICAL STRUCTURE REQUIREMENTS:
 - Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**

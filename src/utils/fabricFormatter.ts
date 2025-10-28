@@ -1,4 +1,4 @@
-interface FabricRecommendation {
+interface FabricAPIRecommendation {
   title: string;
   url: string;
   content?: string;
@@ -10,7 +10,7 @@ interface FabricRecommendation {
  * Formats Fabric recommendations into a RAG context string for itinerary generation
  */
 export const formatFabricContextForRAG = (
-  recommendations: FabricRecommendation[],
+  recommendations: FabricAPIRecommendation[],
   destination: string
 ): string => {
   if (!recommendations || recommendations.length === 0) {
@@ -47,27 +47,33 @@ export const formatFabricContextForRAG = (
   return context;
 };
 
+export interface FabricRecommendation {
+  source: string;
+  topic: string;
+}
+
 /**
  * Extracts Fabric recommendation markers from itinerary text
  */
-export const extractFabricRecommendations = (itinerary: string): { [key: string]: { url: string }[] } => {
-  const fabricRecs: { [key: string]: { url: string }[] } = {};
+export const extractFabricRecommendations = (itinerary: string): { [key: string]: FabricRecommendation[] } => {
+  const fabricRecs: { [key: string]: FabricRecommendation[] } = {};
   
-  // Find all [FABRIC_REC:title:url] markers
-  const fabricMatches = itinerary.match(/\[FABRIC_REC:([^:\]]+):([^\]]+)\]/g);
+  // Find all [FABRIC_REC:venue:source:topic] markers
+  const fabricMatches = itinerary.match(/\[FABRIC_REC:([^:\]]+):([^:\]]+):([^\]]+)\]/g);
   
   if (fabricMatches) {
     fabricMatches.forEach(match => {
-      const parts = match.match(/\[FABRIC_REC:([^:\]]+):([^\]]+)\]/);
-      if (parts && parts.length === 3) {
-        const title = parts[1].trim();
-        const url = parts[2].trim();
+      const parts = match.match(/\[FABRIC_REC:([^:\]]+):([^:\]]+):([^\]]+)\]/);
+      if (parts && parts.length === 4) {
+        const venueName = parts[1].trim();
+        const source = parts[2].trim();
+        const topic = parts[3].trim();
         
-        if (!fabricRecs[title]) {
-          fabricRecs[title] = [];
+        if (!fabricRecs[venueName]) {
+          fabricRecs[venueName] = [];
         }
         
-        fabricRecs[title].push({ url });
+        fabricRecs[venueName].push({ source, topic });
       }
     });
   }

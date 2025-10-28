@@ -248,20 +248,27 @@ Please update and enhance the existing itinerary based on the new parameters pro
 **CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
 YOU MUST include recommendation markers throughout your itinerary. This is NOT optional:
 
-1. **WEB_REC Markers (MANDATORY - MUST include at least 2-3 per day):**
-   - For restaurants, hotels, attractions, mark with [WEB_REC:venue_name:https://tripadvisor.com/...] or similar
-   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza]"
-   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
-
-2. **FABRIC_REC Markers (MANDATORY when user interests match):**
+1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
    - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
    - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
-   - When recommending venues matching these, mark with [FABRIC_REC:venue_name:search:keyword] or [FABRIC_REC:venue_name:instagram:topic]
-   - Example: "Visit Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers] for a basketball game"
-   - Example: "Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset]"
+   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:source_type:topic]
+   - Example: If user searched for "Lakers", recommend "Visit Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers] for a basketball game"
+   - Example: If user has Instagram activity about beaches, recommend "Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset]"
+   - These show as purple/pink highlighted text to indicate personalized recommendations based on their interests
+
+2. **WEB_REC Markers (SECONDARY PRIORITY - use for venues NOT covered by FABRIC_REC):**
+   - For restaurants, hotels, attractions NOT already recommended via FABRIC_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
+   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
+   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
+   - CRITICAL: Do NOT use WEB_REC for a venue if you already used FABRIC_REC for the same venue
 
 3. **SAVED_REC Markers (when from review bank):**
    - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
+
+**DEDUPLICATION RULE (CRITICAL):**
+- Each venue should have ONLY ONE type of recommendation marker
+- Priority order: FABRIC_REC > SAVED_REC > WEB_REC
+- If a venue matches user interests (Fabric data), use FABRIC_REC and do NOT add WEB_REC for the same venue
 
 ${fabricContext ? `
 **YOUR PERSONALIZATION DATA TO USE:**
@@ -364,7 +371,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         messages: [
           {
             role: 'system',
-            content: "You are an expert travel planner who creates detailed, personalized itineraries. CRITICAL: Write in natural, conversational language - NOT like AI-generated content. Use simple, direct sentences after bullet points. Keep descriptions concise and human-sounding. Avoid flowery or overly enthusiastic language. Write like you're texting travel advice to a friend. Always follow the exact format requested with bullet points for all sections and provide specific, actionable recommendations with proper day grouping based on trip duration. IMPORTANT: For all links, use markdown format [Name](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs. MANDATORY: Include [WEB_REC:venue:URL] markers for 2-3 venues per day AND [FABRIC_REC:venue:search:keyword] or [FABRIC_REC:venue:instagram:topic] markers when user's interests match. Without these markers, the itinerary is INCOMPLETE."
+            content: "You are an expert travel planner who creates detailed, personalized itineraries. CRITICAL: Write in natural, conversational language - NOT like AI-generated content. Use simple, direct sentences after bullet points. Keep descriptions concise and human-sounding. Avoid flowery or overly enthusiastic language. Write like you're texting travel advice to a friend. Always follow the exact format requested with bullet points for all sections and provide specific, actionable recommendations with proper day grouping based on trip duration. IMPORTANT: For all links, use markdown format [Name](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs. MANDATORY: Include recommendation markers - PRIORITY ORDER: FABRIC_REC first, then WEB_REC for remaining venues (NO DUPLICATES). FABRIC_REC format: [FABRIC_REC:venue:source:topic] where source is 'search' or 'instagram'. WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC. Without these markers, the itinerary is INCOMPLETE."
           },
           {
             role: 'user',

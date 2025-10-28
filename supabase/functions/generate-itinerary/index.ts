@@ -462,19 +462,29 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 • Attraction tickets and tours
 • Transportation booking links
 
-IMPORTANT RECOMMENDATION MARKING: 
-- When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post.
-- Include 1-2 highly-rated internet-researched recommendations per day, marked with [WEB_REC:venue_name:source_url] where source_url is a real booking/review website URL (e.g., TripAdvisor, Booking.com).
-- When recommending venues that match the user's Google search keywords, mark them with [FABRIC_REC:venue_name:search:keyword] where keyword is what they searched for. Search keywords extracted: ${fabricKeywords.search.slice(0, 10).join(', ')}
-- When recommending venues that match the user's Instagram activity, mark them with [FABRIC_REC:venue_name:instagram:detail] where detail describes the Instagram connection. Instagram topics: ${fabricKeywords.instagram.slice(0, 5).join(', ')}
-- For ${destination} in this season, prioritize the most popular activities (e.g., skiing for mountain destinations in winter).
-- Use bullet points for all sections.
-- Never show the recommendation markers in the final text - they should be invisible to users but clickable.
+**CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
+YOU MUST include recommendation markers in your itinerary. This is NOT optional:
 
-${fabricKeywords && (fabricKeywords.search.length > 0 || fabricKeywords.instagram.length > 0) ? `
-FABRIC DATA CONTEXT (match these when recommending):
-Search Keywords: ${fabricKeywords.search.slice(0, 20).join(', ')}
-Instagram Topics: ${fabricKeywords.instagram.slice(0, 15).join(', ')}
+1. **WEB_REC Markers (MANDATORY - MUST include at least 2-3 per day):**
+   - For restaurants, hotels, attractions, mark with [WEB_REC:venue_name:https://tripadvisor.com/...] or similar booking/review site
+   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
+   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
+
+2. **FABRIC_REC Markers (MANDATORY when user interests match):**
+   - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
+   - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
+   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:search:keyword] or [FABRIC_REC:venue_name:instagram:topic]
+   - Example: If user searched for "Lakers", recommend "Visit Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers] for a basketball game"
+   - Example: If user has Instagram activity about beaches, recommend "Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset]"
+
+3. **SAVED_REC Markers (when from review bank):**
+   - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
+
+${fabricContext ? `
+**YOUR PERSONALIZATION DATA TO USE:**
+${fabricContext}
+
+Based on this data, you MUST include personalized FABRIC_REC recommendations that match the user's interests.
 ` : ''}
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
@@ -501,25 +511,33 @@ CRITICAL WRITING STYLE:
 - Avoid flowery or overly enthusiastic language
 - Write like you're texting travel advice to a friend
 
+CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
+- YOU MUST include [WEB_REC:venue:URL] markers for 2-3 restaurants/attractions per day - this is MANDATORY
+- YOU MUST include [FABRIC_REC:venue:search:keyword] or [FABRIC_REC:venue:instagram:topic] when user's interests match - this is MANDATORY
+- Without these markers, the itinerary is INCOMPLETE and UNUSABLE
+- Examples:
+  * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle] for morning brew"
+  * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers]"
+  * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:beach sunset]"
+
 CRITICAL STRUCTURE REQUIREMENTS:
 - Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
 - For day-by-day section, ALWAYS use format: **Day 1: [Title]** (this is critical for parsing)
 - Use bullet points • for lists in ALL sections
 - Embed links as markdown: [Text](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs
-- Mark recommendations: [SAVED_REC:venue_name:user_name] for saved posts, [WEB_REC:venue_name:URL] for web sources, [FABRIC_REC:venue_name:search:keyword] for search history, [FABRIC_REC:venue_name:instagram:topic] for Instagram activity
 
 FORMATTING FOR EACH DAY:
 **Day 1: [Arrival & Exploration]**
 
 • Morning:
-• Activity with brief description
+• Activity with brief description [WEB_REC:venue:URL]
 • Activity with brief description
 
 • Afternoon:  
-• Activity with brief description
+• Activity with brief description [FABRIC_REC:venue:search:keyword]
 
 • Evening:
-• Activity with brief description
+• Restaurant recommendation [WEB_REC:venue:URL]
 
 • Night:
 • Activity with brief description

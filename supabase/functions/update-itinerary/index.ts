@@ -101,6 +101,14 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
     try {
       const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
       
+      // Query Google Search summaries for rich context
+      const { data: searchSummaries } = await supabase
+        .from('google_search_summaries')
+        .select('summary_content, summary_date, metadata')
+        .eq('user_id', userId)
+        .order('summary_date', { ascending: false })
+        .limit(8);
+
       const { data: searchData } = await supabase
         .from('google_search_raw_threads')
         .select('content, preview, details, asat')
@@ -169,8 +177,15 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
       });
 
       // Add local data to context
+      if (searchSummaries && searchSummaries.length > 0) {
+        fabricContext += '\n\nYOUR INTERESTS & PREFERENCES (from your digital activity):\n';
+        searchSummaries.forEach(summary => {
+          fabricContext += `\n${summary.summary_content}\n`;
+        });
+      }
+
       if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-        fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
+        fabricContext += '\n\nRECENT RELEVANT ACTIVITY:\n';
         
         if (relevantSearches.length > 0) {
           fabricContext += '\nRecent Searches:\n';

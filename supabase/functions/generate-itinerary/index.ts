@@ -48,6 +48,9 @@ serve(async (req) => {
         inspirationFolder 
       });
 
+      // Initialize Fabric keywords outside try-catch for broader scope
+      const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
+
       // Fetch Fabric recommendations and personal data
       let fabricContext = '';
       try {
@@ -94,7 +97,6 @@ serve(async (req) => {
 
           // Also query local Fabric data tables
           const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
-          const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
           
           const { data: searchData } = await supabaseClient
             .from('google_search_raw_threads')

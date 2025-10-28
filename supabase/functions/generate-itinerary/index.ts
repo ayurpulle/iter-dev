@@ -51,7 +51,7 @@ serve(async (req) => {
       // Initialize Fabric keywords outside try-catch for broader scope
       const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
 
-      // Fetch Fabric recommendations and personal data
+      // Fetch Fabric API recommendations if connected
       let fabricContext = '';
       try {
         console.log('Checking for Fabric connection...');
@@ -63,7 +63,7 @@ serve(async (req) => {
           .maybeSingle();
 
         if (fabricConnection?.access_token) {
-          console.log('Fetching Fabric data for destination:', destination);
+          console.log('Fetching Fabric API recommendations for destination:', destination);
           
           // Parse interests into array if it's a string
           const interestsArray = typeof interests === 'string' 
@@ -94,103 +94,114 @@ serve(async (req) => {
               ).join('\n')
             }\n`;
           }
-
-          // Also query local Fabric data tables
-          const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
-          
-          const { data: searchData } = await supabaseClient
-            .from('google_search_raw_threads')
-            .select('content, preview, details, asat')
-            .eq('user_id', userId)
-            .order('asat', { ascending: false })
-            .limit(50);
-
-          const { data: instagramData } = await supabaseClient
-            .from('instagram_interactions')
-            .select('content, preview, details')
-            .eq('user_id', userId)
-            .order('asat', { ascending: false })
-            .limit(30);
-
-          // Filter for destination-relevant content and extract keywords
-          const relevantSearches = searchData?.filter(item => {
-            const searchText = (item.content || item.preview || '').toLowerCase();
-            return destinationKeywords.some(keyword => 
-              searchText.includes(keyword) || 
-              searchText.includes('travel') || 
-              searchText.includes('hotel') || 
-              searchText.includes('flight') ||
-              searchText.includes('restaurant')
-            );
-          }) || [];
-
-          const relevantInstagram = instagramData?.filter(item => {
-            const postText = (item.content || item.preview || '').toLowerCase();
-            return destinationKeywords.some(keyword => postText.includes(keyword));
-          }) || [];
-
-          // Extract specific keywords/venues from searches
-          relevantSearches.forEach(search => {
-            const text = search.preview || search.content || '';
-            // Extract potential venue names and keywords
-            const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)/gi);
-            if (venueMatches) {
-              venueMatches.forEach(match => {
-                const cleaned = match.trim().slice(0, 50);
-                if (!fabricKeywords.search.includes(cleaned)) {
-                  fabricKeywords.search.push(cleaned);
-                }
-              });
-            }
-            // Extract key topic words
-            const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-            words.slice(0, 3).forEach(word => {
-              if (!fabricKeywords.search.includes(word) && !['travel', 'hotel', 'flight', 'restaurant'].includes(word)) {
-                fabricKeywords.search.push(word);
-              }
-            });
-          });
-
-          // Extract specific venues/topics from Instagram
-          relevantInstagram.forEach(post => {
-            const text = post.preview || post.content || '';
-            const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
-            if (venueMatches) {
-              venueMatches.forEach(match => {
-                const cleaned = match.trim().slice(0, 50);
-                if (!fabricKeywords.instagram.includes(cleaned)) {
-                  fabricKeywords.instagram.push(cleaned);
-                }
-              });
-            }
-          });
-
-          // Add local data to context
-          if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-            fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
-            
-            if (relevantSearches.length > 0) {
-              fabricContext += '\nRecent Searches:\n';
-              relevantSearches.slice(0, 10).forEach(search => {
-                fabricContext += `- ${search.preview || search.content}\n`;
-              });
-            }
-
-            if (relevantInstagram.length > 0) {
-              fabricContext += '\nInstagram Activity:\n';
-              relevantInstagram.slice(0, 5).forEach(post => {
-                fabricContext += `- ${post.preview || post.content}\n`;
-              });
-            }
-            
-            console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
-          }
         } else {
           console.log('No active Fabric connection found for user');
         }
       } catch (fabricErr) {
-        console.error('Failed to fetch Fabric data:', fabricErr);
-        // Continue without Fabric data
+        console.error('Failed to fetch Fabric API data:', fabricErr);
+        // Continue without Fabric API data
+      }
+
+      // Query local Google Search and Instagram data tables (always, not just with Fabric connection)
+      try {
+        console.log('Querying local Google Search and Instagram data...');
+        const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
+        
+        const { data: searchData } = await supabaseClient
+          .from('google_search_raw_threads')
+          .select('content, preview, details, asat')
+          .eq('user_id', userId)
+          .order('asat', { ascending: false })
+          .limit(50);
+
+        const { data: instagramData } = await supabaseClient
+          .from('instagram_interactions')
+          .select('content, preview, details')
+          .eq('user_id', userId)
+          .order('asat', { ascending: false })
+          .limit(30);
+
+        console.log(`Found ${searchData?.length || 0} total search records and ${instagramData?.length || 0} Instagram records`);
+
+        // Filter for destination-relevant content and extract keywords
+        const relevantSearches = searchData?.filter(item => {
+          const searchText = (item.content || item.preview || '').toLowerCase();
+          return destinationKeywords.some(keyword => 
+            searchText.includes(keyword) || 
+            searchText.includes('travel') || 
+            searchText.includes('hotel') || 
+            searchText.includes('flight') ||
+            searchText.includes('restaurant') ||
+            searchText.includes('things to do')
+          );
+        }) || [];
+
+        const relevantInstagram = instagramData?.filter(item => {
+          const postText = (item.content || item.preview || '').toLowerCase();
+          return destinationKeywords.some(keyword => postText.includes(keyword));
+        }) || [];
+
+        // Extract specific keywords/venues from searches
+        relevantSearches.forEach(search => {
+          const text = search.preview || search.content || '';
+          // Extract potential venue names and keywords
+          const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)/gi);
+          if (venueMatches) {
+            venueMatches.forEach(match => {
+              const cleaned = match.trim().slice(0, 50);
+              if (!fabricKeywords.search.includes(cleaned)) {
+                fabricKeywords.search.push(cleaned);
+              }
+            });
+          }
+          // Extract key topic words (sports teams, activities, etc.)
+          const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+          words.slice(0, 5).forEach(word => {
+            if (!fabricKeywords.search.includes(word) && 
+                !['travel', 'hotel', 'flight', 'restaurant', 'things', 'search'].includes(word)) {
+              fabricKeywords.search.push(word);
+            }
+          });
+        });
+
+        // Extract specific venues/topics from Instagram
+        relevantInstagram.forEach(post => {
+          const text = post.preview || post.content || '';
+          const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
+          if (venueMatches) {
+            venueMatches.forEach(match => {
+              const cleaned = match.trim().slice(0, 50);
+              if (!fabricKeywords.instagram.includes(cleaned)) {
+                fabricKeywords.instagram.push(cleaned);
+              }
+            });
+          }
+        });
+
+        // Add local data to context
+        if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
+          fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
+          
+          if (relevantSearches.length > 0) {
+            fabricContext += '\nRecent Searches:\n';
+            relevantSearches.slice(0, 10).forEach(search => {
+              fabricContext += `- ${search.preview || search.content}\n`;
+            });
+          }
+
+          if (relevantInstagram.length > 0) {
+            fabricContext += '\nInstagram Activity:\n';
+            relevantInstagram.slice(0, 5).forEach(post => {
+              fabricContext += `- ${post.preview || post.content}\n`;
+            });
+          }
+          
+          console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
+          console.log('Extracted keywords - Search:', fabricKeywords.search.slice(0, 5), 'Instagram:', fabricKeywords.instagram.slice(0, 5));
+        }
+      } catch (localDataErr) {
+        console.error('Failed to fetch local Google/Instagram data:', localDataErr);
+        // Continue without local data
       }
 
       // Get user's saved posts to use as review bank (filter by folder if specified)
@@ -436,11 +447,11 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 • Attraction tickets and tours
 • Transportation booking links
 
-IMPORTANT: 
+IMPORTANT RECOMMENDATION MARKING: 
 - When recommending venues from the review bank, mark them with [SAVED_REC:venue_name:user_name] where user_name is the name of the user who created the saved post.
-- Include 1-2 highly-rated internet-researched recommendations per itinerary, marked with [WEB_REC:venue_name:source_url] where source_url is a real booking/review website URL.
-- When recommending venues related to the user's search history, mark them with [FABRIC_REC:venue_name:search:keyword] where keyword describes what they searched for (e.g., "tapas restaurant", "rooftop bar").
-- When recommending venues related to Instagram activity, mark them with [FABRIC_REC:venue_name:instagram:topic] where topic describes the Instagram content (e.g., "beach sunset", "street food").
+- Include 1-2 highly-rated internet-researched recommendations per day, marked with [WEB_REC:venue_name:source_url] where source_url is a real booking/review website URL (e.g., TripAdvisor, Booking.com).
+- When recommending venues that match the user's Google search keywords, mark them with [FABRIC_REC:venue_name:search:keyword] where keyword is what they searched for. Search keywords extracted: ${fabricKeywords.search.slice(0, 10).join(', ')}
+- When recommending venues that match the user's Instagram activity, mark them with [FABRIC_REC:venue_name:instagram:detail] where detail describes the Instagram connection. Instagram topics: ${fabricKeywords.instagram.slice(0, 5).join(', ')}
 - For ${destination} in this season, prioritize the most popular activities (e.g., skiing for mountain destinations in winter).
 - Use bullet points for all sections.
 - Never show the recommendation markers in the final text - they should be invisible to users but clickable.

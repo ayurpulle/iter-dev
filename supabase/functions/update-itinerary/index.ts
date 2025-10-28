@@ -92,98 +92,102 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
         } catch (apiErr) {
           console.error('Failed to fetch Fabric API recommendations:', apiErr);
         }
-
-        // Query local Fabric data tables
-        const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
-        
-        const { data: searchData } = await supabase
-          .from('google_search_raw_threads')
-          .select('content, preview, details, asat')
-          .eq('user_id', userId)
-          .order('asat', { ascending: false })
-          .limit(50);
-
-        const { data: instagramData } = await supabase
-          .from('instagram_interactions')
-          .select('content, preview, details')
-          .eq('user_id', userId)
-          .order('asat', { ascending: false })
-          .limit(30);
-
-        // Filter for destination-relevant content and extract keywords
-        const relevantSearches = searchData?.filter(item => {
-          const searchText = (item.content || item.preview || '').toLowerCase();
-          return destinationKeywords.some(keyword => 
-            searchText.includes(keyword) || 
-            searchText.includes('travel') || 
-            searchText.includes('hotel') || 
-            searchText.includes('flight') ||
-            searchText.includes('restaurant')
-          );
-        }) || [];
-
-        const relevantInstagram = instagramData?.filter(item => {
-          const postText = (item.content || item.preview || '').toLowerCase();
-          return destinationKeywords.some(keyword => postText.includes(keyword));
-        }) || [];
-
-        // Extract specific keywords/venues from searches
-        relevantSearches.forEach(search => {
-          const text = search.preview || search.content || '';
-          // Extract potential venue names and keywords
-          const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower)/gi);
-          if (venueMatches) {
-            venueMatches.forEach(match => {
-              const cleaned = match.trim().slice(0, 50);
-              if (!fabricKeywords.search.includes(cleaned)) {
-                fabricKeywords.search.push(cleaned);
-              }
-            });
-          }
-          // Also extract standalone words for broader matching
-          const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-          words.slice(0, 3).forEach(word => {
-            if (!fabricKeywords.search.includes(word) && word !== 'travel' && word !== 'hotel' && word !== 'flight') {
-              fabricKeywords.search.push(word);
-            }
-          });
-        });
-
-        // Extract specific venues/topics from Instagram
-        relevantInstagram.forEach(post => {
-          const text = post.preview || post.content || '';
-          const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
-          if (venueMatches) {
-            venueMatches.forEach(match => {
-              const cleaned = match.trim().slice(0, 50);
-              if (!fabricKeywords.instagram.includes(cleaned)) {
-                fabricKeywords.instagram.push(cleaned);
-              }
-            });
-          }
-        });
-
-        // Add local data to context
-        if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-          fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
-          
-          if (relevantSearches.length > 0) {
-            fabricContext += '\nRecent Searches:\n';
-            relevantSearches.slice(0, 10).forEach(search => {
-              fabricContext += `- ${search.preview || search.content}\n`;
-            });
-          }
-
-          if (relevantInstagram.length > 0) {
-            fabricContext += '\nInstagram Activity:\n';
-            relevantInstagram.slice(0, 5).forEach(post => {
-              fabricContext += `- ${post.preview || post.content}\n`;
-            });
-          }
-        }
       }
     } catch (fabricErr) {
-      console.error('Failed to fetch Fabric data:', fabricErr);
+      console.error('Failed to fetch Fabric connection:', fabricErr);
+    }
+
+    // Query local Google Search and Instagram data (always, not just with Fabric connection)
+    try {
+      const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
+      
+      const { data: searchData } = await supabase
+        .from('google_search_raw_threads')
+        .select('content, preview, details, asat')
+        .eq('user_id', userId)
+        .order('asat', { ascending: false })
+        .limit(50);
+
+      const { data: instagramData } = await supabase
+        .from('instagram_interactions')
+        .select('content, preview, details')
+        .eq('user_id', userId)
+        .order('asat', { ascending: false })
+        .limit(30);
+
+      // Filter for destination-relevant content and extract keywords
+      const relevantSearches = searchData?.filter(item => {
+        const searchText = (item.content || item.preview || '').toLowerCase();
+        return destinationKeywords.some(keyword => 
+          searchText.includes(keyword) || 
+          searchText.includes('travel') || 
+          searchText.includes('hotel') || 
+          searchText.includes('flight') ||
+          searchText.includes('restaurant') ||
+          searchText.includes('things to do')
+        );
+      }) || [];
+
+      const relevantInstagram = instagramData?.filter(item => {
+        const postText = (item.content || item.preview || '').toLowerCase();
+        return destinationKeywords.some(keyword => postText.includes(keyword));
+      }) || [];
+
+      // Extract specific keywords/venues from searches
+      relevantSearches.forEach(search => {
+        const text = search.preview || search.content || '';
+        const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)/gi);
+        if (venueMatches) {
+          venueMatches.forEach(match => {
+            const cleaned = match.trim().slice(0, 50);
+            if (!fabricKeywords.search.includes(cleaned)) {
+              fabricKeywords.search.push(cleaned);
+            }
+          });
+        }
+        const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+        words.slice(0, 5).forEach(word => {
+          if (!fabricKeywords.search.includes(word) && 
+              !['travel', 'hotel', 'flight', 'restaurant', 'things', 'search'].includes(word)) {
+            fabricKeywords.search.push(word);
+          }
+        });
+      });
+
+      // Extract specific venues/topics from Instagram
+      relevantInstagram.forEach(post => {
+        const text = post.preview || post.content || '';
+        const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
+        if (venueMatches) {
+          venueMatches.forEach(match => {
+            const cleaned = match.trim().slice(0, 50);
+            if (!fabricKeywords.instagram.includes(cleaned)) {
+              fabricKeywords.instagram.push(cleaned);
+            }
+          });
+        }
+      });
+
+      // Add local data to context
+      if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
+        fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
+        
+        if (relevantSearches.length > 0) {
+          fabricContext += '\nRecent Searches:\n';
+          relevantSearches.slice(0, 10).forEach(search => {
+            fabricContext += `- ${search.preview || search.content}\n`;
+          });
+        }
+
+        if (relevantInstagram.length > 0) {
+          fabricContext += '\nInstagram Activity:\n';
+          relevantInstagram.slice(0, 5).forEach(post => {
+            fabricContext += `- ${post.preview || post.content}\n`;
+          });
+        }
+      }
+    } catch (localDataErr) {
+      console.error('Failed to fetch local Google/Instagram data:', localDataErr);
     }
 
     // Calculate trip duration

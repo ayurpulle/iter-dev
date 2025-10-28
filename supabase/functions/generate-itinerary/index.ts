@@ -48,23 +48,53 @@ serve(async (req) => {
         inspirationFolder 
       });
 
-      // Fetch personalized Fabric data from user's digital history
+      // Fetch Fabric recommendations and personal data
       let fabricContext = '';
       try {
         console.log('Checking for Fabric connection...');
         const { data: fabricConnection } = await supabaseClient
           .from('fabric_connections')
-          .select('status')
+          .select('access_token, status')
           .eq('user_id', userId)
           .eq('status', 'active')
           .maybeSingle();
 
-        if (fabricConnection) {
+        if (fabricConnection?.access_token) {
           console.log('Fetching Fabric data for destination:', destination);
           
+          // Parse interests into array if it's a string
+          const interestsArray = typeof interests === 'string' 
+            ? interests.split(',').map((i: string) => i.trim()) 
+            : Array.isArray(interests) 
+              ? interests 
+              : [];
+
+          // Fetch API recommendations
+          const { data: fabricRecs, error: fabricError } = await supabaseClient.functions.invoke(
+            'fetch-fabric-recommendations',
+            {
+              body: {
+                destination,
+                interests: interestsArray,
+                accessToken: fabricConnection.access_token
+              }
+            }
+          );
+
+          if (fabricError) {
+            console.error('Error fetching Fabric recommendations:', fabricError);
+          } else if (fabricRecs && Array.isArray(fabricRecs) && fabricRecs.length > 0) {
+            console.log(`Found ${fabricRecs.length} Fabric API recommendations`);
+            fabricContext = `\n\nFABRIC PERSONALIZED RECOMMENDATIONS (from your digital self):\n${
+              fabricRecs.map((rec: any) => 
+                `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
+              ).join('\n')
+            }\n`;
+          }
+
+          // Also query local Fabric data tables
           const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
           
-          // Query Google Search data for travel-related searches
           const { data: searchData } = await supabaseClient
             .from('google_search_raw_threads')
             .select('content, preview, details, asat')
@@ -72,7 +102,6 @@ serve(async (req) => {
             .order('asat', { ascending: false })
             .limit(50);
 
-          // Query Instagram interactions for location/travel posts
           const { data: instagramData } = await supabaseClient
             .from('instagram_interactions')
             .select('content, preview, details')
@@ -97,9 +126,9 @@ serve(async (req) => {
             return destinationKeywords.some(keyword => postText.includes(keyword));
           }) || [];
 
-          // Build context from Fabric data
+          // Add local data to context
           if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-            fabricContext = '\n\nFABRIC PERSONALIZED INSIGHTS (from your digital history):\n';
+            fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
             
             if (relevantSearches.length > 0) {
               fabricContext += '\nRecent Searches:\n';

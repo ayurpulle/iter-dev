@@ -45,20 +45,55 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
     const userCurrency = profile?.default_currency || 'USD';
     const userLocation = profile?.base_location || 'United States';
 
-    // Fetch personalized Fabric data
+    // Fetch personalized Fabric data from both API and local tables
     let fabricContext = '';
     try {
       const { data: fabricConnection } = await supabase
         .from('fabric_connections')
-        .select('status')
+        .select('access_token, status')
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle();
 
-      if (fabricConnection) {
+      if (fabricConnection?.access_token) {
+        // Fetch API recommendations
+        const interestsArray = typeof requestData.interests === 'string' 
+          ? requestData.interests.split(',').map((i: string) => i.trim()) 
+          : Array.isArray(requestData.interests) 
+            ? requestData.interests 
+            : [];
+
+        try {
+          const response = await fetch(`${supabaseUrl}/functions/v1/fetch-fabric-recommendations`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              destination: requestData.destination,
+              interests: interestsArray,
+              accessToken: fabricConnection.access_token
+            })
+          });
+
+          if (response.ok) {
+            const fabricRecs = await response.json();
+            if (Array.isArray(fabricRecs) && fabricRecs.length > 0) {
+              fabricContext = `\n\nFABRIC API RECOMMENDATIONS:\n${
+                fabricRecs.map((rec: any) => 
+                  `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
+                ).join('\n')
+              }\n`;
+            }
+          }
+        } catch (apiErr) {
+          console.error('Failed to fetch Fabric API recommendations:', apiErr);
+        }
+
+        // Query local Fabric data tables
         const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
         
-        // Query Google Search data
         const { data: searchData } = await supabase
           .from('google_search_raw_threads')
           .select('content, preview, details, asat')
@@ -66,7 +101,6 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
           .order('asat', { ascending: false })
           .limit(50);
 
-        // Query Instagram interactions
         const { data: instagramData } = await supabase
           .from('instagram_interactions')
           .select('content, preview, details')
@@ -91,9 +125,9 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
           return destinationKeywords.some(keyword => postText.includes(keyword));
         }) || [];
 
-        // Build context
+        // Add local data to context
         if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-          fabricContext = '\n\nFABRIC PERSONALIZED INSIGHTS:\n';
+          fabricContext += '\n\nYOUR DIGITAL HISTORY:\n';
           
           if (relevantSearches.length > 0) {
             fabricContext += '\nRecent Searches:\n';

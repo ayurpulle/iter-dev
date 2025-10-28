@@ -183,9 +183,6 @@ serve(async (req) => {
             
             console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
           }
-          
-          // Store keywords in the result to pass to the prompt
-          (result as any).fabricKeywords = fabricKeywords;
         } else {
           console.log('No active Fabric connection found for user');
         }
@@ -446,10 +443,10 @@ IMPORTANT:
 - Use bullet points for all sections.
 - Never show the recommendation markers in the final text - they should be invisible to users but clickable.
 
-${(result as any).fabricKeywords ? `
+${fabricKeywords && (fabricKeywords.search.length > 0 || fabricKeywords.instagram.length > 0) ? `
 FABRIC DATA CONTEXT (match these when recommending):
-Search Keywords: ${(result as any).fabricKeywords.search.slice(0, 20).join(', ')}
-Instagram Topics: ${(result as any).fabricKeywords.instagram.slice(0, 15).join(', ')}
+Search Keywords: ${fabricKeywords.search.slice(0, 20).join(', ')}
+Instagram Topics: ${fabricKeywords.instagram.slice(0, 15).join(', ')}
 ` : ''}
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;

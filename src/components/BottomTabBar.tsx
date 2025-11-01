@@ -15,18 +15,18 @@ const BottomTabBar = () => {
           variant="ghost" 
           size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/search")}
         >
-          <Home size={30} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
+          <Plane size={30} className={location.pathname.startsWith("/search") ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
-          onClick={() => navigate("/map")}
+          onClick={() => navigate("/")}
         >
-          <Globe size={30} className={location.pathname.startsWith("/map") ? "text-primary" : "text-muted-foreground"} />
+          <Home size={30} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
@@ -42,9 +42,9 @@ const BottomTabBar = () => {
           variant="ghost" 
           size="lg" 
           className="flex flex-col items-center gap-1 h-auto p-3"
-          onClick={() => navigate("/search")}
+          onClick={() => navigate("/map")}
         >
-          <Plane size={26} className={location.pathname.startsWith("/search") ? "text-primary" : "text-muted-foreground"} />
+          <Globe size={30} className={location.pathname.startsWith("/map") ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 

@@ -699,8 +699,10 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
 
     const requestData = await req.json();
 
-    // Start the background itinerary generation and await it
-    await generateItineraryBackground(requestData, authHeader, user.id);
+    // Start the background itinerary generation WITHOUT awaiting (fire and forget)
+    generateItineraryBackground(requestData, authHeader, user.id).catch(err => {
+      console.error('Background task error:', err);
+    });
 
     // Return immediate response
     return new Response(JSON.stringify({ 

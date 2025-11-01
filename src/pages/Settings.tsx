@@ -113,7 +113,7 @@ const Settings = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/account')}
             className="flex items-center gap-2"
           >
             <ArrowLeft size={20} />

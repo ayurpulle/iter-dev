@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Plane, PlusCircle, User, Globe } from 'lucide-react';
+import { Compass, Plane, PlusCircle, User, Globe } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import NotificationBadge from './NotificationBadge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ const BottomTabBar = () => {
           className="flex flex-col items-center gap-1 h-auto p-3"
           onClick={() => navigate("/")}
         >
-          <Home size={30} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
+          <Compass size={30} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 

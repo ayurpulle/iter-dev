@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FabricConnectionToggle } from "@/components/FabricConnectionToggle";
+import { ImportAyurDataButton } from "@/components/ImportAyurDataButton";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -319,10 +320,14 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HelpCircle size={20} />
-              Support
+              Support & Admin
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <ImportAyurDataButton />
+            
+            <Separator />
+            
             <Button variant="outline" className="w-full justify-start">
               <HelpCircle size={16} className="mr-2" />
               Help Center

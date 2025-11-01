@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import ayurData from '@/data/ayur-google-searches.json';
+import ayurSummaries from '@/data/ayur-google-summaries.json';
 
 const AYUR_USER_ID = '2ef8fb6a-70ac-413a-8d12-ddcfce8193c7';
 
@@ -69,7 +70,53 @@ export async function importAyurGoogleSearchData() {
   }
 }
 
-// Uncomment to run immediately
-// importAyurGoogleSearchData().then(result => {
-//   console.log('Final result:', result);
-// });
+export async function importAyurGoogleSummaries() {
+  console.log('Starting import of Ayur Google search summaries...');
+  console.log(`Total summaries to import: ${ayurSummaries.items.length}`);
+
+  try {
+    // First, delete existing summaries for this user
+    const { error: deleteError } = await supabase
+      .from('google_search_summaries')
+      .delete()
+      .eq('user_id', AYUR_USER_ID);
+
+    if (deleteError) {
+      console.error('Error deleting existing summaries:', deleteError);
+      throw deleteError;
+    }
+
+    console.log('Existing summaries deleted. Starting insert...');
+
+    // Map and insert all summaries
+    const summariesToInsert = ayurSummaries.items
+      .filter((item: any) => item.summary && item.summary !== "No activity found for this period")
+      .map((item: any) => ({
+        id: item.id,
+        user_id: AYUR_USER_ID,
+        summary_date: item.to_date.split('T')[0], // Use to_date as the summary date
+        summary_content: item.summary,
+        metadata: {
+          provider: item.provider,
+          provider_connection_id: item.provider_connection_id,
+          from_date: item.from_date,
+          to_date: item.to_date,
+        },
+      }));
+
+    const { data, error } = await supabase
+      .from('google_search_summaries')
+      .insert(summariesToInsert);
+
+    if (error) {
+      console.error('Error inserting summaries:', error);
+      throw error;
+    }
+
+    console.log(`Successfully imported ${summariesToInsert.length} summaries`);
+    return { successCount: summariesToInsert.length, errorCount: 0 };
+  } catch (error) {
+    console.error('Summary import failed:', error);
+    throw error;
+  }
+}

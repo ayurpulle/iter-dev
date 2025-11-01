@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FabricConnectionToggle } from "@/components/FabricConnectionToggle";
+import { ImportShreyasDataButton } from "@/components/ImportShreyasDataButton";
+import { ImportAyurDataButton } from "@/components/ImportAyurDataButton";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -337,6 +339,14 @@ const Settings = () => {
               <Shield size={16} className="mr-2" />
               Terms of Service
             </Button>
+            
+            <Separator className="my-3" />
+            
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Data Import Tools</p>
+              <ImportShreyasDataButton />
+              <ImportAyurDataButton />
+            </div>
           </CardContent>
         </Card>
 

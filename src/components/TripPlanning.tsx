@@ -1046,12 +1046,12 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                         }}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">{location.flag}</span>
+                          <span className="text-xl flex-shrink-0">{location.flag}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{location.name}</p>
                             <p className="text-xs text-muted-foreground truncate">{location.fullName}</p>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
                             {location.type}
                           </Badge>
                         </div>

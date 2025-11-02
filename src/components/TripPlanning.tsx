@@ -1049,7 +1049,11 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                           <span className="text-xl flex-shrink-0">{location.flag}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{location.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{location.fullName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {location.fullName.length > 37 
+                                ? `${location.fullName.substring(0, 37)}...` 
+                                : location.fullName}
+                            </p>
                           </div>
                           <Badge variant="secondary" className="text-xs flex-shrink-0">
                             {location.type}

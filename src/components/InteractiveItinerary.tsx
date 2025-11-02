@@ -76,8 +76,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       
       // Combined pattern for markdown links and recommendations
       // Handle both [text](url) and [WEB_REC: VenueName:URL] formats
-      // Use [\s\S] to match across line breaks within the tag
-      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):\s*([\s\S]+?):\s*(https?:[\s\S]+?)\]|\[(?:WEB_REC|FABRIC_REC):([^\]]+)\]/g;
+      // Use [^:] for venue name and [^\]] for URL to avoid greedy matching issues
+      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):\s*([^:]+):\s*(https?:[^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       

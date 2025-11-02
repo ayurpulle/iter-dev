@@ -57,6 +57,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
     cleanedText = cleanedText
       .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
       .replace(/\*([^*]+)\*/g, '$1') // Remove * markdown formatting
+      .replace(/\s+[-–—*_]{3,}\s*$/gm, '') // Remove trailing horizontal rules from lines
       .replace(/^[\s]*[-•]+\s*/gm, '• ') // Convert all dashes and existing bullets to single bullet
       .replace(/•\s*•+/g, '•') // Remove multiple bullets
       .replace(/•\s+•/g, '•') // Remove spaced double bullets

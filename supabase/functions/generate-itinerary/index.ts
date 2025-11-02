@@ -619,7 +619,7 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'system_message',
+          type: 'itinerary_complete',
           title: 'Your Itinerary is Ready!',
           message: `Your iter to ${destination} is ready, check it out in saved trips`,
           data: {
@@ -655,7 +655,7 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
         .from('notifications')
         .insert({
           user_id: userId,
-          type: 'system_message',
+          type: 'itinerary_error',
           title: 'Itinerary Generation Failed',
           message: 'We encountered an issue generating your itinerary. Please try again.',
           data: { error: (error as Error)?.message }

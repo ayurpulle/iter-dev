@@ -465,23 +465,23 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 **CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
 YOU MUST include recommendation markers in your itinerary. This is NOT optional:
 
-1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
+ 1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
    - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
    - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
    - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:source_type:personal_reason]
-   - CRITICAL: The "personal_reason" field must be STRIKINGLY PERSONALIZED - analyze the user's searches/activity holistically to understand their deeper interests and sentiment
-   - DO NOT just use search titles or keywords - amalgamate their interests to create a unique, personal reason
+   - CRITICAL: The "personal_reason" field must be personalized based on the user's searches/activity
+   - Use natural, simple language - prefer "interest" or "curiosity" over dramatic words
    - Examples of GOOD personalization:
-     * Museum + art searches + cultural interests → "your passion for Renaissance art and cultural immersion"
-     * Lakers searches + sports bar visits + game highlights → "your love for live basketball and the Lakers game day atmosphere"  
-     * Beach posts + sunset photos + coastal dining → "your preference for oceanfront dining and golden hour moments"
-     * Coffee shop searches + specialty roasts + cafe culture → "your appreciation for artisanal coffee and cozy cafe workspaces"
+     * Museum + art searches + cultural interests → "your interest in Renaissance art and cultural immersion"
+     * Lakers searches + sports bar visits + game highlights → "your interest in live basketball and Lakers games"  
+     * Beach posts + sunset photos + coastal dining → "your curiosity about oceanfront dining and sunset views"
+     * Coffee shop searches + specialty roasts + cafe culture → "your interest in artisanal coffee and cozy cafe spaces"
    - Examples of BAD personalization (TOO GENERIC):
      * "search:Lakers" ❌
      * "instagram:museum" ❌
      * "search:restaurant" ❌
-   - Format: [FABRIC_REC:Crypto.com Arena:search:your love for live basketball and the Lakers game day atmosphere]
-   - These show as purple/pink highlighted text to indicate deeply personalized recommendations
+   - Format: [FABRIC_REC:Crypto.com Arena:search:your interest in live basketball and Lakers games]
+   - These show as purple/pink highlighted text to indicate personalized recommendations
 
 2. **WEB_REC Markers (SECONDARY PRIORITY - use for venues NOT covered by FABRIC_REC):**
    - For restaurants, hotels, attractions NOT already recommended via FABRIC_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
@@ -531,11 +531,12 @@ CRITICAL WRITING STYLE:
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
 - YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
 - PRIORITY ORDER: FABRIC_REC first, then WEB_REC for remaining venues (NO DUPLICATES)
-- FABRIC_REC format: [FABRIC_REC:venue:source:deeply_personal_reason] where source is "search" or "instagram"
+- FABRIC_REC format: [FABRIC_REC:venue:source:personal_reason] where source is "search" or "instagram"
 - WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC
+- For FABRIC_REC, use natural language with "interest" or "curiosity" - avoid dramatic words like "passion", "love", "dedication"
 - Examples:
-  * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:your love for live basketball and the Lakers game day atmosphere]"
-  * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:your preference for oceanfront dining and golden hour moments]"
+  * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:your interest in live basketball and Lakers games]"
+  * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:your curiosity about oceanfront dining and sunset views]"
   * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle]" (only if no Fabric match)
 
 CRITICAL STRUCTURE REQUIREMENTS:

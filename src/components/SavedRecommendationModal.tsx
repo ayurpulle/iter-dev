@@ -60,7 +60,7 @@ export const SavedRecommendationModal = ({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-pink-900 dark:text-pink-100">
-                    <span className="font-semibold">{rec.topic.split(' ').slice(0, 10).join(' ')}</span>
+                    <span className="font-semibold">{rec.topic}</span>
                   </p>
                   <p className="text-xs text-pink-700 dark:text-pink-300 mt-1">
                     From your {rec.source === 'search' ? 'Google searches' : 'Instagram activity'}

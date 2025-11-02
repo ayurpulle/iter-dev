@@ -67,9 +67,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .filter(line => !line.match(/^[•\s]*[-–—\-]+\s*$/)) // Remove lines that are just bullets and dashes
       .filter(line => !line.match(/^[-–—*_\-]{2,}$/)) // Remove horizontal rule lines (---, ***, ___)
       .filter(line => line !== '•') // Remove lines that are just a single bullet
-      .join('\n')
-      // Remove newlines within WEB_REC and FABRIC_REC tags to ensure they parse correctly
-      .replace(/\[(WEB_REC|FABRIC_REC):[^\]]*\]/gs, (match) => match.replace(/\n/g, ' '));
+      .join('\n');
     
     // Helper function to parse markdown links and recommendations inline
     const parseInlineContent = (content: string) => {
@@ -78,7 +76,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       
       // Combined pattern for markdown links and recommendations
       // Handle both [text](url) and [WEB_REC: VenueName:URL] formats
-      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):\s*(.+?):\s*(https?:\/\/[^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):([^\]]+)\]/g;
+      // Use [\s\S] to match across line breaks within the tag
+      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):\s*([\s\S]+?):\s*(https?:[\s\S]+?)\]|\[(?:WEB_REC|FABRIC_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       
@@ -93,8 +92,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         
         // Check if it's a markdown link
         if (match[1] && match[2]) {
-          // Markdown link [text](url) - clean up URL by removing spaces
-          const cleanUrl = match[2].trim().replace(/\s+/g, '');
+          // Markdown link [text](url) - clean up URL by removing newlines and spaces
+          const cleanUrl = match[2].replace(/\n/g, '').replace(/\s+/g, '').trim();
           const linkText = match[1].trim();
           
           elements.push(
@@ -110,8 +109,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           );
         } else if (match[4] && match[5]) {
           // WEB_REC or FABRIC_REC with inline URL: [WEB_REC: VenueName:URL]
-          const venueName = match[4].trim();
-          const url = match[5].trim();
+          const venueName = match[4].replace(/\n/g, ' ').trim();
+          const url = match[5].replace(/\n/g, '').replace(/\s+/g, '').trim();
           const isFabric = match[0].includes('FABRIC_REC');
           
           // Check if we have recommendations data for this venue - if so, show bubble modal

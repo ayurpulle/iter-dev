@@ -762,7 +762,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
 
   if (currentView === 'viewIter' && viewingIter) {
     return (
-      <div className="px-4 py-6 pb-24 max-w-[95vw] mx-auto">
+      <div className="px-2 py-6 pb-24 w-full mx-auto">
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <Button 
@@ -890,7 +890,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
       : 3;
     
     return (
-      <div className="px-4 py-6 pb-24 max-w-[95vw] mx-auto">
+      <div className="px-2 py-6 pb-24 w-full mx-auto">
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <Button 

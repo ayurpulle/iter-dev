@@ -64,6 +64,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .map(line => line.trim())
       .filter(line => line.length > 0)
       .filter(line => !line.match(/^[•\s]*[-–—]+\s*$/)) // Remove lines that are just bullets and dashes
+      .filter(line => !line.match(/^[-–—*_]{3,}$/)) // Remove horizontal rule lines (---, ***, ___)
       .filter(line => line !== '•') // Remove lines that are just a single bullet
       .join('\n');
     

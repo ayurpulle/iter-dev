@@ -207,7 +207,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         const lineContent = line.replace(/^[•\-]\s+/, '').trim();
         
         // Check if this is a time-of-day bullet point with special formatting
-        const timePattern = /^(Morning|Afternoon|Evening|Night):?\s*(.*)$/i;
+        // Use word boundary to avoid matching words like "nightcap"
+        const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
         const timeMatch = lineContent.match(timePattern);
         
         if (timeMatch) {
@@ -268,9 +269,10 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
         
         // Regular bullet point - render with single bullet
         return <div key={lineIdx} className="flex items-start gap-2 text-sm text-foreground mb-1 leading-relaxed"><span className="mt-0.5">•</span><span className="flex-1 break-words">{parseInlineContent(lineContent)}</span></div>;
-      } else if (/^(Morning|Afternoon|Evening|Night):?/i.test(line.trim())) {
+      } else if (/^(Morning|Afternoon|Evening|Night):\s*/i.test(line.trim())) {
         // Handle time-of-day headers that aren't bullet points
-        const timePattern = /^(Morning|Afternoon|Evening|Night):?\s*(.*)$/i;
+        // Require colon to avoid matching words like "nightcap"
+        const timePattern = /^(Morning|Afternoon|Evening|Night):\s*(.*)$/i;
         const timeMatch = line.trim().match(timePattern);
         
         if (timeMatch) {

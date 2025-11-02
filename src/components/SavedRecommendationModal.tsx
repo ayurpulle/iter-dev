@@ -45,7 +45,7 @@ export const SavedRecommendationModal = ({
           </DialogTitle>
           <DialogDescription>
             {isFabricOnly 
-              ? `Recommended based on your interests (${fabricRecommendations.length} ${fabricRecommendations.length === 1 ? 'reason' : 'reasons'})`
+              ? 'recommendation powered by onFabric!'
               : `Recommended by ${recommendations.map(r => r.name).join(', ')} (${recommendations.length} ${recommendations.length === 1 ? 'recommendation' : 'recommendations'})`
             }
           </DialogDescription>
@@ -60,7 +60,7 @@ export const SavedRecommendationModal = ({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-pink-900 dark:text-pink-100">
-                    Because of your interest in <span className="font-semibold">{rec.topic}</span>
+                    <span className="font-semibold">{rec.topic.split(' ').slice(0, 10).join(' ')}</span>
                   </p>
                   <p className="text-xs text-pink-700 dark:text-pink-300 mt-1">
                     From your {rec.source === 'search' ? 'Google searches' : 'Instagram activity'}

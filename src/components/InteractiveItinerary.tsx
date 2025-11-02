@@ -75,9 +75,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       let idx = 0;
       
       // Combined pattern for markdown links and recommendations
-      // More flexible pattern to handle spaces in URLs and between brackets/parentheses
-      // The [\s\S] in the URL group allows matching URLs that span multiple lines or have any characters
-      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC|FABRIC_REC):([^\]]+)\]/g;
+      // Handle both [text](url) and [WEB_REC: VenueName:URL] formats
+      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):\s*([^:\]]+):([^\]]+)\]|\[(?:WEB_REC|FABRIC_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       
@@ -107,9 +106,29 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
               {linkText}
             </a>
           );
-        } else if (match[3]) {
-          // Recommendation marker
-          const recData = match[3].split(':');
+        } else if (match[4] && match[5]) {
+          // WEB_REC or FABRIC_REC with inline URL: [WEB_REC: VenueName:URL]
+          const venueName = match[4].trim();
+          const url = match[5].trim();
+          const isFabric = match[0].includes('FABRIC_REC');
+          
+          elements.push(
+            <a
+              key={`inline-rec-${idx++}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={isFabric 
+                ? "text-pink-600 hover:text-pink-500 underline font-medium transition-colors"
+                : "text-blue-600 hover:text-blue-500 underline font-medium transition-colors"
+              }
+            >
+              {venueName}
+            </a>
+          );
+        } else if (match[3] || match[6]) {
+          // Recommendation marker without URL
+          const recData = (match[3] || match[6]).split(':');
           const venueName = recData[0];
           const recType = match[0].includes('WEB_REC') 
             ? 'web' 

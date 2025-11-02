@@ -214,11 +214,24 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
       duration = `${days} day${days !== 1 ? 's' : ''}`;
     }
 
-    // Construct detailed prompt for OpenAI
+    // Construct detailed prompt for OpenAI - focus on preserving existing content
     const prompt = `
-You are a travel expert creating a detailed, personalized itinerary. Generate a comprehensive travel itinerary with the following specifications:
+You are updating a travel itinerary based on changed parameters. Your response MUST preserve the COMPLETE original itinerary structure and content.
 
-**Core Requirements:**
+CRITICAL INSTRUCTIONS:
+1. ALWAYS return the FULL itinerary - every day, every activity, every section
+2. PRESERVE ALL existing recommendation markers: [FRIEND_REC:VenueName], [WEB_REC:VenueName:URL], and [FABRIC_REC:venue:source:topic]
+3. NEVER remove or modify existing markers
+4. Make only targeted changes based on what parameters changed
+5. Your response should be AT LEAST as long as the original itinerary
+6. Keep 90%+ of the original content intact
+
+**Current Complete Itinerary (${requestData.currentContent.length} characters):**
+"""
+${requestData.currentContent}
+"""
+
+**Updated Parameters:**
 - Destination: ${requestData.destination}
 - Duration: ${duration || 'Flexible duration'}
 - Budget Level: ${requestData.budget ? '$'.repeat(requestData.budget) : '$$$'} (1=budget, 5=ultra-luxury)
@@ -235,122 +248,62 @@ ${fabricContext}
 **Friend Recommendations:**
 ${JSON.stringify(requestData.friendRecommendations || {}, null, 2)}
 
-**Current Itinerary to Update:**
-${requestData.currentContent}
+**What to Update:**
+Based on the changed parameters above, make MINIMAL, TARGETED updates to:
+1. If budget changed: Update accommodation and dining recommendations to match new budget level
+2. If interests changed: Adjust activities to align with new interests (but keep structure)
+3. If dates/duration changed: Adjust day headers and timing (but keep activities)
+4. If destination changed: Update all content to new destination
 
-**Instructions:**
-Please update and enhance the existing itinerary based on the new parameters provided above. Maintain the same structure but update:
-1. Dates and duration if changed
-2. Budget-appropriate recommendations if budget level changed
-3. Activities and recommendations if interests changed
-4. Overall tone and recommendations to match the travel style
+**What to PRESERVE (CRITICAL):**
+1. ALL recommendation markers: [FRIEND_REC:VenueName], [WEB_REC:VenueName:URL], [FABRIC_REC:venue:source:topic]
+2. The exact structure and format of all sections
+3. All existing activities and recommendations (unless budget/interests require changes)
+4. All markdown links [text](url)
+5. The Morning/Afternoon/Evening/Night structure for each day
 
-**CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
-YOU MUST include recommendation markers throughout your itinerary. This is NOT optional:
+**FORMATTING REQUIREMENTS (MUST BE PRESERVED EXACTLY):**
+- Section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
+- Use bullet points • for all lists
+- Day structure (CRITICAL for parsing):
+  **Day 1: [Title]**
+  
+  • Morning:
+  • Activity with brief description
+  
+  • Afternoon:
+  • Activity with brief description
+  
+  • Evening:
+  • Activity with brief description
+  
+  • Night:
+  • Activity or note
 
-1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
-   - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
-   - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
-   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:source_type:topic]
-   - Example: If user searched for "Lakers", recommend "Visit Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:Lakers] for a basketball game"
-   - Example: If user has Instagram activity about beaches, recommend "Sunset Beach [FABRIC_REC:Sunset Beach:instagram:beach sunset]"
-   - These show as purple/pink highlighted text to indicate personalized recommendations based on their interests
+- For other sections: use bullet points • with bold sub-headers like **Budget:** or **Local Customs:**
+- Embed URLs as markdown hyperlinks: [Text](URL), never show raw URLs
+- Keep concise, actionable content
 
-2. **WEB_REC Markers (SECONDARY PRIORITY - use for venues NOT covered by FABRIC_REC):**
-   - For restaurants, hotels, attractions NOT already recommended via FABRIC_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
-   - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
-   - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
-   - CRITICAL: Do NOT use WEB_REC for a venue if you already used FABRIC_REC for the same venue
-
-3. **SAVED_REC Markers (when from review bank):**
-   - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
-
-**DEDUPLICATION RULE (CRITICAL):**
-- Each venue should have ONLY ONE type of recommendation marker
-- Priority order: FABRIC_REC > SAVED_REC > WEB_REC
-- If a venue matches user interests (Fabric data), use FABRIC_REC and do NOT add WEB_REC for the same venue
+**Additional Fabric Keywords Available:**
+- Search Keywords: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
+- Instagram Topics: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
 
 ${fabricContext ? `
-**YOUR PERSONALIZATION DATA TO USE:**
+**Personalization Data:**
 ${fabricContext}
 
-Based on this data, you MUST include personalized FABRIC_REC recommendations that match the user's interests.
+You MAY add new FABRIC_REC markers for venues matching user interests, but do NOT remove existing ones.
 ` : ''}
 
-**Required Format:**
-Structure your response with these exact sections:
-
-**Trip Summary**
-[2-3 sentences describing the updated trip overview, highlighting what makes this itinerary special]
-
-**Getting There**
-[Transportation recommendations in bullet points]
-• Flight recommendations and booking tips
-• Airport transfer options
-• Entry requirements and documentation
-[Keep concise and actionable]
-
-**Perfect Stay**
-[Accommodation recommendations in bullet points]
-• **Budget:** [hotel with details]
-• **Mid-Range:** [hotel with details]
-• **Luxury:** [hotel with details]
-• **Best Neighborhoods:** [neighborhood recommendations]
-• **Booking Tips:** [timing and booking advice]
-[Keep concise and organized]
-
-**Day-by-Day Itinerary**
-[IMPORTANT: Follow day grouping rules:
-- For trips ≤7 days: Use "Day 1:", "Day 2:", etc.
-- For trips 7-14 days: Group as "Days 1-2:", "Days 3-4:", etc.
-- For trips >14 days: Group by weeks "Week 1:", "Week 2:", etc.]
-
-For EACH day, use this EXACT structure (critical for parsing):
-**Day 1: [Day Title]**
-
-• Morning:
-• Activity with brief description
-• Activity with brief description
-
-• Afternoon:
-• Activity with brief description
-• Activity with brief description
-
-• Evening:
-• Activity with brief description
-
-• Night:
-• Activity or note about nighttime
-
-[Use bullet points • for all activities]
-
-**Travel Tips**
-[Practical advice in bullet points]
-• **Local Customs:** [etiquette tips]
-• **Transportation:** [getting around advice]
-• **Money:** [payment and currency tips]
-• **What to Pack:** [essential items]
-• **Safety:** [safety considerations]
-• **Best Times:** [optimal visiting times]
-[Keep concise and actionable]
-
-**Booking Links**
-[Relevant booking recommendations in bullet points]
-• Flight and accommodation booking tips
-• Activity reservation recommendations
-• Useful booking platforms or services
-
-**FORMATTING REQUIREMENTS:**
-1. Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
-2. Use bullet points • for all lists
-3. Day structure CRITICAL: **Day X: [Title]** followed by time periods with bullet points
-4. For sub-sections use **Bold:** for headers like **Budget:**, **Local Customs:**, etc.
-5. Embed all URLs as markdown hyperlinks: [Link Text](URL), never show raw URLs
-6. PRESERVE all [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL] markers
-7. Keep tone conversational but informative
-8. Include specific venue names and practical details
-
-Keep the same engaging, personal tone while updating the content to match the new parameters. Include specific recommendations that align with the specified budget and interests.
+NOW PROVIDE THE COMPLETE UPDATED ITINERARY:
+- Include ALL days from the original
+- Include ALL activities and recommendations
+- PRESERVE all existing [FRIEND_REC], [WEB_REC], and [FABRIC_REC] markers
+- Apply only the necessary updates based on changed parameters
+- Maintain Morning/Afternoon/Evening/Night structure
+- Use bullet points • for all lists
+- Embed URLs as hyperlinks
+- Your response must be a complete, standalone itinerary
 `;
 
     console.log('Calling OpenAI API for itinerary regeneration...');
@@ -371,14 +324,14 @@ Keep the same engaging, personal tone while updating the content to match the ne
         messages: [
           {
             role: 'system',
-            content: "You are an expert travel planner who creates detailed, personalized itineraries. CRITICAL: Write in natural, conversational language - NOT like AI-generated content. Use simple, direct sentences after bullet points. Keep descriptions concise and human-sounding. Avoid flowery or overly enthusiastic language. Write like you're texting travel advice to a friend. Always follow the exact format requested with bullet points for all sections and provide specific, actionable recommendations with proper day grouping based on trip duration. IMPORTANT: For all links, use markdown format [Name](URL) with NO SPACES between brackets and parentheses, and NO SPACES in URLs. MANDATORY: Include recommendation markers - PRIORITY ORDER: FABRIC_REC first, then WEB_REC for remaining venues (NO DUPLICATES). FABRIC_REC format: [FABRIC_REC:venue:source:topic] where source is 'search' or 'instagram'. WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC. Without these markers, the itinerary is INCOMPLETE."
+            content: "You are a travel itinerary editor who updates itineraries while preserving their structure. CRITICAL RULES: 1) ALWAYS return the COMPLETE itinerary with ALL sections and days 2) Your response MUST be at least " + Math.floor(requestData.currentContent.length * 0.8) + " characters 3) PRESERVE ALL recommendation markers: [FRIEND_REC], [WEB_REC], [FABRIC_REC] - NEVER remove them 4) Make only targeted changes based on what parameters changed 5) Keep 90%+ of original content intact 6) Use bullet points • for all lists 7) Maintain Morning/Afternoon/Evening/Night structure 8) Embed URLs as markdown [text](url) with NO SPACES 9) Write in natural, conversational language like texting a friend 10) NEVER say 'rest remains the same' or summarize - output the FULL itinerary"
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 4000,
+        max_completion_tokens: 5000,
       }),
     });
 

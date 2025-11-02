@@ -843,7 +843,7 @@ export const StructuredItinerary = ({
                 <div className="space-y-4">
                   {parsed.days.map((day, index) => (
                     <div key={index} className="border-l-2 border-blue-200 pl-3">
-                      <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                      <h3 className="font-semibold text-lg mb-2 flex items-start gap-2">
                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
                           {day.isRange ? `Days ${day.number}-${day.endDay}` : `Day ${day.number}`}
                         </span>

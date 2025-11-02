@@ -75,7 +75,8 @@ export const GlobalNotifications = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        async (payload) => {
+          console.log('Real-time notification received:', payload);
           const notification = payload.new;
           
           if (notification.type === 'itinerary_complete') {
@@ -83,6 +84,13 @@ export const GlobalNotifications = () => {
               description: notification.message,
               duration: 8000,
             });
+            
+            // Mark as read
+            await supabase
+              .from('notifications')
+              .update({ read: true })
+              .eq('id', notification.id);
+              
           } else if (notification.type === 'itinerary_error') {
             toast.error(notification.title, {
               description: notification.message,
@@ -95,10 +103,18 @@ export const GlobalNotifications = () => {
               },
               duration: 8000,
             });
+            
+            // Mark as read
+            await supabase
+              .from('notifications')
+              .update({ read: true })
+              .eq('id', notification.id);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Notification channel status:', status);
+      });
 
     // Periodic check every 30 seconds as backup
     const interval = setInterval(checkForItineraryNotifications, 30000);

@@ -57,15 +57,15 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
     cleanedText = cleanedText
       .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove ** markdown formatting
       .replace(/\*([^*]+)\*/g, '$1') // Remove * markdown formatting
-      .replace(/\s+[-–—*_]{3,}\s*$/gm, '') // Remove trailing horizontal rules from lines
+      .replace(/\s*[-–—\-]{2,}\s*$/gm, '') // Remove trailing dashes/horizontal rules from lines (2 or more dashes)
       .replace(/^[\s]*[-•]+\s*/gm, '• ') // Convert all dashes and existing bullets to single bullet
       .replace(/•\s*•+/g, '•') // Remove multiple bullets
       .replace(/•\s+•/g, '•') // Remove spaced double bullets
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0)
-      .filter(line => !line.match(/^[•\s]*[-–—]+\s*$/)) // Remove lines that are just bullets and dashes
-      .filter(line => !line.match(/^[-–—*_]{3,}$/)) // Remove horizontal rule lines (---, ***, ___)
+      .filter(line => !line.match(/^[•\s]*[-–—\-]+\s*$/)) // Remove lines that are just bullets and dashes
+      .filter(line => !line.match(/^[-–—*_\-]{2,}$/)) // Remove horizontal rule lines (---, ***, ___)
       .filter(line => line !== '•') // Remove lines that are just a single bullet
       .join('\n');
     
@@ -76,7 +76,8 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       
       // Combined pattern for markdown links and recommendations
       // More flexible pattern to handle spaces in URLs and between brackets/parentheses
-      const pattern = /\[([^\]]+)\]\s*\(\s*([^\)]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC|FABRIC_REC):([^\]]+)\]/g;
+      // The [\s\S] in the URL group allows matching URLs that span multiple lines or have any characters
+      const pattern = /\[([^\]]+)\]\s*\(\s*([\s\S]+?)\s*\)|\[(?:FRIEND_REC|SAVED_REC|WEB_REC|FABRIC_REC):([^\]]+)\]/g;
       let match;
       let lastIndex = 0;
       

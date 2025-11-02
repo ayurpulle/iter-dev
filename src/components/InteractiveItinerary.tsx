@@ -44,8 +44,13 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
   };
 
   const renderIterWithRecommendations = (text: string) => {
-    // First, ensure time periods are on their own lines
+    // First, consolidate markdown links that span multiple lines
+    // Match [text]\n(url) and convert to [text](url)
     let cleanedText = text
+      .replace(/\]\s*\n\s*\(/g, '](')
+    
+    // Ensure time periods are on their own lines
+    cleanedText = cleanedText
       // Split inline time periods onto separate lines
       .replace(/\s+(Morning|Afternoon|Evening|Night):/g, '\n$1:')
       // Ensure travel tips sections are on separate lines

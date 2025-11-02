@@ -44,7 +44,7 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
 
   if (loading) {
     return (
-      <div className="px-4 py-6 pb-24 max-w-4xl mx-auto">
+      <div className="px-4 py-6 pb-24 max-w-[95vw] mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="sm" onClick={onBack} className="p-1">
             <ArrowLeft size={20} />
@@ -66,7 +66,7 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
   }
 
   return (
-    <div className="px-4 py-6 pb-24 max-w-4xl mx-auto">
+    <div className="px-4 py-6 pb-24 max-w-[95vw] mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Button variant="ghost" size="sm" onClick={onBack} className="p-1">
           <ArrowLeft size={20} />

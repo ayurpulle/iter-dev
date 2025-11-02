@@ -67,11 +67,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .filter(line => !line.match(/^[•\s]*[-–—\-]+\s*$/)) // Remove lines that are just bullets and dashes
       .filter(line => !line.match(/^[-–—*_\-]{2,}$/)) // Remove horizontal rule lines (---, ***, ___)
       .filter(line => line !== '•') // Remove lines that are just a single bullet
-      .join('\n')
-      // Fix markdown links that are split across lines - join [text]\n(url) into [text](url)
-      .replace(/\]\s*\n\s*\(/g, '](')
-      // Remove spaces within URLs like "https: //" -> "https://"
-      .replace(/(\w+):\s+\/\//g, '$1://');
+      .join('\n');
     
     // Helper function to parse markdown links and recommendations inline
     const parseInlineContent = (content: string) => {

@@ -112,20 +112,62 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           const url = match[5].trim();
           const isFabric = match[0].includes('FABRIC_REC');
           
-          elements.push(
-            <a
-              key={`inline-rec-${idx++}`}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={isFabric 
-                ? "text-pink-600 hover:text-pink-500 underline font-medium transition-colors"
-                : "text-blue-600 hover:text-blue-500 underline font-medium transition-colors"
-              }
-            >
-              {venueName}
-            </a>
-          );
+          // Check if we have recommendations data for this venue - if so, show bubble modal
+          if (isFabric && fabricRecommendations[venueName]) {
+            const recommendations = fabricRecommendations[venueName];
+            elements.push(
+              <span key={`fabric-rec-${idx++}`} className="inline-block relative">
+                <span 
+                  className="text-pink-600 hover:text-pink-500 cursor-pointer font-medium underline decoration-pink-300 hover:decoration-pink-600 transition-colors"
+                  onClick={() => setSelectedFabricVenue(venueName)}
+                >
+                  {venueName}
+                </span>
+                <span 
+                  className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 rounded-full ml-1 cursor-pointer hover:from-pink-500 hover:to-purple-500 transition-colors"
+                  onClick={() => setSelectedFabricVenue(venueName)}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                  </svg>
+                </span>
+              </span>
+            );
+          } else if (!isFabric && webRecommendations[venueName]) {
+            const recommendations = webRecommendations[venueName];
+            elements.push(
+              <span key={`web-rec-${idx++}`} className="inline-block relative">
+                <span 
+                  className="text-blue-600 hover:text-blue-500 cursor-pointer font-medium underline decoration-blue-300 hover:decoration-blue-600 transition-colors"
+                  onClick={() => setSelectedWebVenue(venueName)}
+                >
+                  {venueName}
+                </span>
+                <span 
+                  className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full ml-1 cursor-pointer hover:bg-blue-500 transition-colors"
+                  onClick={() => setSelectedWebVenue(venueName)}
+                >
+                  +{recommendations.length}
+                </span>
+              </span>
+            );
+          } else {
+            // No recommendations data, just show as hyperlink
+            elements.push(
+              <a
+                key={`inline-rec-${idx++}`}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={isFabric 
+                  ? "text-pink-600 hover:text-pink-500 underline font-medium transition-colors"
+                  : "text-blue-600 hover:text-blue-500 underline font-medium transition-colors"
+                }
+              >
+                {venueName}
+              </a>
+            );
+          }
         } else if (match[3] || match[6]) {
           // Recommendation marker without URL
           const recData = (match[3] || match[6]).split(':');

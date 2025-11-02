@@ -620,7 +620,7 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
           user_id: userId,
           type: 'system_message',
           title: 'Your Itinerary is Ready!',
-          message: `Your ${destination} itinerary has been generated and is ready to view.`,
+          message: `Your iter to ${destination} is ready, check it out in saved trips`,
           data: {
             trip_id: savedTrip.id,
             destination: destination,

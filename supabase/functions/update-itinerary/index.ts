@@ -438,7 +438,7 @@ Keep the same engaging, personal tone while updating the content to match the ne
         user_id: userId,
         type: 'itinerary_updated',
         title: 'Itinerary Updated',
-        message: `Your ${requestData.destination} itinerary has been successfully updated!`,
+        message: `Your iter to ${requestData.destination} has been updated, check it out in saved trips`,
         data: { itinerary_id: requestData.itineraryId }
       });
 

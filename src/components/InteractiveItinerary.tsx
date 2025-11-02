@@ -44,9 +44,22 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
   };
 
   const renderIterWithRecommendations = (text: string) => {
+    // Sanitize: Remove any malformed recommendation markers that aren't properly formatted
+    // This catches patterns like "WEB_REC:venue:url" or "FABRIC_REC:venue:url" without brackets
+    let sanitizedText = text.replace(
+      /(?<!\[)\b(WEB_REC|FABRIC_REC|FRIEND_REC|SAVED_REC):[^[\n]+?:https?:\/\/[^\s\]]+/g,
+      ''
+    );
+    
+    // Also remove standalone markers without proper markdown formatting
+    sanitizedText = sanitizedText.replace(
+      /(?<!\[)\b(WEB_REC|FABRIC_REC|FRIEND_REC|SAVED_REC):[^\[\n]+/g,
+      ''
+    );
+    
     // First, consolidate markdown links that span multiple lines
     // Match [text]\n(url) and convert to [text](url)
-    let cleanedText = text
+    let cleanedText = sanitizedText
       .replace(/\]\s*\n\s*\(/g, '](')
     
     // Ensure time periods are on their own lines

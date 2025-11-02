@@ -330,13 +330,26 @@ export const StructuredItinerary = ({
       };
     }
     
+    // Sanitize: Remove any malformed recommendation markers that aren't properly formatted
+    // This catches patterns like "WEB_REC:venue:url" or "FABRIC_REC:venue:url" without brackets
+    let sanitizedItinerary = currentItinerary.replace(
+      /(?<!\[)\b(WEB_REC|FABRIC_REC|FRIEND_REC|SAVED_REC):[^[\n]+?:https?:\/\/[^\s\]]+/g,
+      ''
+    );
+    
+    // Also remove standalone markers without proper markdown formatting
+    sanitizedItinerary = sanitizedItinerary.replace(
+      /(?<!\[)\b(WEB_REC|FABRIC_REC|FRIEND_REC|SAVED_REC):[^\[\n]+/g,
+      ''
+    );
+    
     // Calculate trip length to determine parsing strategy
     const tripLength = localStartDate && localEndDate 
       ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))
       : 7; // Default to 7 days if no dates
     
     // Split into main sections based on headers (support both markdown and plain text)
-    const sections = currentItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*|^Trip Summary|^Getting There|^Perfect Stay|^Day-by-Day Itinerary|^Travel Tips|^Booking Links|^Flights)/m);
+    const sections = sanitizedItinerary.split(/(?=\*\*Trip Summary\*\*|\*\*Getting There\*\*|\*\*Perfect Stay\*\*|\*\*Day-by-Day Itinerary\*\*|\*\*Travel Tips\*\*|\*\*Booking Links\*\*|\*\*Flights\*\*|^Trip Summary|^Getting There|^Perfect Stay|^Day-by-Day Itinerary|^Travel Tips|^Booking Links|^Flights)/m);
     
     const parsed = {
       summary: '',

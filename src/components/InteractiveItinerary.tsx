@@ -67,7 +67,9 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
       .filter(line => !line.match(/^[•\s]*[-–—\-]+\s*$/)) // Remove lines that are just bullets and dashes
       .filter(line => !line.match(/^[-–—*_\-]{2,}$/)) // Remove horizontal rule lines (---, ***, ___)
       .filter(line => line !== '•') // Remove lines that are just a single bullet
-      .join('\n');
+      .join('\n')
+      // Remove newlines within WEB_REC and FABRIC_REC tags to ensure they parse correctly
+      .replace(/\[(WEB_REC|FABRIC_REC):[^\]]*\]/gs, (match) => match.replace(/\n/g, ' '));
     
     // Helper function to parse markdown links and recommendations inline
     const parseInlineContent = (content: string) => {

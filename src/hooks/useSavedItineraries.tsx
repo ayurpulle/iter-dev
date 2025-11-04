@@ -110,16 +110,24 @@ export const useSavedItineraries = () => {
         collaborativeTrips = (collabTripsData || []).map(trip => {
           const collaboration = userCollaborations.find(collab => collab.itinerary_id === trip.id);
           
-          // Extract budget from overall_budget field (same as background trips)
+          // Extract budget from overall_budget field (handle both string and number types)
           let budget = null;
-          if (trip.overall_budget && typeof trip.overall_budget === 'number') {
-            budget = trip.overall_budget;
+          if (trip.overall_budget) {
+            if (typeof trip.overall_budget === 'number') {
+              budget = trip.overall_budget;
+            } else if (typeof trip.overall_budget === 'string') {
+              const parsed = parseInt(trip.overall_budget);
+              if (!isNaN(parsed)) {
+                budget = parsed;
+              }
+            }
           }
           
           console.log('Processing collaborative trip:', {
             tripId: trip.id,
             title: trip.title,
             overall_budget: trip.overall_budget,
+            overall_budget_type: typeof trip.overall_budget,
             mappedBudget: budget,
             hashtags: trip.hashtags
           });
@@ -130,7 +138,7 @@ export const useSavedItineraries = () => {
             destination: trip.destination,
             start_date: trip.start_date,
             end_date: trip.end_date,
-            budget: budget, // Map from overall_budget instead of hardcoding to null
+            budget: budget, // Map from overall_budget
             interests: trip.hashtags || [], // Map from hashtags field
             itinerary_content: trip.description || '',
             friend_recommendations: {},
@@ -217,10 +225,17 @@ export const useSavedItineraries = () => {
       const processedTrips = (backgroundTrips || [])
         .filter(trip => trip.description && trip.description.length > 500) // Only keep actual itineraries
         .map(trip => {
-        // Extract budget from overall_budget field (which stores the encoded budget number)
+        // Extract budget from overall_budget field (handle both string and number types since DB stores as text)
         let budget = null;
-        if (trip.overall_budget && typeof trip.overall_budget === 'number') {
-          budget = trip.overall_budget;
+        if (trip.overall_budget) {
+          if (typeof trip.overall_budget === 'number') {
+            budget = trip.overall_budget;
+          } else if (typeof trip.overall_budget === 'string') {
+            const parsed = parseInt(trip.overall_budget);
+            if (!isNaN(parsed)) {
+              budget = parsed;
+            }
+          }
         } else if (trip.cost && typeof trip.cost === 'string') {
           // Fallback: extract from cost string (e.g., "Budget Level 2" -> 2)
           const budgetMatch = trip.cost.match(/Budget Level (\d+)/);
@@ -237,6 +252,7 @@ export const useSavedItineraries = () => {
           originalHashtags: trip.hashtags,
           mappedInterests: interests ? [...interests] : [], // Create a copy to avoid circular reference
           originalOverallBudget: trip.overall_budget,
+          overallBudgetType: typeof trip.overall_budget,
           mappedBudget: budget
         });
 

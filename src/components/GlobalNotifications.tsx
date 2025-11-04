@@ -31,9 +31,16 @@ export const GlobalNotifications = () => {
             setLastNotificationId(notification.id);
             
             if (notification.type === 'itinerary_complete') {
+              const itineraryId = (notification.data as any)?.tripId;
               toast.success(notification.title, {
                 description: notification.message,
                 duration: 8000, // Show for 8 seconds
+                action: itineraryId ? {
+                  label: 'View',
+                  onClick: () => {
+                    navigate(`/search?viewIter=${itineraryId}`);
+                  },
+                } : undefined,
               });
             } else if (notification.type === 'itinerary_error') {
               toast.error(notification.title, {
@@ -80,9 +87,16 @@ export const GlobalNotifications = () => {
           const notification = payload.new;
           
           if (notification.type === 'itinerary_complete') {
+            const itineraryId = (notification.data as any)?.tripId;
             toast.success(notification.title, {
               description: notification.message,
               duration: 8000,
+              action: itineraryId ? {
+                label: 'View',
+                onClick: () => {
+                  navigate(`/search?viewIter=${itineraryId}`);
+                },
+              } : undefined,
             });
             
             // Mark as read

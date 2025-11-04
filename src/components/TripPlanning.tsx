@@ -1364,7 +1364,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="notes" className="mb-3 block">Anything else you'd like to add?</Label>
+              <Label htmlFor="notes" className="mb-4 block">Anything else you'd like to add?</Label>
               <Textarea
                 id="notes"
                 placeholder="Special requirements, budget considerations, activities..."

@@ -7,7 +7,6 @@ import React from "react";
 import { preloadCriticalRoutes, preloadCriticalData } from "@/utils/routePreloader";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
-import GlobalNotifications from "@/components/GlobalNotifications";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
 import { ItineraryEditProvider } from "@/components/ItineraryEditContext";
@@ -50,7 +49,6 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <GlobalNotifications />
               <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={

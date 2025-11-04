@@ -124,15 +124,31 @@ export const StructuredItinerary = ({
   
   // Decode values from iterData or use props as fallback
   const decodedBudget = useMemo(() => {
+    console.log('Decoding budget - iterData:', {
+      budget: iterData?.budget,
+      budgetType: typeof iterData?.budget,
+      propBudget: budget,
+      propBudgetType: typeof budget
+    });
+    
     if (iterData?.budget !== undefined && iterData?.budget !== null) {
       const budgetValue = typeof iterData.budget === 'number' ? iterData.budget : parseInt(String(iterData.budget));
-      return isNaN(budgetValue) ? 3 : Math.max(1, Math.min(5, budgetValue));
+      const decoded = isNaN(budgetValue) ? 3 : Math.max(1, Math.min(5, budgetValue));
+      console.log('Decoded budget from iterData:', decoded);
+      return decoded;
     }
     if (typeof budget === 'string' && budget.length > 0) {
       const parsed = parseInt(budget);
-      return isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed));
+      const decoded = isNaN(parsed) ? 3 : Math.max(1, Math.min(5, parsed));
+      console.log('Decoded budget from string prop:', decoded);
+      return decoded;
     }
-    if (typeof budget === 'number') return Math.max(1, Math.min(5, budget));
+    if (typeof budget === 'number') {
+      const decoded = Math.max(1, Math.min(5, budget));
+      console.log('Decoded budget from number prop:', decoded);
+      return decoded;
+    }
+    console.log('Defaulting budget to 3');
     return 3;
   }, [budget, iterData?.budget]);
   

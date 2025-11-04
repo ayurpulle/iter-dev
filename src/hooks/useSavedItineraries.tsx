@@ -109,14 +109,29 @@ export const useSavedItineraries = () => {
         // Combine trip data with collaboration info and convert to itinerary format
         collaborativeTrips = (collabTripsData || []).map(trip => {
           const collaboration = userCollaborations.find(collab => collab.itinerary_id === trip.id);
+          
+          // Extract budget from overall_budget field (same as background trips)
+          let budget = null;
+          if (trip.overall_budget && typeof trip.overall_budget === 'number') {
+            budget = trip.overall_budget;
+          }
+          
+          console.log('Processing collaborative trip:', {
+            tripId: trip.id,
+            title: trip.title,
+            overall_budget: trip.overall_budget,
+            mappedBudget: budget,
+            hashtags: trip.hashtags
+          });
+          
           return {
             id: trip.id,
             title: trip.title,
             destination: trip.destination,
             start_date: trip.start_date,
             end_date: trip.end_date,
-            budget: null, // trips don't have budget field like saved_itineraries
-            interests: [],
+            budget: budget, // Map from overall_budget instead of hardcoding to null
+            interests: trip.hashtags || [], // Map from hashtags field
             itinerary_content: trip.description || '',
             friend_recommendations: {},
             created_at: trip.created_at,

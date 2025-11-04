@@ -343,6 +343,9 @@ export const StructuredItinerary = ({
       ''
     );
     
+    // Fix markdown links: remove spaces between ] and ( to ensure proper link formatting
+    sanitizedItinerary = sanitizedItinerary.replace(/\]\s+\(/g, '](');
+    
     // Calculate trip length to determine parsing strategy
     const tripLength = localStartDate && localEndDate 
       ? Math.ceil((localEndDate.getTime() - localStartDate.getTime()) / (1000 * 60 * 60 * 24))

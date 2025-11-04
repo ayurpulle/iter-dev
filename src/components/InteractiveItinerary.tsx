@@ -59,8 +59,10 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
     
     // First, consolidate markdown links that span multiple lines
     // Match [text]\n(url) and convert to [text](url)
+    // Also fix spaces between ] and ( to ensure proper markdown formatting
     let cleanedText = sanitizedText
       .replace(/\]\s*\n\s*\(/g, '](')
+      .replace(/\]\s+\(/g, '](')
     
     // Ensure time periods are on their own lines
     cleanedText = cleanedText

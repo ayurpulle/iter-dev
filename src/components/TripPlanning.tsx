@@ -988,8 +988,8 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     <div className="px-4 py-6 pb-24 max-w-md mx-auto">
       <div className="space-y-4">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">Plan Your Trip</h1>
-          <p className="text-muted-foreground">Tell us about your dream getaway</p>
+          <h1 className="text-4xl font-bold text-foreground">Plan Your Trip</h1>
+          <p className="text-xl text-muted-foreground">Tell us about your dream getaway</p>
         </div>
 
         {/* Where */}
@@ -1001,7 +1001,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   <div className="flex items-center gap-3">
                     <MapPin size={20} className="text-primary" />
                     <div>
-                      <p className="font-medium text-sm">Where</p>
+                      <p className="font-medium text-base">Where</p>
                       <p className="text-muted-foreground text-sm">
                         {formData.destination || "Search destinations"}
                       </p>
@@ -1104,7 +1104,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   <div className="flex items-center gap-3">
                     <Calendar size={20} className="text-primary" />
                     <div>
-                      <p className="font-medium text-sm">When</p>
+                      <p className="font-medium text-base">When</p>
                       <p className="text-muted-foreground text-sm">
                         {formData.startDate && formData.endDate 
                           ? `${format(formData.startDate, "MMM d")} - ${format(formData.endDate, "MMM d")}`
@@ -1186,7 +1186,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <div className="flex items-center gap-3">
                 <Heart size={20} className="text-primary" />
                 <div>
-                  <p className="font-medium text-sm">Budget</p>
+                  <p className="font-medium text-base">Budget</p>
                   <p className="text-muted-foreground text-sm">
                     {getBudgetDescription(formData.budget) || "Select budget level"}
                   </p>
@@ -1218,7 +1218,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
                   <div className="flex items-center gap-3">
                     <Heart size={20} className="text-primary" />
                     <div>
-                      <p className="font-medium text-sm">Type of Holiday</p>
+                      <p className="font-medium text-base">Type of Holiday</p>
                       <p className="text-muted-foreground text-sm">
                         {formData.holidayTypes.length > 0 
                           ? `${formData.holidayTypes.length} selected`
@@ -1268,7 +1268,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
               <div className="flex items-center gap-3">
                 <Users size={20} className="text-primary" />
                 <div>
-                  <p className="font-medium text-sm">Take Inspiration</p>
+                  <p className="font-medium text-base">Take Inspiration</p>
                    <p className="text-muted-foreground text-sm">
                      {formData.inspirationSource === "none" ? "Not using inspiration" :
                       formData.inspirationSource === "all" ? "From all saved posts" :

@@ -150,6 +150,16 @@ export const StructuredItinerary = ({
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   const { toast } = useToast();
+  
+  // Sync local budget with decoded budget when it changes
+  useEffect(() => {
+    setLocalBudget(decodedBudget);
+  }, [decodedBudget]);
+  
+  // Sync local holiday types with decoded holiday types when they change
+  useEffect(() => {
+    setLocalHolidayTypes(decodedHolidayTypes);
+  }, [decodedHolidayTypes]);
 
   const availableHolidayTypes = [
     "Adventure & Outdoor",

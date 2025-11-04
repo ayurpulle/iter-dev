@@ -26,6 +26,7 @@ import { useRAGIter } from "@/hooks/useRAGItinerary";
 
 import { IterEditDialog } from "./IterEditDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { IterNotification } from "./IterNotification";
 
 interface TripPlanningProps {
   openIterId?: string | null;
@@ -58,6 +59,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   const [generatedIter, setGeneratedIter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [iterNotification, setIterNotification] = useState<"generating" | "ready" | null>(null);
 
   // Handle pre-filled destination from globe navigation
   useEffect(() => {
@@ -143,6 +145,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           
           if (result) {
             setLastGeneratedData(prev => ({ ...prev, id: result.id }));
+            setIterNotification("ready");
           }
         } catch (error) {
           console.error('Auto-save failed:', error);
@@ -619,6 +622,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           message: data.message,
           status: 'processing'
         }));
+        setIterNotification("generating");
       } else if (data?.itinerary) {
         // Immediate response with itinerary
         setGeneratedIter(data.itinerary);
@@ -627,6 +631,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           itinerary: data.itinerary,
           status: 'completed'
         }));
+        setIterNotification("ready");
       }
       
     } catch (error) {
@@ -984,6 +989,14 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
 
   return (
     <div className="px-4 py-6 pb-24 max-w-md mx-auto">
+      {/* Iter Notifications */}
+      {iterNotification && (
+        <IterNotification
+          type={iterNotification}
+          onDismiss={() => setIterNotification(null)}
+        />
+      )}
+      
       <div className="space-y-4">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-foreground">Plan Your Trip</h1>

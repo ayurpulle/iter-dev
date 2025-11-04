@@ -35,12 +35,12 @@ export const GlobalNotifications = () => {
               toast.success(notification.title, {
                 description: notification.message,
                 duration: 8000, // Show for 8 seconds
-                action: itineraryId ? {
+                action: {
                   label: 'View',
                   onClick: () => {
-                    navigate(`/search?viewIter=${itineraryId}`);
+                    navigate('/search');
                   },
-                } : undefined,
+                },
               });
             } else if (notification.type === 'itinerary_error') {
               toast.error(notification.title, {
@@ -91,12 +91,12 @@ export const GlobalNotifications = () => {
             toast.success(notification.title, {
               description: notification.message,
               duration: 8000,
-              action: itineraryId ? {
+              action: {
                 label: 'View',
                 onClick: () => {
-                  navigate(`/search?viewIter=${itineraryId}`);
+                  navigate('/search');
                 },
-              } : undefined,
+              },
             });
             
             // Mark as read

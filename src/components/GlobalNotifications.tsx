@@ -38,7 +38,7 @@ export const GlobalNotifications = () => {
                 action: {
                   label: 'View',
                   onClick: () => {
-                    navigate('/search');
+                    navigate('/search?view=savedTrips');
                   },
                 },
               });
@@ -94,7 +94,7 @@ export const GlobalNotifications = () => {
               action: {
                 label: 'View',
                 onClick: () => {
-                  navigate('/search');
+                  navigate('/search?view=savedTrips');
                 },
               },
             });

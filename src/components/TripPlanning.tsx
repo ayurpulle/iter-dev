@@ -263,6 +263,15 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const viewIterId = urlParams.get('viewIter') || openIterId;
+    const viewParam = urlParams.get('view');
+    
+    // Handle view parameter (e.g., ?view=savedTrips)
+    if (viewParam === 'savedTrips') {
+      setCurrentView('savedTrips');
+      // Clear the URL param
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
     
     if (viewIterId && user) {
       // First try to find in already loaded itineraries

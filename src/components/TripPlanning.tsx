@@ -988,7 +988,7 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     <div className="px-4 py-6 pb-24 max-w-md mx-auto">
       <div className="space-y-4">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">Plan Your Trip</h1>
+          <h1 className="text-3xl font-bold text-foreground">Plan Your Trip</h1>
           <p className="text-xl text-muted-foreground">Tell us about your dream getaway</p>
         </div>
 

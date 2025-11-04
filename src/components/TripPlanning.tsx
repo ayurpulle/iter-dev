@@ -619,12 +619,6 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           message: data.message,
           status: 'processing'
         }));
-        
-        toast({
-          title: "Generation Started",
-          description: data.message || `Your ${data.destination} itinerary is being generated. You'll receive a notification when it's ready!`,
-          duration: 5000,
-        });
       } else if (data?.itinerary) {
         // Immediate response with itinerary
         setGeneratedIter(data.itinerary);
@@ -633,11 +627,6 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
           itinerary: data.itinerary,
           status: 'completed'
         }));
-        
-        toast({
-          title: "Itinerary Generated",
-          description: "Your itinerary has been created successfully!",
-        });
       }
       
     } catch (error) {

@@ -14,46 +14,46 @@ const BottomTabBar = () => {
         <Button 
           variant="ghost" 
           size="lg" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-4"
           onClick={() => navigate("/search")}
         >
-          <Plane size={50} className={location.pathname.startsWith("/search") ? "text-primary" : "text-muted-foreground"} />
+          <Plane size={56} className={location.pathname.startsWith("/search") ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="lg" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-4"
           onClick={() => navigate("/")}
         >
-          <Compass size={50} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
+          <Compass size={56} className={location.pathname === "/" || (!location.pathname.startsWith("/map") && !location.pathname.startsWith("/create") && !location.pathname.startsWith("/search") && !location.pathname.startsWith("/account")) ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="lg" 
-          className="flex flex-col items-center gap-1 h-auto p-3 relative"
+          className="flex flex-col items-center gap-1 h-auto p-4 relative"
           onClick={() => navigate("/create")}
         >
-          <PlusCircle size={50} className={location.pathname.startsWith("/create") ? "text-primary" : "text-muted-foreground"} />
+          <PlusCircle size={56} className={location.pathname.startsWith("/create") ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="lg" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-4"
           onClick={() => navigate("/map")}
         >
-          <Globe size={50} className={location.pathname.startsWith("/map") ? "text-primary" : "text-muted-foreground"} />
+          <Globe size={56} className={location.pathname.startsWith("/map") ? "text-primary" : "text-muted-foreground"} />
         </Button>
         
         <Button 
           variant="ghost" 
           size="lg" 
-          className="flex flex-col items-center gap-1 h-auto p-3"
+          className="flex flex-col items-center gap-1 h-auto p-4"
           onClick={() => navigate("/account")}
         >
-          <User size={50} className={location.pathname.startsWith("/account") ? "text-primary" : "text-muted-foreground"} />
+          <User size={56} className={location.pathname.startsWith("/account") ? "text-primary" : "text-muted-foreground"} />
         </Button>
       </div>
     </div>

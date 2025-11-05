@@ -393,7 +393,7 @@ export const StructuredItinerary = ({
     sections.forEach(section => {
       const trimmed = section.trim();
       if (trimmed.startsWith('**Trip Summary**') || trimmed.startsWith('Trip Summary')) {
-        parsed.summary = trimmed.replace(/(\*\*)?Trip Summary(\*\*)?/, '').trim();
+        parsed.summary = trimmed.replace(/(\*\*)?Trip Summary(\*\*)?/, '').trim().replace(/[-—–]+\s*$/, '').trim();
       } else if (trimmed.startsWith('**Getting There**') || trimmed.startsWith('**Flights**') || trimmed.startsWith('Getting There') || trimmed.startsWith('Flights')) {
         parsed.gettingThere = trimmed.replace(/(\*\*)?(Getting There|Flights)(\*\*)?/, '').trim();
       } else if (trimmed.startsWith('**Perfect Stay**') || trimmed.startsWith('Perfect Stay')) {

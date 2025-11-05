@@ -427,7 +427,7 @@ ${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsConte
 Create a structured itinerary with these sections:
 
 **Trip Summary** 
-Generate a personalized summary (2-3 sentences) in plain text that captures the unique essence and highlights of this specific ${destination} trip, considering the travel style, interests, and duration. Write it as proper sentences without bullet points, dashes, or any list formatting.
+Generate a personalized summary (2-3 sentences) in plain text that captures the unique essence and highlights of this specific ${destination} trip, considering the travel style, interests, and duration. Write it as proper sentences without bullet points, dashes, or any list formatting. DO NOT end with "---" or any dashes. End naturally with a period.
 
 **Getting There**
 • Flight recommendations and booking tips

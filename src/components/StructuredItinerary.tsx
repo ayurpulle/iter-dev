@@ -369,6 +369,13 @@ export const StructuredItinerary = ({
       ''
     );
     
+    // CRITICAL: Strip out ALL recommendation markers (properly bracketed ones too)
+    // This ensures they never appear as plain text in the itinerary
+    sanitizedItinerary = sanitizedItinerary.replace(/\[FABRIC_REC:[^\]]+\]/g, '');
+    sanitizedItinerary = sanitizedItinerary.replace(/\[WEB_REC:[^\]]+\]/g, '');
+    sanitizedItinerary = sanitizedItinerary.replace(/\[FRIEND_REC:[^\]]+\]/g, '');
+    sanitizedItinerary = sanitizedItinerary.replace(/\[SAVED_REC:[^\]]+\]/g, '');
+    
     // Fix markdown links: remove spaces between ] and ( to ensure proper link formatting
     sanitizedItinerary = sanitizedItinerary.replace(/\]\s+\(/g, '](');
     

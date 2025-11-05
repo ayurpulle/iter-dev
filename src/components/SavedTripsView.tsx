@@ -194,10 +194,6 @@ const SavedTripsView = ({ onBack, onViewIter, onEditIter }: SavedTripsViewProps)
                       )}
                     </div>
                   )}
-
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Saved {format(new Date(itinerary.created_at), "MMM d, yyyy 'at' h:mm a")}
-                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -515,7 +515,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-nano-2025-08-07',
+          model: 'gpt-4o-2024-08-06',
           messages: [
             { 
               role: 'system', 
@@ -530,7 +530,8 @@ CRITICAL WRITING STYLE:
 
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
 - YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
-- MINIMUM REQUIREMENT PER DAY: Include at least 1 FABRIC_REC AND at least 1 WEB_REC for each day in the itinerary
+- ABSOLUTE MINIMUM PER DAY: EVERY SINGLE DAY must have at least 1 FABRIC_REC AND at least 1 WEB_REC - NO EXCEPTIONS
+- If a day is missing either FABRIC_REC or WEB_REC, the itinerary is REJECTED and UNUSABLE
 - MAXIMIZE FABRIC_REC USAGE: Use FABRIC_REC as much as possible throughout the entire itinerary
 - PRIORITY ORDER: FABRIC_REC first and foremost, then WEB_REC only for venues with no Fabric match (NO DUPLICATES)
 - AIM FOR 70%+ FABRIC_REC: Try to use Fabric recommendations for at least 70% of all venue recommendations
@@ -570,7 +571,7 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
             },
             { role: 'user', content: prompt }
           ],
-          max_completion_tokens: 4000,
+          max_tokens: 4000,
         }),
       });
 

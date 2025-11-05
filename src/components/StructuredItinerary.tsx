@@ -369,12 +369,7 @@ export const StructuredItinerary = ({
       ''
     );
     
-    // CRITICAL: Strip out ALL recommendation markers (properly bracketed ones too)
-    // This ensures they never appear as plain text in the itinerary
-    sanitizedItinerary = sanitizedItinerary.replace(/\[FABRIC_REC:[^\]]+\]/g, '');
-    sanitizedItinerary = sanitizedItinerary.replace(/\[WEB_REC:[^\]]+\]/g, '');
-    sanitizedItinerary = sanitizedItinerary.replace(/\[FRIEND_REC:[^\]]+\]/g, '');
-    sanitizedItinerary = sanitizedItinerary.replace(/\[SAVED_REC:[^\]]+\]/g, '');
+    // Note: Don't strip recommendation markers here - they'll be converted to links in formatInlineContent
     
     // Fix markdown links: remove spaces between ] and ( to ensure proper link formatting
     sanitizedItinerary = sanitizedItinerary.replace(/\]\s+\(/g, '](');
@@ -590,18 +585,150 @@ export const StructuredItinerary = ({
   };
 
   const formatInlineContent = (text: string) => {
-    // Enhanced URL detection pattern
-    const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-    const parts = text.split(urlPattern);
+    const elements: JSX.Element[] = [];
+    let remainingText = text;
+    let keyIndex = 0;
     
-    return parts.map((part, partIndex) => {
-      if (part.match(urlPattern)) {
-        const url = part.startsWith('http') ? part : `https://${part}`;
-        const displayText = part.length > 40 ? part.substring(0, 37) + '...' : part;
-        
-        return (
+    // Process all recommendation markers and URLs
+    while (remainingText.length > 0) {
+      // Check for FABRIC_REC markers
+      const fabricMatch = remainingText.match(/\[FABRIC_REC:([^:]+):([^:]+):([^\]]+)\]/);
+      // Check for WEB_REC markers
+      const webMatch = remainingText.match(/\[WEB_REC:([^:]+):([^\]]+)\]/);
+      // Check for FRIEND_REC markers
+      const friendMatch = remainingText.match(/\[FRIEND_REC:([^:]+):([^\]]+)\]/);
+      // Check for SAVED_REC markers
+      const savedMatch = remainingText.match(/\[SAVED_REC:([^:]+):([^\]]+)\]/);
+      // Check for regular URLs
+      const urlMatch = remainingText.match(/(https?:\/\/[^\s\]]+|www\.[^\s\]]+)/);
+      
+      // Find the earliest match
+      let firstMatch = null;
+      let matchType = '';
+      let matchIndex = Infinity;
+      
+      if (fabricMatch && fabricMatch.index !== undefined && fabricMatch.index < matchIndex) {
+        firstMatch = fabricMatch;
+        matchType = 'fabric';
+        matchIndex = fabricMatch.index;
+      }
+      if (webMatch && webMatch.index !== undefined && webMatch.index < matchIndex) {
+        firstMatch = webMatch;
+        matchType = 'web';
+        matchIndex = webMatch.index;
+      }
+      if (friendMatch && friendMatch.index !== undefined && friendMatch.index < matchIndex) {
+        firstMatch = friendMatch;
+        matchType = 'friend';
+        matchIndex = friendMatch.index;
+      }
+      if (savedMatch && savedMatch.index !== undefined && savedMatch.index < matchIndex) {
+        firstMatch = savedMatch;
+        matchType = 'saved';
+        matchIndex = savedMatch.index;
+      }
+      if (urlMatch && urlMatch.index !== undefined && urlMatch.index < matchIndex) {
+        firstMatch = urlMatch;
+        matchType = 'url';
+        matchIndex = urlMatch.index;
+      }
+      
+      if (!firstMatch || firstMatch.index === undefined) {
+        // No more matches, add remaining text
+        const cleanText = remainingText.replace(/\*\*/g, '');
+        if (cleanText) {
+          elements.push(<span key={keyIndex++}>{cleanText}</span>);
+        }
+        break;
+      }
+      
+      // Add text before the match
+      const beforeText = remainingText.substring(0, firstMatch.index).replace(/\*\*/g, '');
+      if (beforeText) {
+        elements.push(<span key={keyIndex++}>{beforeText}</span>);
+      }
+      
+      // Add the matched element
+      if (matchType === 'fabric') {
+        const venueName = fabricMatch![1];
+        const source = fabricMatch![2];
+        const topic = fabricMatch![3];
+        elements.push(
           <a
-            key={partIndex}
+            key={keyIndex++}
+            href={`#fabric-${venueName}`}
+            onClick={(e) => {
+              e.preventDefault();
+              // Handle fabric recommendation click
+            }}
+            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline decoration-primary/50"
+          >
+            {venueName}
+            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">Fabric</Badge>
+          </a>
+        );
+        remainingText = remainingText.substring(firstMatch.index + firstMatch[0].length);
+      } else if (matchType === 'web') {
+        const venueName = webMatch![1];
+        const url = webMatch![2];
+        elements.push(
+          <a
+            key={keyIndex++}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline decoration-primary/50"
+          >
+            {venueName}
+            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">Web</Badge>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        );
+        remainingText = remainingText.substring(firstMatch.index + firstMatch[0].length);
+      } else if (matchType === 'friend') {
+        const venueName = friendMatch![1];
+        const postId = friendMatch![2];
+        elements.push(
+          <a
+            key={keyIndex++}
+            href={`#friend-${postId}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedVenue(venueName);
+              setShowRecommendationModal(true);
+            }}
+            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline decoration-primary/50"
+          >
+            {venueName}
+            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">Friend</Badge>
+          </a>
+        );
+        remainingText = remainingText.substring(firstMatch.index + firstMatch[0].length);
+      } else if (matchType === 'saved') {
+        const venueName = savedMatch![1];
+        const postId = savedMatch![2];
+        elements.push(
+          <a
+            key={keyIndex++}
+            href={`#saved-${postId}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedVenue(venueName);
+              setShowRecommendationModal(true);
+            }}
+            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline decoration-primary/50"
+          >
+            {venueName}
+            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">Saved</Badge>
+          </a>
+        );
+        remainingText = remainingText.substring(firstMatch.index + firstMatch[0].length);
+      } else if (matchType === 'url') {
+        const url = urlMatch![0].startsWith('http') ? urlMatch![0] : `https://${urlMatch![0]}`;
+        const displayText = urlMatch![0].length > 40 ? urlMatch![0].substring(0, 37) + '...' : urlMatch![0];
+        elements.push(
+          <a
+            key={keyIndex++}
             href={url}
             target="_blank"
             rel="noopener noreferrer"
@@ -611,12 +738,11 @@ export const StructuredItinerary = ({
             <ExternalLink className="h-3 w-3" />
           </a>
         );
+        remainingText = remainingText.substring(firstMatch.index + urlMatch![0].length);
       }
-      
-      // Remove ** formatting from text but don't process as bold
-      const cleanedPart = part.replace(/\*\*/g, '');
-      return cleanedPart;
-    });
+    }
+    
+    return elements.length > 0 ? elements : text.replace(/\*\*/g, '');
   };
 
   const getItinerarySummary = () => {

@@ -515,7 +515,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-search-preview-2025-03-11',
+          model: 'gpt-5-mini-2025-08-07',
           messages: [
             { 
               role: 'system', 

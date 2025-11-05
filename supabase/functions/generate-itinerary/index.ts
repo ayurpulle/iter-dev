@@ -530,13 +530,17 @@ CRITICAL WRITING STYLE:
 
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
 - YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
-- PRIORITY ORDER: FABRIC_REC first, then WEB_REC for remaining venues (NO DUPLICATES)
+- MAXIMIZE FABRIC_REC USAGE: Use FABRIC_REC as much as possible throughout the entire itinerary
+- PRIORITY ORDER: FABRIC_REC first and foremost, then WEB_REC only for venues with no Fabric match (NO DUPLICATES)
+- AIM FOR 70%+ FABRIC_REC: Try to use Fabric recommendations for at least 70% of all venue recommendations
 - FABRIC_REC format: [FABRIC_REC:venue:source:personal_reason] where source is "search" or "instagram"
 - WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC
 - For FABRIC_REC, use natural language with "interest" or "curiosity" - avoid dramatic words like "passion", "love", "dedication"
+- Be creative in matching Fabric data: if you have search/instagram data about food, restaurants, activities, or locations, USE IT
 - Examples:
   * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:your interest in live basketball and Lakers games]"
   * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:your curiosity about oceanfront dining and sunset views]"
+  * "Try ramen at Ichiran [FABRIC_REC:Ichiran:search:your searches about authentic Japanese ramen spots]"
   * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle]" (only if no Fabric match)
 
 CRITICAL STRUCTURE REQUIREMENTS:

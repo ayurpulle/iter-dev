@@ -72,7 +72,7 @@ export const IterNotification = ({ type, onDismiss }: IterNotificationProps) => 
   }, [isDragging, dragOffset]);
 
   const handleViewTrips = () => {
-    navigate("/trip-planning", { state: { openSavedTrips: true } });
+    navigate("/?view=savedTrips");
     onDismiss();
   };
 

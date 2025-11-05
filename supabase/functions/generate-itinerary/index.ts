@@ -515,7 +515,7 @@ Focus on creating a practical, actionable itinerary that balances popular attrac
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-search-preview-2025-03-11',
+          model: 'gpt-5-2025-08-07',
           messages: [
             { 
               role: 'system', 
@@ -565,7 +565,7 @@ Keep each section clear and parseable. Maintain this exact structure. Write natu
             },
             { role: 'user', content: prompt }
           ],
-          max_tokens: 4000,
+          max_completion_tokens: 4000,
         }),
       });
 

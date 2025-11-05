@@ -530,6 +530,7 @@ CRITICAL WRITING STYLE:
 
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
 - YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
+- MINIMUM REQUIREMENT PER DAY: Include at least 1 FABRIC_REC AND at least 1 WEB_REC for each day in the itinerary
 - MAXIMIZE FABRIC_REC USAGE: Use FABRIC_REC as much as possible throughout the entire itinerary
 - PRIORITY ORDER: FABRIC_REC first and foremost, then WEB_REC only for venues with no Fabric match (NO DUPLICATES)
 - AIM FOR 70%+ FABRIC_REC: Try to use Fabric recommendations for at least 70% of all venue recommendations

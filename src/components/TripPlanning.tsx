@@ -188,6 +188,43 @@ const TripPlanning = ({ openIterId }: TripPlanningProps = {}) => {
     };
   }, [refetchSavedItineraries, viewingIter?.id]);
 
+  // Monitor for background-generated itineraries
+  useEffect(() => {
+    if (!user || !lastGeneratedData?.status || lastGeneratedData.status !== 'processing') {
+      return;
+    }
+
+    // Poll for new itinerary every 3 seconds
+    const pollInterval = setInterval(async () => {
+      console.log('Polling for background-generated itinerary...');
+      await refetchSavedItineraries();
+      
+      // Check if a new itinerary was created for this destination
+      const newIter = savedItineraries.find(iter => 
+        iter.destination === lastGeneratedData.destination &&
+        new Date(iter.created_at).getTime() > Date.now() - 60000 // Created in last minute
+      );
+      
+      if (newIter) {
+        console.log('Background itinerary found:', newIter);
+        setLastGeneratedData(prev => ({ ...prev, id: newIter.id, status: 'completed' }));
+        setIterNotification("ready");
+        clearInterval(pollInterval);
+      }
+    }, 3000);
+
+    // Stop polling after 5 minutes
+    const timeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      console.log('Stopped polling for background itinerary');
+    }, 300000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, [user, lastGeneratedData?.status, lastGeneratedData?.destination, savedItineraries, refetchSavedItineraries]);
+
   // Fetch specific itinerary directly (bypasses race condition)
   const fetchSpecificItinerary = async (itineraryId: string) => {
     try {

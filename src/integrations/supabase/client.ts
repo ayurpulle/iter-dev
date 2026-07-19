@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://lmsmnfjcmzqqmzdejztx.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxtc21uZmpjbXpxcW16ZGVqenR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NzAxNzYsImV4cCI6MjA3MTU0NjE3Nn0.C9WteJnLCu30ga-Bw0vUDj-Mp6zrg7TI9smxNwDSarg";
+const SUPABASE_URL = "https://pkoayabnnarrifzkvoqp.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_uHSW14M0TVmX44MxScy3aw_4JQfaGdx";
 
 // Create a singleton instance to prevent multiple client instances
 let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;

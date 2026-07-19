@@ -1,4 +1,4 @@
-project_id = "lmsmnfjcmzqqmzdejztx"
+project_id = "pkoayabnnarrifzkvoqp"
 
 [api]
 enabled = true
@@ -19,7 +19,7 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-ip_version = "ipv4"
+ip_version = "IPv4"
 
 [studio]
 enabled = true
@@ -35,7 +35,6 @@ pop3_port = 54326
 [storage]
 enabled = true
 file_size_limit = "50MiB"
-s3_enabled = false
 
 [auth]
 enabled = true
@@ -43,7 +42,6 @@ site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["https://127.0.0.1:3000"]
 jwt_expiry = 3600
 enable_signup = true
-email_double_confirm_changes = true
 enable_manual_linking = false
 
 [auth.email]
@@ -56,9 +54,8 @@ enable_signup = false
 enable_confirmations = false
 template = "Your code is {{ .Code }}"
 
-[edge_functions]
+[edge_runtime]
 enabled = true
-ip_version = "ipv4"
 
 [functions.get-mapbox-token]
 verify_jwt = true

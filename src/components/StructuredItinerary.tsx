@@ -591,7 +591,7 @@ export const StructuredItinerary = ({
     
     // Process all recommendation markers and URLs
     while (remainingText.length > 0) {
-      // Check for FABRIC_REC markers
+      // Check for legacy FABRIC_REC markers (integration removed; render venue name as plain text)
       const fabricMatch = remainingText.match(/\[FABRIC_REC:([^:]+):([^:]+):([^\]]+)\]/);
       // Check for WEB_REC markers
       const webMatch = remainingText.match(/\[WEB_REC:([^:]+):([^\]]+)\]/);
@@ -651,22 +651,7 @@ export const StructuredItinerary = ({
       // Add the matched element
       if (matchType === 'fabric') {
         const venueName = fabricMatch![1];
-        const source = fabricMatch![2];
-        const topic = fabricMatch![3];
-        elements.push(
-          <a
-            key={keyIndex++}
-            href={`#fabric-${venueName}`}
-            onClick={(e) => {
-              e.preventDefault();
-              // Handle fabric recommendation click
-            }}
-            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline decoration-primary/50"
-          >
-            {venueName}
-            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">Fabric</Badge>
-          </a>
-        );
+        elements.push(<span key={keyIndex++}>{venueName}</span>);
         remainingText = remainingText.substring(firstMatch.index + firstMatch[0].length);
       } else if (matchType === 'web') {
         const venueName = webMatch![1];

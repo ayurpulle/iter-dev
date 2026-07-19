@@ -45,166 +45,6 @@ async function regenerateItineraryBackground(requestData: RegenerateItineraryDat
     const userCurrency = profile?.default_currency || 'USD';
     const userLocation = profile?.base_location || 'United States';
 
-    // Fetch personalized Fabric data from both API and local tables
-    let fabricContext = '';
-    const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
-    
-    try {
-      const { data: fabricConnection } = await supabase
-        .from('fabric_connections')
-        .select('access_token, status')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (fabricConnection?.access_token) {
-        // Fetch API recommendations
-        const interestsArray = typeof requestData.interests === 'string' 
-          ? requestData.interests.split(',').map((i: string) => i.trim()) 
-          : Array.isArray(requestData.interests) 
-            ? requestData.interests 
-            : [];
-
-        try {
-          const response = await fetch(`${supabaseUrl}/functions/v1/fetch-fabric-recommendations`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              destination: requestData.destination,
-              interests: interestsArray,
-              accessToken: fabricConnection.access_token
-            })
-          });
-
-          if (response.ok) {
-            const fabricRecs = await response.json();
-            if (Array.isArray(fabricRecs) && fabricRecs.length > 0) {
-              fabricContext = `\n\nFABRIC API RECOMMENDATIONS:\n${
-                fabricRecs.map((rec: any) => 
-                  `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
-                ).join('\n')
-              }\n`;
-            }
-          }
-        } catch (apiErr) {
-          console.error('Failed to fetch Fabric API recommendations:', apiErr);
-        }
-      }
-    } catch (fabricErr) {
-      console.error('Failed to fetch Fabric connection:', fabricErr);
-    }
-
-    // Query local Google Search and Instagram data (always, not just with Fabric connection)
-    try {
-      const destinationKeywords = requestData.destination.toLowerCase().split(/[\s,]+/);
-      
-      // Query Google Search summaries for rich context
-      const { data: searchSummaries } = await supabase
-        .from('google_search_summaries')
-        .select('summary_content, summary_date, metadata')
-        .eq('user_id', userId)
-        .order('summary_date', { ascending: false })
-        .limit(8);
-
-      const { data: searchData } = await supabase
-        .from('google_search_raw_threads')
-        .select('content, preview, details, asat')
-        .eq('user_id', userId)
-        .order('asat', { ascending: false })
-        .limit(50);
-
-      const { data: instagramData } = await supabase
-        .from('instagram_interactions')
-        .select('content, preview, details')
-        .eq('user_id', userId)
-        .order('asat', { ascending: false })
-        .limit(30);
-
-      // Filter for destination-relevant content and extract keywords
-      const relevantSearches = searchData?.filter(item => {
-        const searchText = (item.content || item.preview || '').toLowerCase();
-        return destinationKeywords.some(keyword => 
-          searchText.includes(keyword) || 
-          searchText.includes('travel') || 
-          searchText.includes('hotel') || 
-          searchText.includes('flight') ||
-          searchText.includes('restaurant') ||
-          searchText.includes('things to do')
-        );
-      }) || [];
-
-      const relevantInstagram = instagramData?.filter(item => {
-        const postText = (item.content || item.preview || '').toLowerCase();
-        return destinationKeywords.some(keyword => postText.includes(keyword));
-      }) || [];
-
-      // Extract specific keywords/venues from searches
-      relevantSearches.forEach(search => {
-        const text = search.preview || search.content || '';
-        const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)/gi);
-        if (venueMatches) {
-          venueMatches.forEach(match => {
-            const cleaned = match.trim().slice(0, 50);
-            if (!fabricKeywords.search.includes(cleaned)) {
-              fabricKeywords.search.push(cleaned);
-            }
-          });
-        }
-        const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-        words.slice(0, 5).forEach(word => {
-          if (!fabricKeywords.search.includes(word) && 
-              !['travel', 'hotel', 'flight', 'restaurant', 'things', 'search'].includes(word)) {
-            fabricKeywords.search.push(word);
-          }
-        });
-      });
-
-      // Extract specific venues/topics from Instagram
-      relevantInstagram.forEach(post => {
-        const text = post.preview || post.content || '';
-        const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
-        if (venueMatches) {
-          venueMatches.forEach(match => {
-            const cleaned = match.trim().slice(0, 50);
-            if (!fabricKeywords.instagram.includes(cleaned)) {
-              fabricKeywords.instagram.push(cleaned);
-            }
-          });
-        }
-      });
-
-      // Add local data to context
-      if (searchSummaries && searchSummaries.length > 0) {
-        fabricContext += '\n\nYOUR INTERESTS & PREFERENCES (from your digital activity):\n';
-        searchSummaries.forEach(summary => {
-          fabricContext += `\n${summary.summary_content}\n`;
-        });
-      }
-
-      if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-        fabricContext += '\n\nRECENT RELEVANT ACTIVITY:\n';
-        
-        if (relevantSearches.length > 0) {
-          fabricContext += '\nRecent Searches:\n';
-          relevantSearches.slice(0, 10).forEach(search => {
-            fabricContext += `- ${search.preview || search.content}\n`;
-          });
-        }
-
-        if (relevantInstagram.length > 0) {
-          fabricContext += '\nInstagram Activity:\n';
-          relevantInstagram.slice(0, 5).forEach(post => {
-            fabricContext += `- ${post.preview || post.content}\n`;
-          });
-        }
-      }
-    } catch (localDataErr) {
-      console.error('Failed to fetch local Google/Instagram data:', localDataErr);
-    }
-
     // Calculate trip duration
     let duration = '';
     if (requestData.startDate && requestData.endDate) {
@@ -220,7 +60,7 @@ You are updating a travel itinerary based on changed parameters. Your response M
 
 CRITICAL INSTRUCTIONS:
 1. ALWAYS return the FULL itinerary - every day, every activity, every section
-2. PRESERVE ALL existing recommendation markers: [FRIEND_REC:VenueName], [WEB_REC:VenueName:URL], and [FABRIC_REC:venue:source:topic]
+2. PRESERVE ALL existing recommendation markers: [FRIEND_REC:VenueName] and [WEB_REC:VenueName:URL]
 3. NEVER remove or modify existing markers
 4. Make only targeted changes based on what parameters changed
 5. Your response should be AT LEAST as long as the original itinerary
@@ -243,8 +83,6 @@ ${requestData.currentContent}
 **Additional Context:**
 ${requestData.ragContext || 'No additional context provided'}
 
-${fabricContext}
-
 **Friend Recommendations:**
 ${JSON.stringify(requestData.friendRecommendations || {}, null, 2)}
 
@@ -256,7 +94,7 @@ Based on the changed parameters above, make MINIMAL, TARGETED updates to:
 4. If destination changed: Update all content to new destination
 
 **What to PRESERVE (CRITICAL):**
-1. ALL recommendation markers: [FRIEND_REC:VenueName], [WEB_REC:VenueName:URL], [FABRIC_REC:venue:source:topic]
+1. ALL recommendation markers: [FRIEND_REC:VenueName], [WEB_REC:VenueName:URL]
 2. The exact structure and format of all sections
 3. All existing activities and recommendations (unless budget/interests require changes)
 4. All markdown links [text](url)
@@ -284,21 +122,10 @@ Based on the changed parameters above, make MINIMAL, TARGETED updates to:
 - Embed URLs as markdown hyperlinks: [Text](URL), never show raw URLs
 - Keep concise, actionable content
 
-**Additional Fabric Keywords Available:**
-- Search Keywords: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
-- Instagram Topics: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
-
-${fabricContext ? `
-**Personalization Data:**
-${fabricContext}
-
-You MAY add new FABRIC_REC markers for venues matching user interests, but do NOT remove existing ones.
-` : ''}
-
 NOW PROVIDE THE COMPLETE UPDATED ITINERARY:
 - Include ALL days from the original
 - Include ALL activities and recommendations
-- PRESERVE all existing [FRIEND_REC], [WEB_REC], and [FABRIC_REC] markers
+- PRESERVE all existing [FRIEND_REC] and [WEB_REC] markers
 - Apply only the necessary updates based on changed parameters
 - Maintain Morning/Afternoon/Evening/Night structure
 - Use bullet points • for all lists
@@ -324,7 +151,7 @@ NOW PROVIDE THE COMPLETE UPDATED ITINERARY:
         messages: [
           {
             role: 'system',
-            content: "You are a travel itinerary editor who updates itineraries while preserving their structure. CRITICAL RULES: 1) ALWAYS return the COMPLETE itinerary with ALL sections and days 2) Your response MUST be at least " + Math.floor(requestData.currentContent.length * 0.8) + " characters 3) PRESERVE ALL recommendation markers: [FRIEND_REC], [WEB_REC], [FABRIC_REC] - NEVER remove them 4) Make only targeted changes based on what parameters changed 5) Keep 90%+ of original content intact 6) Use bullet points • for all lists 7) Maintain Morning/Afternoon/Evening/Night structure 8) Embed URLs as markdown [text](url) with NO SPACES 9) Write in natural, conversational language like texting a friend 10) NEVER say 'rest remains the same' or summarize - output the FULL itinerary"
+            content: "You are a travel itinerary editor who updates itineraries while preserving their structure. CRITICAL RULES: 1) ALWAYS return the COMPLETE itinerary with ALL sections and days 2) Your response MUST be at least " + Math.floor(requestData.currentContent.length * 0.8) + " characters 3) PRESERVE ALL recommendation markers: [FRIEND_REC], [WEB_REC] - NEVER remove them 4) Make only targeted changes based on what parameters changed 5) Keep 90%+ of original content intact 6) Use bullet points • for all lists 7) Maintain Morning/Afternoon/Evening/Night structure 8) Embed URLs as markdown [text](url) with NO SPACES 9) Write in natural, conversational language like texting a friend 10) NEVER say 'rest remains the same' or summarize - output the FULL itinerary"
           },
           {
             role: 'user',

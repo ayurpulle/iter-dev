@@ -5,7 +5,6 @@ import { ChevronDown, ChevronUp, Star, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SavedRecommendationModal } from "@/components/SavedRecommendationModal";
 import { WebRecommendationModal } from "@/components/WebRecommendationModal";
-import { extractFabricRecommendations, type FabricRecommendation } from "@/utils/fabricFormatter";
 
 interface FriendRecommendation {
   name: string;
@@ -32,9 +31,6 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
   const [expandedVenues, setExpandedVenues] = useState<{ [key: string]: boolean }>({});
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedWebVenue, setSelectedWebVenue] = useState<string | null>(null);
-  const [selectedFabricVenue, setSelectedFabricVenue] = useState<string | null>(null);
-  
-  const fabricRecommendations = extractFabricRecommendations(itinerary);
 
   const toggleVenue = (venueName: string) => {
     setExpandedVenues(prev => ({
@@ -128,33 +124,12 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
             </a>
           );
         } else if (match[4] && match[5]) {
-          // WEB_REC or FABRIC_REC with inline URL: [WEB_REC: VenueName:URL]
+          // WEB_REC (or legacy FABRIC_REC) with inline URL: [WEB_REC: VenueName:URL]
           const venueName = match[4].replace(/\n/g, ' ').trim();
           const url = match[5].replace(/\n/g, '').replace(/\s+/g, '').trim();
-          const isFabric = match[0].includes('FABRIC_REC');
-          
+
           // Check if we have recommendations data for this venue - if so, show bubble modal
-          if (isFabric && fabricRecommendations[venueName]) {
-            const recommendations = fabricRecommendations[venueName];
-            elements.push(
-              <span key={`fabric-rec-${idx++}`} className="inline-block relative">
-                <span 
-                  className="text-pink-600 hover:text-pink-500 cursor-pointer font-medium underline decoration-pink-300 hover:decoration-pink-600 transition-colors"
-                  onClick={() => setSelectedFabricVenue(venueName)}
-                >
-                  {venueName}
-                </span>
-                <span 
-                  className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 rounded-full ml-1 cursor-pointer hover:from-pink-500 hover:to-purple-500 transition-colors"
-                  onClick={() => setSelectedFabricVenue(venueName)}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                  </svg>
-                </span>
-              </span>
-            );
-          } else if (!isFabric && webRecommendations[venueName]) {
+          if (webRecommendations[venueName]) {
             const recommendations = webRecommendations[venueName];
             elements.push(
               <span key={`web-rec-${idx++}`} className="inline-block relative">
@@ -180,10 +155,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={isFabric 
-                  ? "text-pink-600 hover:text-pink-500 underline font-medium transition-colors"
-                  : "text-blue-600 hover:text-blue-500 underline font-medium transition-colors"
-                }
+                className="text-blue-600 hover:text-blue-500 underline font-medium transition-colors"
               >
                 {venueName}
               </a>
@@ -193,11 +165,7 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           // Recommendation marker without URL
           const recData = (match[3] || match[6]).split(':');
           const venueName = recData[0];
-          const recType = match[0].includes('WEB_REC') 
-            ? 'web' 
-            : match[0].includes('FABRIC_REC') 
-              ? 'fabric' 
-              : 'friend';
+          const recType = match[0].includes('WEB_REC') ? 'web' : 'friend';
           
           if (recType === 'friend' && friendRecommendations[venueName]) {
             const recommendations = friendRecommendations[venueName];
@@ -232,27 +200,6 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
                   onClick={() => setSelectedWebVenue(venueName)}
                 >
                   +{recommendations.length}
-                </span>
-              </span>
-            );
-          } else if (recType === 'fabric' && fabricRecommendations[venueName]) {
-            // Handle Fabric recommendations - make them clickable
-            const recommendations = fabricRecommendations[venueName];
-            elements.push(
-              <span key={`fabric-rec-${idx++}`} className="inline-block relative">
-                <span 
-                  className="text-pink-600 hover:text-pink-500 cursor-pointer font-medium underline decoration-pink-300 hover:decoration-pink-600 transition-colors"
-                  onClick={() => setSelectedFabricVenue(venueName)}
-                >
-                  {venueName}
-                </span>
-                <span 
-                  className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 rounded-full ml-1 cursor-pointer hover:from-pink-500 hover:to-purple-500 transition-colors"
-                  onClick={() => setSelectedFabricVenue(venueName)}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                  </svg>
                 </span>
               </span>
             );
@@ -398,15 +345,6 @@ const InteractiveIter = ({ itinerary, friendRecommendations, webRecommendations 
           onClose={() => setSelectedWebVenue(null)}
           venueName={selectedWebVenue}
           recommendations={webRecommendations[selectedWebVenue]}
-        />
-      )}
-      
-      {selectedFabricVenue && fabricRecommendations[selectedFabricVenue] && (
-        <SavedRecommendationModal
-          isOpen={!!selectedFabricVenue}
-          onClose={() => setSelectedFabricVenue(null)}
-          venueName={selectedFabricVenue}
-          fabricRecommendations={fabricRecommendations[selectedFabricVenue]}
         />
       )}
     </>

@@ -48,177 +48,6 @@ serve(async (req) => {
         inspirationFolder 
       });
 
-      // Initialize Fabric keywords outside try-catch for broader scope
-      const fabricKeywords: { search: string[], instagram: string[] } = { search: [], instagram: [] };
-
-      // Fetch Fabric API recommendations if connected
-      let fabricContext = '';
-      try {
-        console.log('Checking for Fabric connection...');
-        const { data: fabricConnection } = await supabaseClient
-          .from('fabric_connections')
-          .select('access_token, status')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (fabricConnection?.access_token) {
-          console.log('Fetching Fabric API recommendations for destination:', destination);
-          
-          // Parse interests into array if it's a string
-          const interestsArray = typeof interests === 'string' 
-            ? interests.split(',').map((i: string) => i.trim()) 
-            : Array.isArray(interests) 
-              ? interests 
-              : [];
-
-          // Fetch API recommendations
-          const { data: fabricRecs, error: fabricError } = await supabaseClient.functions.invoke(
-            'fetch-fabric-recommendations',
-            {
-              body: {
-                destination,
-                interests: interestsArray,
-                accessToken: fabricConnection.access_token
-              }
-            }
-          );
-
-          if (fabricError) {
-            console.error('Error fetching Fabric recommendations:', fabricError);
-          } else if (fabricRecs && Array.isArray(fabricRecs) && fabricRecs.length > 0) {
-            console.log(`Found ${fabricRecs.length} Fabric API recommendations`);
-            fabricContext = `\n\nFABRIC PERSONALIZED RECOMMENDATIONS (from your digital self):\n${
-              fabricRecs.map((rec: any) => 
-                `- ${rec.title}${rec.url ? ` (${rec.url})` : ''}${rec.content ? `: ${rec.content}` : ''}`
-              ).join('\n')
-            }\n`;
-          }
-        } else {
-          console.log('No active Fabric connection found for user');
-        }
-      } catch (fabricErr) {
-        console.error('Failed to fetch Fabric API data:', fabricErr);
-        // Continue without Fabric API data
-      }
-
-      // Query local Google Search and Instagram data tables (always, not just with Fabric connection)
-      try {
-        console.log('Querying local Google Search and Instagram data...');
-        const destinationKeywords = destination.toLowerCase().split(/[\s,]+/);
-        
-        // Query Google Search summaries for rich context
-        const { data: searchSummaries } = await supabaseClient
-          .from('google_search_summaries')
-          .select('summary_content, summary_date, metadata')
-          .eq('user_id', userId)
-          .order('summary_date', { ascending: false })
-          .limit(8);
-
-        const { data: searchData } = await supabaseClient
-          .from('google_search_raw_threads')
-          .select('content, preview, details, asat')
-          .eq('user_id', userId)
-          .order('asat', { ascending: false })
-          .limit(50);
-
-        const { data: instagramData } = await supabaseClient
-          .from('instagram_interactions')
-          .select('content, preview, details')
-          .eq('user_id', userId)
-          .order('asat', { ascending: false })
-          .limit(30);
-
-        console.log(`Found ${searchSummaries?.length || 0} search summaries, ${searchData?.length || 0} search records, and ${instagramData?.length || 0} Instagram records`);
-
-        // Filter for destination-relevant content and extract keywords
-        const relevantSearches = searchData?.filter(item => {
-          const searchText = (item.content || item.preview || '').toLowerCase();
-          return destinationKeywords.some(keyword => 
-            searchText.includes(keyword) || 
-            searchText.includes('travel') || 
-            searchText.includes('hotel') || 
-            searchText.includes('flight') ||
-            searchText.includes('restaurant') ||
-            searchText.includes('things to do')
-          );
-        }) || [];
-
-        const relevantInstagram = instagramData?.filter(item => {
-          const postText = (item.content || item.preview || '').toLowerCase();
-          return destinationKeywords.some(keyword => postText.includes(keyword));
-        }) || [];
-
-        // Extract specific keywords/venues from searches
-        relevantSearches.forEach(search => {
-          const text = search.preview || search.content || '';
-          // Extract potential venue names and keywords
-          const venueMatches = text.match(/(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)\s+[\w\s]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park|market|temple|church|palace|tower|arena|stadium|theater)/gi);
-          if (venueMatches) {
-            venueMatches.forEach(match => {
-              const cleaned = match.trim().slice(0, 50);
-              if (!fabricKeywords.search.includes(cleaned)) {
-                fabricKeywords.search.push(cleaned);
-              }
-            });
-          }
-          // Extract key topic words (sports teams, activities, etc.)
-          const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-          words.slice(0, 5).forEach(word => {
-            if (!fabricKeywords.search.includes(word) && 
-                !['travel', 'hotel', 'flight', 'restaurant', 'things', 'search'].includes(word)) {
-              fabricKeywords.search.push(word);
-            }
-          });
-        });
-
-        // Extract specific venues/topics from Instagram
-        relevantInstagram.forEach(post => {
-          const text = post.preview || post.content || '';
-          const venueMatches = text.match(/(?:@[\w.]+|#[\w]+|[\w\s]+(?:restaurant|hotel|cafe|bar|museum|beach|park))/gi);
-          if (venueMatches) {
-            venueMatches.forEach(match => {
-              const cleaned = match.trim().slice(0, 50);
-              if (!fabricKeywords.instagram.includes(cleaned)) {
-                fabricKeywords.instagram.push(cleaned);
-              }
-            });
-          }
-        });
-
-        // Add local data to context
-        if (searchSummaries && searchSummaries.length > 0) {
-          fabricContext += '\n\nYOUR INTERESTS & PREFERENCES (from your digital activity):\n';
-          searchSummaries.forEach(summary => {
-            fabricContext += `\n${summary.summary_content}\n`;
-          });
-        }
-
-        if (relevantSearches.length > 0 || relevantInstagram.length > 0) {
-          fabricContext += '\n\nRECENT RELEVANT ACTIVITY:\n';
-          
-          if (relevantSearches.length > 0) {
-            fabricContext += '\nRecent Searches:\n';
-            relevantSearches.slice(0, 10).forEach(search => {
-              fabricContext += `- ${search.preview || search.content}\n`;
-            });
-          }
-
-          if (relevantInstagram.length > 0) {
-            fabricContext += '\nInstagram Activity:\n';
-            relevantInstagram.slice(0, 5).forEach(post => {
-              fabricContext += `- ${post.preview || post.content}\n`;
-            });
-          }
-          
-          console.log(`Found ${relevantSearches.length} relevant searches and ${relevantInstagram.length} Instagram posts`);
-          console.log('Extracted keywords - Search:', fabricKeywords.search.slice(0, 5), 'Instagram:', fabricKeywords.instagram.slice(0, 5));
-        }
-      } catch (localDataErr) {
-        console.error('Failed to fetch local Google/Instagram data:', localDataErr);
-        // Continue without local data
-      }
-
       // Get user's saved posts to use as review bank (filter by folder if specified)
       console.log('Fetching user saved posts for review bank...');
       
@@ -418,8 +247,6 @@ Trip Details:
 - Travel Style: ${travelStyle || 'Not specified'}  
 - Interests: ${interests || 'General travel'}
 
-${fabricContext}
-
 ${reviewBankContext}
 
 ${friendsPostsContext ? `\n\nFriends who've been there say:\n${friendsPostsContext}\n` : ''}
@@ -465,44 +292,18 @@ Keep descriptions concise but well-written, avoid overly specific times. Focus o
 **CRITICAL: RECOMMENDATION MARKING REQUIREMENTS** 
 YOU MUST include recommendation markers in your itinerary. This is NOT optional:
 
- 1. **FABRIC_REC Markers (HIGHEST PRIORITY - use these when user interests match):**
-   - Search Keywords Available: ${fabricKeywords.search.slice(0, 20).join(', ') || 'None'}
-   - Instagram Topics Available: ${fabricKeywords.instagram.slice(0, 15).join(', ') || 'None'}
-   - When recommending venues matching these keywords/topics, mark with [FABRIC_REC:venue_name:source_type:personal_reason]
-   - CRITICAL: The "personal_reason" field must be personalized based on the user's searches/activity
-   - Use natural, simple language - prefer "interest" or "curiosity" over dramatic words
-   - Examples of GOOD personalization:
-     * Museum + art searches + cultural interests → "your interest in Renaissance art and cultural immersion"
-     * Lakers searches + sports bar visits + game highlights → "your interest in live basketball and Lakers games"  
-     * Beach posts + sunset photos + coastal dining → "your curiosity about oceanfront dining and sunset views"
-     * Coffee shop searches + specialty roasts + cafe culture → "your interest in artisanal coffee and cozy cafe spaces"
-   - Examples of BAD personalization (TOO GENERIC):
-     * "search:Lakers" ❌
-     * "instagram:museum" ❌
-     * "search:restaurant" ❌
-   - Format: [FABRIC_REC:Crypto.com Arena:search:your interest in live basketball and Lakers games]
-   - These show as purple/pink highlighted text to indicate personalized recommendations
+1. **SAVED_REC Markers (HIGHEST PRIORITY - when from review bank):**
+   - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
 
-2. **WEB_REC Markers (SECONDARY PRIORITY - use for venues NOT covered by FABRIC_REC):**
-   - For restaurants, hotels, attractions NOT already recommended via FABRIC_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
+2. **WEB_REC Markers (use for venues NOT covered by SAVED_REC):**
+   - For restaurants, hotels, attractions NOT already recommended via SAVED_REC, mark with [WEB_REC:venue_name:https://tripadvisor.com/...]
    - Example: "Try Joe's Pizza [WEB_REC:Joe's Pizza:https://tripadvisor.com/restaurant/joes-pizza] for authentic NY slices"
    - Use real, plausible URLs for TripAdvisor, Booking.com, OpenTable, etc.
-   - CRITICAL: Do NOT use WEB_REC for a venue if you already used FABRIC_REC for the same venue
-
-3. **SAVED_REC Markers (when from review bank):**
-   - Mark venues from saved posts with [SAVED_REC:venue_name:user_name]
+   - CRITICAL: Do NOT use WEB_REC for a venue if you already used SAVED_REC for the same venue
 
 **DEDUPLICATION RULE (CRITICAL):**
 - Each venue should have ONLY ONE type of recommendation marker
-- Priority order: FABRIC_REC > SAVED_REC > WEB_REC
-- If a venue matches user interests (Fabric data), use FABRIC_REC and do NOT add WEB_REC for the same venue
-
-${fabricContext ? `
-**YOUR PERSONALIZATION DATA TO USE:**
-${fabricContext}
-
-Based on this data, you MUST include personalized FABRIC_REC recommendations that match the user's interests.
-` : ''}
+- Priority order: SAVED_REC > WEB_REC
 
 Focus on creating a practical, actionable itinerary that balances popular attractions with authentic local experiences.`;
 
@@ -530,20 +331,12 @@ CRITICAL WRITING STYLE:
 
 CRITICAL RECOMMENDATION REQUIREMENTS (NON-NEGOTIABLE):
 - YOU MUST include recommendation markers - without them, the itinerary is INCOMPLETE and UNUSABLE
-- ABSOLUTE MINIMUM PER DAY: EVERY SINGLE DAY must have at least 1 FABRIC_REC AND at least 1 WEB_REC - NO EXCEPTIONS
-- If a day is missing either FABRIC_REC or WEB_REC, the itinerary is REJECTED and UNUSABLE
-- MAXIMIZE FABRIC_REC USAGE: Use FABRIC_REC as much as possible throughout the entire itinerary
-- PRIORITY ORDER: FABRIC_REC first and foremost, then WEB_REC only for venues with no Fabric match (NO DUPLICATES)
-- AIM FOR 70%+ FABRIC_REC: Try to use Fabric recommendations for at least 70% of all venue recommendations
-- FABRIC_REC format: [FABRIC_REC:venue:source:personal_reason] where source is "search" or "instagram"
-- WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by FABRIC_REC
-- For FABRIC_REC, use natural language with "interest" or "curiosity" - avoid dramatic words like "passion", "love", "dedication"
-- Be creative in matching Fabric data: if you have search/instagram data about food, restaurants, activities, or locations, USE IT
-- Examples:
-  * "Catch a Lakers game at Crypto.com Arena [FABRIC_REC:Crypto.com Arena:search:your interest in live basketball and Lakers games]"
-  * "Sunset at Santa Monica Pier [FABRIC_REC:Santa Monica Pier:instagram:your curiosity about oceanfront dining and sunset views]"
-  * "Try ramen at Ichiran [FABRIC_REC:Ichiran:search:your searches about authentic Japanese ramen spots]"
-  * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle]" (only if no Fabric match)
+- ABSOLUTE MINIMUM PER DAY: EVERY SINGLE DAY must have at least 1 WEB_REC - NO EXCEPTIONS
+- If a day is missing a WEB_REC, the itinerary is REJECTED and UNUSABLE
+- PRIORITY ORDER: SAVED_REC first for venues from the review bank, then WEB_REC (NO DUPLICATES)
+- WEB_REC format: [WEB_REC:venue:URL] - only for venues NOT covered by SAVED_REC
+- Example:
+  * "Visit Blue Bottle Coffee [WEB_REC:Blue Bottle Coffee:https://tripadvisor.com/blue-bottle]"
 
 CRITICAL STRUCTURE REQUIREMENTS:
 - Use section headers: **Trip Summary**, **Getting There**, **Perfect Stay**, **Day-by-Day Itinerary**, **Travel Tips**, **Booking Links**
@@ -559,7 +352,7 @@ FORMATTING FOR EACH DAY:
 • Activity with brief description
 
 • Afternoon:  
-• Activity with brief description [FABRIC_REC:venue:search:keyword]
+• Activity with brief description [WEB_REC:venue:URL]
 
 • Evening:
 • Restaurant recommendation [WEB_REC:venue:URL]
